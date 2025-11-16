@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
 import PillNav from "@/components/PillNav"
+import HamburgerMenu from "@/components/HamburgerMenu"
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -32,9 +33,9 @@ export default function Navigation() {
   const isDark = theme === 'dark'
 
   return (
-    <div className="relative w-full">
+    <div className="flex justify-center relative w-full">
       {/* StableCoin Logo/Heading on the left */}
-      <div className="absolute top-[1em] left-4 z-[1002]">
+      <div className="absolute top-[1em] left-4 z-1002">
         <Link href="/" className="flex items-center gap-2 group">
           <div className="relative h-8 w-14">
             <Image
@@ -52,24 +53,30 @@ export default function Navigation() {
         </Link>
       </div>
 
-      {/* Centered PillNav Component */}
-      <div className="flex justify-center">
-        <PillNav
-          items={navItems}
-          activeHref={pathname}
-          className="custom-nav"
-          ease="power2.easeOut"
-          baseColor="transparent"
-          pillColor={isDark ? "#ffffff" : "#000000"}
-          hoveredPillTextColor={isDark ? "#000000" : "#1a1a1a"}
-          pillTextColor={isDark ? "#000000" : "#ffffff"}
-          initialLoadAnimation={true}
-        />
-      </div>
+      {/* Centered PillNav Component - Desktop only */}
+      <PillNav
+        items={navItems}
+        activeHref={pathname}
+        className="custom-nav"
+        ease="power2.easeOut"
+        baseColor="transparent"
+        pillColor={isDark ? "#ffffff" : "#000000"}
+        hoveredPillTextColor={isDark ? "#000000" : "#1a1a1a"}
+        pillTextColor={isDark ? "#000000" : "#ffffff"}
+        initialLoadAnimation={true}
+      />
       
       {/* Additional controls positioned on the right */}
-      <div className="absolute top-[1em] right-4 flex items-center gap-3 z-[1001]">
+      <div className="absolute top-[1em] right-4 flex items-center gap-3 z-1001">
         <ThemeToggle />
+        <HamburgerMenu 
+          items={navItems}
+          ease="power2.easeOut"
+          baseColor={isDark ? "#ffffff" : "#000000"}
+          pillColor={isDark ? "#000000" : "#ffffff"}
+          hoveredPillTextColor={isDark ? "#ffffff" : "#000000"}
+          pillTextColor={isDark ? "#000000" : "#ffffff"}
+        />
         <ConnectButton />
       </div>
     </div>
