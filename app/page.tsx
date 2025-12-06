@@ -43,7 +43,7 @@ export default function HomePage() {
           <div className="text-center">
             <HeroText />
             <div className="flex justify-center items-center">
-              <p className="text-xl text-muted-foreground mb-8 text-pretty max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground mb-8 text-pretty  max-w-2xl mx-auto">
               Launch your own stablecoin. Maintain price stability and
               build trust in the decentralized economy.
             </p>
@@ -64,6 +64,8 @@ export default function HomePage() {
 
       {/* How It Works Section */}
       <section className="relative min-h-screen flex items-center z-[5]">
+        
+        {/* Particles canvas start */}
         <div className="pointer-events-none absolute inset-0 -z-10">
           <Particles
             particleColors={["#ffffff", "#d9e2ff"]}
@@ -77,12 +79,15 @@ export default function HomePage() {
             className="pointer-events-none w-full h-full"
           />
         </div>
+
+        {/* main section of how it works?  */}
         <div className="container mx-auto px-4 relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
+            {/*main card how it works?*/}
             <Card className="grid container py-8 p-8 grid-cols-1 gap-8 items-center lg:grid-cols-2 bg-transparent backdrop-blur-0 rounded-none shadow-lg border border-white/40">
               <motion.div
                 className="flex gap-10 flex-col"
@@ -185,6 +190,8 @@ export default function HomePage() {
             </Card>
           </motion.div>
         </div>
+
+        {/* Particles canvas end */}
         <div className="pointer-events-none absolute inset-0 -z-10">
           <Particles
             particleColors={["#ffffff", "#d9e2ff"]}

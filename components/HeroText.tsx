@@ -29,13 +29,14 @@ function HeroText() {
     }, [titleNumber, titles]);
 
     return (
-        <h1
+        <div className="flex justify-center items-center">
+            <h1
             className="my-30 text-3xl lg:text-5xl font-semibold mb-6 tracking-[0.25em] uppercase"
             style={{ fontFamily: "'Space Mono', 'Syne', 'Orbitron', 'Courier New', monospace" }}
         >
             <div className="flex flex-col items-center gap-2">
-                <div className="text-center">
-                    <span className="relative inline-block h-[1.3em] text-center">
+                <div className="flex justify-center items-center text-center">
+                    <span className="flex justify-center items-center relative h-[1.3em] text-center">
                         {titles.map((title, index) => (
                             <motion.span
                                 key={index}
@@ -59,13 +60,14 @@ function HeroText() {
                         ))}
                     </span>
                 </div>
-               <div className="text-center">
+               <div className="flex justify-center items-center text-center">
                  <div className="mt-2">
                     <span className="block font-semibold tracking-[0.4em]">Stablecoins</span>
                 </div>
                </div>
             </div>
         </h1>
+        </div>
     );
 }
 
