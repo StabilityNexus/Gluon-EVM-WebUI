@@ -42,17 +42,21 @@ export default function HomePage() {
         <div className="container mx-auto px-4 mb-24 relative z-10">
           <div className="text-center">
             <HeroText />
-            <p className="text-xl text-muted-foreground mb-8 text-pretty max-w-2xl mx-auto">
+            <div className="flex justify-center items-center">
+              <p className="text-xl text-muted-foreground mb-8 text-pretty max-w-2xl mx-auto">
               Launch your own stablecoin. Maintain price stability and
               build trust in the decentralized economy.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="text-lg px-8 cursor-target rounded-none">
+            </div>
+            <div className="flex justify-center items-center">
+              <div className="flex flex-col  sm:flex-row gap-4 justify-center">
+              <Button asChild size="lg" className="min-w-40 text-sm sm:text-lg px-4 sm:px-8 py-2 sm:py-3 cursor-target rounded-none whitespace-nowrap">
                 <Link href="/create">Create Stablecoin</Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="text-lg px-8 bg-transparent cursor-target rounded-none">
+              <Button asChild variant="outline" size="lg" className="min-w-40 text-sm sm:text-lg px-4 sm:px-8 py-2 sm:py-3 bg-transparent cursor-target rounded-none whitespace-nowrap">
                 <Link href="/explorer">Explore Coins</Link>
               </Button>
+            </div>
             </div>
           </div>
         </div>

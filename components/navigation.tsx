@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "@/components/theme-toggle"
 import PillNav from "@/components/PillNav"
-import HamburgerMenu from "@/components/HamburgerMenu"
+//import HamburgerMenu from "@/components/HamburgerMenu"
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -69,14 +69,14 @@ export default function Navigation() {
       {/* Additional controls positioned on the right */}
       <div className="absolute top-[1em] right-4 flex items-center gap-3 z-1001">
         <ThemeToggle />
-        <HamburgerMenu 
+        {/* <HamburgerMenu 
           items={navItems}
           ease="power2.easeOut"
           baseColor={isDark ? "#ffffff" : "#000000"}
           pillColor={isDark ? "#000000" : "#ffffff"}
           hoveredPillTextColor={isDark ? "#ffffff" : "#000000"}
           pillTextColor={isDark ? "#000000" : "#ffffff"}
-        />
+        /> */}
         <ConnectButton />
       </div>
     </div>
