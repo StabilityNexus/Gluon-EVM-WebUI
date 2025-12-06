@@ -253,15 +253,15 @@ export default function ExplorerPage() {
         {/* Search and Filters */}
         {!isLoadingReactors && (
           <>
-            <div className="mb-8 max-w-4xl mx-auto">
-              <div className="flex justify-center items-center mb-6">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <div className="mb-8 max-w-4xl mx-auto flex justify-center">
+              <div className="relative">
                 <Input
                   placeholder="Search by reactor address..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-12 h-12 min-w-80 bg-transparent border-2 border-white/20 focus:border-white/40 hover:border-white/30 rounded-full transition-all duration-300 shadow-sm focus:shadow-md cursor-target"
                 />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none" />
               </div>
             </div>
 
