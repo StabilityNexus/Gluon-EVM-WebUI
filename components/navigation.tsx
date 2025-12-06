@@ -33,21 +33,21 @@ export default function Navigation() {
   const isDark = theme === 'dark'
 
   return (
-    <div className="flex justify-center relative w-full">
+    <div className="flex justify-center min-w-full min-h-16 ">
       {/* StableCoin Logo/Heading on the left */}
-      <div className="absolute top-[1em] left-4 z-1002">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="relative h-8 w-14">
+      <div className="absolute top-[1em] left-2 sm:left-4 z-1002">
+        <Link href="/" className="flex items-center gap-1 sm:gap-2 group">
+          <div className="relative h-6 w-10 sm:h-8 sm:w-14">
             <Image
               src="/GluonProtocol-Darker.png"
               alt="Gluon logo"
               fill
-              sizes="112px"
+              sizes="(max-width: 640px) 40px, 56px"
               className="object-contain"
               priority
             />
           </div>
-          <span className="font-bold text-xl text-foreground group-hover:text-primary transition-colors">
+          <span className="sm:inline font-bold text-lg sm:text-xl text-foreground group-hover:text-primary transition-colors">
             Gluon
           </span>
         </Link>
@@ -67,7 +67,7 @@ export default function Navigation() {
       />
       
       {/* Additional controls positioned on the right */}
-      <div className="absolute top-[1em] right-4 flex items-center gap-3 z-1001">
+      <div className="absolute top-[1em] right-2 sm:right-4 flex items-center gap-2 sm:gap-3 z-1001">
         <ThemeToggle />
         {/* <HamburgerMenu 
           items={navItems}

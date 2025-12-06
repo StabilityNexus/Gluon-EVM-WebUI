@@ -38,7 +38,8 @@ export default function HomePage() {
       />
       
       {/* Hero Section with Grid Background */}
-      <section className="relative min-h-screen flex items-center z-[5]">
+      <div className="flex items-center justify-center mx-20">
+        <section className="relative min-h-screen flex items-center z-[5]">
         <div className="container mx-auto px-4 mb-24 relative z-10">
           <div className="text-center">
             <HeroText />
@@ -61,9 +62,10 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
+      </div>
       {/* How It Works Section */}
-      <section className="relative min-h-screen flex items-center z-[5]">
+      <div className="flex items-center justify-center mx-20">
+        <section className="relative min-h-screen flex items-center z-[5]">
         
         {/* Particles canvas start */}
         <div className="pointer-events-none absolute inset-0 -z-10">
@@ -206,9 +208,11 @@ export default function HomePage() {
           />
         </div>
       </section>
+      </div>
 
       {/* Research Section */}
-      <section className="relative z-[5] mt-40 mb-32">
+      <div className="flex items-center justify-center mx-20">
+        <section className="relative z-[5] mt-40 mb-32">
         <div className="container mx-auto px-4 py-16 lg:py-24 relative">
           <div className="grid gap-10 lg:grid-cols-2 items-start">
             <motion.div
@@ -276,6 +280,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </div>
     </div>
   )
 }
