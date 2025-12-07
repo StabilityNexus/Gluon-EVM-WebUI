@@ -11,7 +11,7 @@ function HeroText() {
             "Autonomous", 
             "Permissionless", 
             "Transparent", 
-            "Fully Crypto Backed", 
+            "Crypto-Backed", 
             "Anything-Pegged"
         ],
         []
