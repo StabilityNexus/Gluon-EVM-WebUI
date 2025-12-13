@@ -13,6 +13,7 @@ import { StableCoinFactories } from "@/utils/addresses"
 import { toast } from "sonner"
 import Shuffle from "@/components/Shuffle"
 import TargetCursor from "@/components/TargetCursor"
+import TokenSelector from "@/components/TokenSelector"
 
 interface ReactorConfig {
   vaultName: string
@@ -309,11 +310,12 @@ export default function CreatePage() {
                   <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
                     Base Token (Collateral)
                   </Label>
-                  <Input
-                    placeholder="0x..."
+                  <TokenSelector
                     value={config.baseToken}
-                    onChange={(e) => updateConfig("baseToken", e.target.value)}
-                    className={`${inputClasses} font-mono`}
+                    onChange={(address) => updateConfig("baseToken", address)}
+                    placeholder="0x..."
+                    label=""
+                    required={true}
                   />
                 </div>
 
