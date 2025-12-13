@@ -42,11 +42,11 @@ export default function HomePage() {
         <div className="container mx-auto px-4 mb-24 relative z-10">
           <div className="text-center">
             <HeroText />
-            <p className="text-xl text-muted-foreground mb-8 text-pretty max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-muted-foreground mb-6 sm:mb-8 text-pretty max-w-2xl mx-auto px-4">
               Launch your own stablecoin. Maintain price stability and
               build trust in the decentralized economy.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
               <Button asChild size="lg" className="text-lg px-8 cursor-target rounded-none">
                 <Link href="/create">Create Stablecoin</Link>
               </Button>
@@ -73,13 +73,13 @@ export default function HomePage() {
             className="pointer-events-none w-full h-full"
           />
         </div>
-        <div className="container mx-auto px-4 relative">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <Card className="grid container py-8 p-8 grid-cols-1 gap-8 items-center lg:grid-cols-2 bg-transparent backdrop-blur-0 rounded-none shadow-lg border border-white/40">
+            <Card className="grid container py-6 sm:py-8 p-4 sm:p-6 lg:p-8 grid-cols-1 gap-6 sm:gap-8 items-center lg:grid-cols-2 bg-transparent backdrop-blur-0 rounded-none shadow-lg border border-white/40">
               <motion.div
                 className="flex gap-10 flex-col"
                 initial={{ opacity: 0, x: -30 }}
@@ -96,7 +96,7 @@ export default function HomePage() {
                   </motion.div>
                   <div className="flex gap-2 flex-col">
                     <motion.h2
-                      className="text-3xl lg:text-5xl tracking-tighter max-w-xl text-left font-regular"
+                      className="text-2xl sm:text-3xl lg:text-5xl tracking-tighter max-w-xl text-left font-regular"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4, duration: 0.5 }}
@@ -104,7 +104,7 @@ export default function HomePage() {
                       Dual Token Mechanics
                     </motion.h2>
                     <motion.p
-                      className="text-lg leading-relaxed tracking-tight text-muted-foreground max-w-lg text-left"
+                      className="text-base sm:text-lg leading-relaxed tracking-tight text-muted-foreground max-w-lg text-left"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5, duration: 0.5 }}
@@ -210,10 +210,10 @@ export default function HomePage() {
               <span className="inline-block bg-white/10 px-4 py-2 rounded-none text-sm font-medium backdrop-blur-sm border border-white/40">
                 Research Driven
               </span>
-              <h3 className="text-3xl lg:text-4xl tracking-tight font-semibold text-foreground">
+              <h3 className="text-2xl sm:text-3xl lg:text-4xl tracking-tight font-semibold text-foreground">
                 Gluon&apos;s architecture is grounded in peer-reviewed cryptography.
               </h3>
-              <p className="text-lg leading-relaxed text-muted-foreground">
+              <p className="text-base sm:text-lg leading-relaxed text-muted-foreground">
                 The Gluon dual-token system combines the stability guarantees of Neutron with the
                 reflexive upside captured by Proton. Our settlement, oracle, and reserve
                 controls follow the Stability Nexus Gluon research note published on IACR ePrint 2025/1372.
