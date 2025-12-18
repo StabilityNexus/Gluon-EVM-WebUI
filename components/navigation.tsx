@@ -33,8 +33,62 @@ export default function Navigation() {
 
   return (
     <div className="relative w-full">
-      {/* StableCoin Logo/Heading on the left */}
-      <div className="absolute top-[1em] left-4 z-[1002]">
+      {/* Mobile Header - fixed position with logo left, controls right */}
+      <div className="md:hidden flex items-center justify-between px-4 py-2 w-full">
+        {/* Logo on left */}
+        <Link href="/" className="flex items-center gap-2 group z-[1002]">
+          <div className="relative h-7 w-12">
+            <Image
+              src="/GluonProtocol-Darker.png"
+              alt="Gluon logo"
+              fill
+              sizes="96px"
+              className="object-contain"
+              priority
+            />
+          </div>
+          <span className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+            Gluon
+          </span>
+        </Link>
+
+        {/* Mobile controls on right */}
+        <div className="flex items-center gap-2 z-[1001]">
+          <ThemeToggle />
+          <ConnectButton.Custom>
+            {({ account, chain, openConnectModal, openAccountModal, mounted }) => {
+              const connected = mounted && account && chain;
+              return (
+                <button
+                  onClick={connected ? openAccountModal : openConnectModal}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-full bg-foreground text-background hover:opacity-90 transition-opacity"
+                >
+                  {connected ? `${account.displayName}` : 'Connect'}
+                </button>
+              );
+            }}
+          </ConnectButton.Custom>
+        </div>
+      </div>
+
+      {/* Mobile PillNav (hamburger menu only) */}
+      <div className="md:hidden flex justify-center -mt-2">
+        <PillNav
+          items={navItems}
+          activeHref={pathname}
+          className="custom-nav"
+          ease="power2.easeOut"
+          baseColor="transparent"
+          pillColor={isDark ? "#ffffff" : "#000000"}
+          hoveredPillTextColor={isDark ? "#000000" : "#1a1a1a"}
+          pillTextColor={isDark ? "#000000" : "#ffffff"}
+          initialLoadAnimation={false}
+        />
+      </div>
+
+      {/* Desktop Layout */}
+      {/* StableCoin Logo/Heading on the left - desktop only */}
+      <div className="hidden md:block absolute top-[1em] left-4 z-[1002]">
         <Link href="/" className="flex items-center gap-2 group">
           <div className="relative h-8 w-14">
             <Image
@@ -52,8 +106,8 @@ export default function Navigation() {
         </Link>
       </div>
 
-      {/* Centered PillNav Component */}
-      <div className="flex justify-center">
+      {/* Centered PillNav Component - desktop only */}
+      <div className="hidden md:flex justify-center">
         <PillNav
           items={navItems}
           activeHref={pathname}
@@ -66,9 +120,9 @@ export default function Navigation() {
           initialLoadAnimation={true}
         />
       </div>
-      
-      {/* Additional controls positioned on the right */}
-      <div className="absolute top-[1em] right-4 flex items-center gap-3 z-[1001]">
+
+      {/* Additional controls positioned on the right - desktop only */}
+      <div className="hidden md:flex absolute top-[1em] right-4 items-center gap-3 z-[1001]">
         <ThemeToggle />
         <ConnectButton />
       </div>
