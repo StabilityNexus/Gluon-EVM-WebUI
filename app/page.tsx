@@ -18,11 +18,11 @@ export default function HomePage() {
       style={{ fontFamily: "'Inter', 'Helvetica Neue', 'Arial', sans-serif", fontWeight: 400 }}
     >
       {/* Target Cursor Effect */}
-      <TargetCursor 
+      <TargetCursor
         spinDuration={2}
         hideDefaultCursor={true}
       />
-      
+
       {/* Full Page Light Rays Background Effect */}
       <LightRays
         raysOrigin="top-center"
@@ -34,9 +34,9 @@ export default function HomePage() {
         mouseInfluence={0.1}
         noiseAmount={0.1}
         distortion={0.05}
-        className="fixed inset-0"
+        className="fixed inset-0 pointer-events-none"
       />
-      
+
       {/* Hero Section with Grid Background */}
       <section className="relative min-h-screen flex items-center z-[5]">
         <div className="container mx-auto px-4 mb-24 relative z-10">
@@ -153,7 +153,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
               >
-                {/* Fission: Base-Tokens -> Proton + Neutron */} 
+                {/* Fission: Base-Tokens -> Proton + Neutron */}
                 <TokenFlow
                   fromTokens={['Base Token']}
                   toTokens={['Proton', 'Neutron']}

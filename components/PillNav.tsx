@@ -98,7 +98,7 @@ const PillNav: React.FC<PillNavProps> = ({
     window.addEventListener('resize', onResize);
 
     if (document.fonts) {
-      document.fonts.ready.then(layout).catch(() => {});
+      document.fonts.ready.then(layout).catch(() => { });
     }
 
     const menu = mobileMenuRef.current;
@@ -227,7 +227,7 @@ const PillNav: React.FC<PillNavProps> = ({
 
         <div
           ref={navItemsRef}
-          className="relative items-center rounded-full flex w-full justify-center"
+          className="relative items-center rounded-full hidden md:flex w-full justify-center"
           style={{
             height: 'var(--nav-h)',
             background: 'transparent'

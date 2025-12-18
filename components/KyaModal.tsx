@@ -22,11 +22,11 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
       onClick={onClose}
     >
       <div
-        className="bg-[#0B0E15] border-2 border-white/30 rounded-none max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl"
+        className="bg-[#0B0E15] border-2 border-white/30 rounded-none max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl mx-2 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-white/20">
-          <h2 className="text-xl font-bold text-white/85 uppercase tracking-[0.3em] font-mono">
+        <div className="flex justify-between items-center p-4 sm:p-6 border-b border-white/20">
+          <h2 className="text-base sm:text-xl font-bold text-white/85 uppercase tracking-[0.15em] sm:tracking-[0.3em] font-mono">
             Know Your Assumptions
           </h2>
           <button
@@ -37,7 +37,7 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
           </button>
         </div>
 
-        <div className="p-6 space-y-4 text-white/85 text-sm leading-relaxed font-mono">
+        <div className="p-4 sm:p-6 space-y-4 text-white/85 text-xs sm:text-sm leading-relaxed font-mono">
           <p>
             This decentralized application is composed of smart contracts running on a blockchain
             and a website that eases your interaction with the smart contracts.
@@ -187,7 +187,7 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
             .
           </p>
 
-          <div className="flex gap-3 justify-end pt-4 border-t border-white/20">
+          <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-white/20">
             <button
               onClick={handleUnderstand}
               className="px-6 py-2 bg-white text-black hover:bg-[#C6FFDD] transition-colors font-mono uppercase tracking-[0.2em] text-xs"

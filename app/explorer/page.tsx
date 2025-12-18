@@ -87,7 +87,7 @@ function SimpleReactorCard({ address }: { address: string }) {
               </p>
             </div>
           </div>
-          
+
           {/* Token Pair */}
           <div className="flex items-center gap-2 text-sm">
             <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ function SimpleReactorCard({ address }: { address: string }) {
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* Token Names */}
         <div className="space-y-2">
@@ -125,7 +125,7 @@ function SimpleReactorCard({ address }: { address: string }) {
             </span>
           </div>
         </div>
-        
+
         <Link href={`/c?coin=${address}`}>
           <Button className="w-full" size="sm">
             <ExternalLink className="h-4 w-4 mr-2" />
@@ -173,7 +173,7 @@ export default function ExplorerPage() {
   }, [chainId, factoryAddress, deployedReactors, reactorCount, isLoadingReactors, reactorsError, countError])
 
   // Filter reactors by search term (basic filtering for addresses)
-  const filteredReactorAddresses = deployedReactors?.filter((address: string) => 
+  const filteredReactorAddresses = deployedReactors?.filter((address: string) =>
     address.toLowerCase().includes(searchTerm.toLowerCase())
   ) || []
 
@@ -203,18 +203,18 @@ export default function ExplorerPage() {
       style={{ fontFamily: "'Space Mono', 'Syne', 'Orbitron', 'Courier New', monospace", fontWeight: 500 }}
     >
       {/* Target Cursor Effect */}
-      <TargetCursor 
+      <TargetCursor
         spinDuration={2}
         hideDefaultCursor={true}
       />
-      
+
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="mb-12 text-center">
           <Shuffle
             text="StableCoin Reactor Explorer"
             tag="h1"
-            className="text-5xl mb-2"
+            className="text-2xl sm:text-4xl lg:text-5xl mb-2"
             shuffleDirection="right"
             duration={0.35}
             animationMode="evenodd"
@@ -304,8 +304,8 @@ export default function ExplorerPage() {
                   <Activity className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
                   <p className="text-muted-foreground mb-2">No reactors found</p>
                   <p className="text-sm text-muted-foreground">
-                    {deployedReactors && deployedReactors.length === 0 
-                      ? "No reactors have been deployed yet." 
+                    {deployedReactors && deployedReactors.length === 0
+                      ? "No reactors have been deployed yet."
                       : "Try adjusting your search criteria."
                     }
                   </p>
