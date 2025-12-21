@@ -220,7 +220,7 @@ const PillNav: React.FC<PillNavProps> = ({
   return (
     <div className="relative top-[1em] z-[1000] w-full md:w-auto">
       <nav
-        className={`w-full md:w-max flex items-center justify-between md:justify-start box-border px-3 md:px-1 py-1 backdrop-blur-md bg-background/20 rounded-full border border-white/10 ${className}`}
+        className={`w-max flex items-center justify-between md:justify-start box-border px-3 md:px-1 py-1 backdrop-blur-md bg-background/20 rounded-full border border-white/10 ${className}`}
         aria-label="Primary"
         style={cssVars}
       >
