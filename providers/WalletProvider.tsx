@@ -24,12 +24,12 @@ function RainbowKitThemeProvider({ children }: { children: ReactNode }) {
   return (
     <RainbowKitProvider
       theme={mounted && theme === 'dark' ? darkTheme({
-        accentColor: 'hsl(var(--primary))',
-        accentColorForeground: 'white',
+        accentColor: '#ffffff',
+        accentColorForeground: 'black',
         borderRadius: 'medium',
         overlayBlur: 'small',
       }) : lightTheme({
-        accentColor: 'hsl(var(--primary))',
+        accentColor: '#000000',
         accentColorForeground: 'white',
         borderRadius: 'medium',
         overlayBlur: 'small',
