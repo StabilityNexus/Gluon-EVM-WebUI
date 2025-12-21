@@ -80,7 +80,7 @@ export default function Navigation() {
           ease="power2.easeOut"
           baseColor="transparent"
           pillColor={isDark ? "#ffffff" : "#000000"}
-          hoveredPillTextColor={isDark ? "#000000" : "#1a1a1a"}
+          hoveredPillTextColor={isDark ? "#000000" : "#ffffff"}
           pillTextColor={isDark ? "#000000" : "#ffffff"}
           initialLoadAnimation={false}
         />
@@ -115,7 +115,7 @@ export default function Navigation() {
           ease="power2.easeOut"
           baseColor="transparent"
           pillColor={isDark ? "#ffffff" : "#000000"}
-          hoveredPillTextColor={isDark ? "#000000" : "#1a1a1a"}
+          hoveredPillTextColor={isDark ? "#000000" : "#ffffff"}
           pillTextColor={isDark ? "#000000" : "#ffffff"}
           initialLoadAnimation={true}
         />
