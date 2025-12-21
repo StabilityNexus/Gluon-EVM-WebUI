@@ -74,7 +74,7 @@ function SimpleReactorCard({ address }: { address: string }) {
   })
 
   return (
-    <Card className="cursor-target bg-black/70 backdrop-blur-md border-big-dashed shadow-xl hover:shadow-2xl rounded-none">
+    <Card className="cursor-target bg-background/70 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.15)] hover:shadow-[0_0_30px_rgba(0,0,0,0.25)] dark:shadow-[0_0_20px_rgba(255,255,255,0.1)] dark:hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] rounded-none">
       <CardHeader className="pb-3">
         <div className="space-y-3">
           <div className="flex items-start justify-between">
