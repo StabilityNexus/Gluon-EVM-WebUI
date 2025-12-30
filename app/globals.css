@@ -124,6 +124,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  html {
+    scrollbar-gutter: stable;
+    overflow-y: auto;
+  }
 }
 
 /* Updated grid background pattern with bigger squares and higher contrast */
