@@ -107,7 +107,7 @@ export default function RootLayout({
         >
           <WalletProvider>
             <Navigation />
-            <main className="max-w-8xl mx-4 sm:mx-8 lg:mx-16 xl:mx-32 px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+            <main className="max-w-8xl mx-4 sm:mx-8 lg:mx-16 xl:mx-32 px-4 sm:px-6 lg:px-8 pt-24 pb-8 flex-grow">
               {children}
             </main>
             <ClientFooter />
