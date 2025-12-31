@@ -28,14 +28,52 @@ export default function Navigation() {
   const pathname = usePathname()
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const [menuState, setMenuState] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [lastScrollY, setLastScrollY] = useState(0)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [buttonRef, setButtonRef] = useState<HTMLButtonElement | null>(null)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 16 })
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Update menu position when menu opens or on scroll
+  useEffect(() => {
+    const updatePosition = () => {
+      if (buttonRef && mobileMenuOpen) {
+        const rect = buttonRef.getBoundingClientRect()
+        setMenuPosition({
+          top: rect.bottom + 8,
+          right: 16
+        })
+      }
+    }
+
+    updatePosition()
+    window.addEventListener('scroll', updatePosition, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', updatePosition)
+    }
+  }, [buttonRef, mobileMenuOpen])
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (buttonRef && !buttonRef.contains(e.target as Node)) {
+        setMobileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [mobileMenuOpen, buttonRef])
+
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [lastScrollY, setLastScrollY] = useState(0)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -66,7 +104,7 @@ export default function Navigation() {
 
   return (
     <motion.header
-      data-state={menuState && 'active'}
+      data-state={mobileMenuOpen && 'active'}
       className="fixed z-20 w-full px-2 pointer-events-auto"
       initial={{ y: 0, opacity: 1 }}
       animate={{
@@ -238,7 +276,7 @@ export default function Navigation() {
       </motion.div>
       <motion.div
         className={cn(
-          'md:hidden mx-auto mt-2 max-w-full px-4',
+          'md:hidden mx-auto mt-2 max-w-full px-4 relative',
           isScrolled && 'backdrop-blur-[60px]'
         )}
         style={{
@@ -264,7 +302,7 @@ export default function Navigation() {
           duration: 0.8
         }}
       >
-        <div className="flex items-center justify-between py-3">
+        <div className="flex items-center justify-between py-3 relative z-50">
           <Link href="/" className="flex items-center gap-2 group z-[1002]">
             <div className="relative h-7 w-12">
               <Image
@@ -304,17 +342,18 @@ export default function Navigation() {
             </ConnectButton.Custom>
 
             <motion.button
-              onClick={() => setMenuState(!menuState)}
-              aria-label={menuState ? 'Close Menu' : 'Open Menu'}
+              ref={setButtonRef}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Close Menu' : 'Open Menu'}
               className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5"
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
               <motion.div
                 animate={{
-                  rotate: menuState ? 180 : 0,
-                  scale: menuState ? 0 : 1,
-                  opacity: menuState ? 0 : 1
+                  rotate: mobileMenuOpen ? 180 : 0,
+                  scale: mobileMenuOpen ? 0 : 1,
+                  opacity: mobileMenuOpen ? 0 : 1
                 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="m-auto size-6 text-foreground"
@@ -323,9 +362,9 @@ export default function Navigation() {
               </motion.div>
               <motion.div
                 animate={{
-                  rotate: menuState ? 0 : -180,
-                  scale: menuState ? 1 : 0,
-                  opacity: menuState ? 1 : 0
+                  rotate: mobileMenuOpen ? 0 : -180,
+                  scale: mobileMenuOpen ? 1 : 0,
+                  opacity: mobileMenuOpen ? 1 : 0
                 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="absolute inset-0 m-auto size-6 text-foreground"
@@ -335,63 +374,57 @@ export default function Navigation() {
             </motion.button>
           </div>
         </div>
-      </motion.div>
 
-
-      <AnimatePresence>
-        {menuState && (
+        {mobileMenuOpen && buttonRef && (
           <motion.div
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-xl md:hidden"
-            initial={{ opacity: 0, x: '100%' }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: '100%' }}
+            className="fixed z-50 w-48 bg-background/95 backdrop-blur-xl border border-foreground/10 rounded-lg md:hidden overflow-hidden pointer-events-auto"
+            style={{
+              top: menuPosition.top + 'px',
+              right: menuPosition.right + 'px'
+            }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="absolute top-6 right-6">
-              <motion.button
-                onClick={() => setMenuState(false)}
-                className="p-2 text-foreground hover:text-primary transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <X className="w-8 h-8" />
-              </motion.button>
-            </div>
-
-            <ul className="flex flex-col items-center gap-8 text-2xl font-bold uppercase tracking-widest">
-              {navItems.map((item, index) => (
+            <ul className="flex flex-col gap-0 px-0 py-2">
+              {navItems.map((item) => (
                 <motion.li
                   key={item.href}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + index * 0.1 }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2 }}
                 >
                   <Link
                     href={item.href}
-                    onClick={() => setMenuState(false)}
+                    onClick={() => setMobileMenuOpen(false)}
                     className={cn(
-                      "transition-colors relative group",
-                      pathname === item.href ? "text-primary" : "text-foreground/70 hover:text-primary"
+                      "block px-4 py-2 text-sm font-medium transition-colors",
+                      pathname === item.href ? "text-primary bg-accent/20" : "text-foreground/70 hover:text-primary hover:bg-accent/10"
                     )}
                   >
                     {item.label}
-                    <motion.span
-                      className={cn(
-                        "absolute -bottom-2 left-0 h-1 bg-primary transition-all duration-300",
-                        pathname === item.href ? "w-full" : "w-0 group-hover:w-full"
-                      )}
-                      initial={false}
-                      animate={{
-                        width: pathname === item.href ? "100%" : "0%"
-                      }}
-                    />
                   </Link>
                 </motion.li>
               ))}
             </ul>
           </motion.div>
         )}
+      </motion.div>
+
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            className="fixed inset-0 z-30 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ pointerEvents: 'none' }}
+          />
+        )}
       </AnimatePresence>
     </motion.header>
   )
 }
+
