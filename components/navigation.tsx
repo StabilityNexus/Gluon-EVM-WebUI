@@ -104,7 +104,7 @@ export default function Navigation() {
 
   return (
     <motion.header
-      data-state={mobileMenuOpen && 'active'}
+      data-state={mobileMenuOpen ? 'active' : undefined}
       className="fixed z-20 w-full px-2 pointer-events-auto"
       initial={{ y: 0, opacity: 1 }}
       animate={{
@@ -375,19 +375,20 @@ export default function Navigation() {
           </div>
         </div>
 
-        {mobileMenuOpen && buttonRef && (
-          <motion.div
-            className="fixed z-50 w-48 bg-background/95 backdrop-blur-xl border border-foreground/10 rounded-lg md:hidden overflow-hidden pointer-events-auto"
-            style={{
-              top: menuPosition.top + 'px',
-              right: menuPosition.right + 'px'
-            }}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <AnimatePresence>
+          {mobileMenuOpen && buttonRef && (
+            <motion.div
+              className="fixed z-50 w-48 bg-background/95 backdrop-blur-xl border border-foreground/10 rounded-lg md:hidden overflow-hidden pointer-events-auto"
+              style={{
+                top: menuPosition.top + 'px',
+                right: menuPosition.right + 'px'
+              }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              onClick={(e) => e.stopPropagation()}
+            >
             <ul className="flex flex-col gap-0 px-0 py-2">
               {navItems.map((item) => (
                 <motion.li
@@ -409,8 +410,9 @@ export default function Navigation() {
                 </motion.li>
               ))}
             </ul>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       <AnimatePresence>
