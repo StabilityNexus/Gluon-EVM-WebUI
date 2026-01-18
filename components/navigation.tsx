@@ -120,7 +120,7 @@ export default function Navigation() {
 
       <motion.div
         className={cn(
-          'hidden md:block mx-auto mt-2 max-w-6xl px-6 lg:px-12',
+          'hidden md:block mx-auto mt-2 px-6 lg:px-12',
           isScrolled && 'backdrop-blur-[60px]'
         )}
         style={{
@@ -128,10 +128,10 @@ export default function Navigation() {
           WebkitBackdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
         }}
         animate={{
+          maxWidth: isScrolled ? '64rem' : '90rem',
           backgroundColor: isScrolled 
             ? (isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)')
             : 'rgba(0, 0, 0, 0)',
-          maxWidth: isScrolled ? '64rem' : '72rem',
           borderRadius: isScrolled ? '16px' : '0px',
           border: isScrolled 
             ? (isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.18)')
@@ -150,7 +150,7 @@ export default function Navigation() {
         }}
       >
         <motion.div
-          className="relative flex items-center gap-6 py-3 lg:py-4"
+          className="relative flex items-center justify-between py-3 lg:py-4"
           animate={{
             paddingTop: isScrolled ? '12px' : '16px',
             paddingBottom: isScrolled ? '12px' : '16px',
@@ -184,7 +184,7 @@ export default function Navigation() {
           </Link>
 
          
-          <div className="flex-1 flex justify-center">
+          <div className="absolute left-1/2 transform -translate-x-1/2">
             <AnimatePresence>
               {!isScrolled && (
                 <motion.nav
@@ -211,7 +211,7 @@ export default function Navigation() {
           </div>
 
          
-          <div className="flex items-center gap-3 z-[1001] flex-shrink-0">
+          <div className="flex items-center gap-2 z-[1001] flex-shrink-0">
             <AnimatePresence>
               {isScrolled && (
                 <motion.div
@@ -269,8 +269,10 @@ export default function Navigation() {
               )}
             </AnimatePresence>
             
-            <ThemeToggle />
-            <ConnectButton />
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+                <ConnectButton />
+            </div>
           </div>
         </motion.div>
       </motion.div>
