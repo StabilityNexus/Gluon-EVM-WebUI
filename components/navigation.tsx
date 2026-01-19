@@ -212,16 +212,12 @@ export default function Navigation() {
               initial={{ opacity: 0, scale: 0.97, y: -2 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ 
-                type: "spring",
-                stiffness: 300,
-                damping: 30,
-                duration: 0.5
+                duration: 0.5,
+                ease: [0.4, 0, 0.2, 1]
               }}
             >
               {navItems.map((item) => (
-                <Link key={item.href} href={item.href}>
-                  <FlowButton text={item.label} />
-                </Link>
+                <FlowButton key={item.href} text={item.label} href={item.href} />
               ))}
             </motion.nav>
           </div>
