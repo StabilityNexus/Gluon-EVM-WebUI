@@ -34,7 +34,6 @@ export function FlowButton({
         href={href} 
         className={buttonClasses} 
         style={buttonStyle}
-        role="button"
         aria-label={ariaLabel || text}
       >
         {content}
