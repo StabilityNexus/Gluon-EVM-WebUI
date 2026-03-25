@@ -158,3 +158,13 @@
   min-height: auto !important;
   height: auto !important;
 }
+
+/* FlowButton in navbar - ensure proper size */
+button.flow-button-nav {
+  font-size: 16px !important;
+  padding: 10px 20px !important;
+}
+
+button.flow-button-nav span {
+  font-size: 16px !important;
+}

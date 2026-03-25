@@ -76,21 +76,31 @@ export default function Navigation() {
   const [lastScrollY, setLastScrollY] = useState(0)
 
   useEffect(() => {
+    let rafId: number | null = null
+    
     const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      
-      // this is for smoothness (removes jitter)
-      if (currentScrollY > 100) {
-        setIsScrolled(true)
-      } else if (currentScrollY < 50) {
-        setIsScrolled(false)
+      if (rafId === null) {
+        rafId = window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY
+          
+          // Smooth transition threshold with hysteresis to prevent jitter
+          if (currentScrollY > 100) {
+            setIsScrolled(true)
+          } else if (currentScrollY < 50) {
+            setIsScrolled(false)
+          }
+          
+          setLastScrollY(currentScrollY)
+          rafId = null
+        })
       }
-      
-      setLastScrollY(currentScrollY)
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId)
+      }
       window.removeEventListener('scroll', handleScroll)
     }
   }, [])
@@ -105,7 +115,7 @@ export default function Navigation() {
   return (
     <motion.header
       data-state={mobileMenuOpen ? 'active' : undefined}
-      className="fixed z-20 w-full px-2 pointer-events-auto"
+      className="fixed z-20 w-full pointer-events-auto"
       initial={{ y: 0, opacity: 1 }}
       animate={{
         y: 0,
@@ -120,15 +130,13 @@ export default function Navigation() {
 
       <motion.div
         className={cn(
-          'hidden md:block mx-auto mt-2 px-6 lg:px-12',
-          isScrolled && 'backdrop-blur-[60px]'
+          'hidden md:block mt-2'
         )}
-        style={{
-          backdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
-          WebkitBackdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
-        }}
         animate={{
-          maxWidth: isScrolled ? '64rem' : '90rem',
+          marginLeft: isScrolled ? '16px' : '8px',
+          marginRight: isScrolled ? '16px' : '8px',
+          paddingLeft: isScrolled ? '24px' : '16px',
+          paddingRight: isScrolled ? '24px' : '16px',
           backgroundColor: isScrolled 
             ? (isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)')
             : 'rgba(0, 0, 0, 0)',
@@ -139,141 +147,102 @@ export default function Navigation() {
           boxShadow: isScrolled 
             ? (isDark ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)' : '0 8px 32px 0 rgba(0, 0, 0, 0.1)')
             : 'none',
-          paddingLeft: isScrolled ? '20px' : '48px',
-          paddingRight: isScrolled ? '20px' : '48px',
+          marginTop: '8px',
+          y: 0,
+        }}
+        style={{
+          backdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
+          WebkitBackdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
         }}
         transition={{
-          type: "spring",
-          stiffness: 150,
-          damping: 30,
-          duration: 0.8
+          duration: 0.5,
+          ease: [0.4, 0, 0.2, 1]
         }}
       >
         <motion.div
-          className="relative flex items-center justify-between py-3 lg:py-4"
+          className="relative flex items-center justify-between"
+          style={{
+            paddingTop: '16px',
+            paddingBottom: '16px',
+          }}
           animate={{
-            paddingTop: isScrolled ? '12px' : '16px',
-            paddingBottom: isScrolled ? '12px' : '16px',
+            paddingTop: '16px',
+            paddingBottom: '16px',
           }}
           transition={{
-            type: "spring",
-            stiffness: 150,
-            damping: 30,
-            duration: 0.8
+            duration: 0.5,
+            ease: [0.4, 0, 0.2, 1]
           }}
         >
 
-          <Link href="/" className="flex items-center gap-2 group z-[1002] flex-shrink-0">
-            <div className="relative h-8 w-14">
-              <Image
-                src="/GluonProtocol-Darker.png"
-                alt="Gluon logo"
-                fill
-                sizes="112px"
-                className="object-contain"
-                priority
-              />
-            </div>
-            <motion.span 
-              className="font-bold text-xl text-foreground group-hover:text-primary transition-colors"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              Gluon
-            </motion.span>
-          </Link>
+          <motion.div
+            animate={{
+              x: isScrolled ? -16 : 0,
+            }}
+            transition={{
+              duration: 0.5,
+              ease: [0.4, 0, 0.2, 1]
+            }}
+          >
+            <Link href="/" className="flex items-center gap-2 group z-[1002] flex-shrink-0">
+              <div className="relative h-8 w-14">
+                <Image
+                  src="/GluonProtocol-Darker.png"
+                  alt="Gluon logo"
+                  fill
+                  sizes="112px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <motion.span 
+                className="font-bold text-xl text-foreground group-hover:text-primary transition-colors"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                Gluon
+              </motion.span>
+            </Link>
+          </motion.div>
 
          
           <div className="absolute left-1/2 transform -translate-x-1/2">
-            <AnimatePresence>
-              {!isScrolled && (
-                <motion.nav
-                  key="centered-nav"
-                  initial={{ opacity: 0, scale: 0.97, y: -2 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.97, y: -2 }}
-                  transition={{ 
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 35,
-                    mass: 0.6
-                  }}
-                  className="flex items-center gap-6"
-                >
-                  {navItems.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <FlowButton text={item.label} />
-                    </Link>
-                  ))}
-                </motion.nav>
-              )}
-            </AnimatePresence>
+            <motion.nav
+              className="flex items-center gap-8"
+              initial={{ opacity: 0, scale: 0.97, y: -2 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ 
+                duration: 0.5,
+                ease: [0.4, 0, 0.2, 1]
+              }}
+            >
+              {navItems.map((item) => (
+                <FlowButton key={item.href} text={item.label} href={item.href} />
+              ))}
+            </motion.nav>
           </div>
 
          
-          <div className="flex items-center gap-2 z-[1001] flex-shrink-0">
-            <AnimatePresence>
-              {isScrolled && (
-                <motion.div
-                  key="dropdown-nav"
-                  initial={{ opacity: 0, x: 15, scale: 0.97 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 15, scale: 0.97 }}
-                  transition={{ 
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 35,
-                    mass: 0.6
-                  }}
-                >
-                  <DropdownMenu 
-                    open={isDropdownOpen} 
-                    onOpenChange={setIsDropdownOpen}
-                    modal={false}
-                  >
-                    <DropdownMenuTrigger asChild>
-                      <motion.button
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-md hover:bg-accent"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onMouseEnter={() => setIsDropdownOpen(true)}
-                        onMouseLeave={() => setIsDropdownOpen(false)}
-                      >
-                        <span>Quick Links</span>
-                        <ChevronDown className="h-4 w-4" />
-                      </motion.button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent 
-                      align="end" 
-                      className="min-w-[150px]"
-                      onMouseEnter={() => setIsDropdownOpen(true)}
-                      onMouseLeave={() => setIsDropdownOpen(false)}
-                      onCloseAutoFocus={(e) => e.preventDefault()}
-                    >
-                      {navItems.map((item) => (
-                        <DropdownMenuItem key={item.href} asChild>
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              "cursor-pointer",
-                              pathname === item.href && "bg-accent text-accent-foreground"
-                            )}
-                          >
-                            {item.label}
-                          </Link>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
+          <motion.div 
+            className="flex items-center gap-2 z-[1001] flex-shrink-0"
+            animate={{
+              x: isScrolled ? 16 : 0,
+            }}
+            transition={{
+              duration: 0.5,
+              ease: [0.4, 0, 0.2, 1]
+            }}
+          >
             <div className="flex items-center gap-1">
               <ThemeToggle />
+              <div className={cn(
+                "[&_button]:!text-foreground",
+                "[&_button]:transition-colors"
+              )}>
                 <ConnectButton />
+              </div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       </motion.div>
       <motion.div
@@ -298,10 +267,8 @@ export default function Navigation() {
             : 'none',
         }}
         transition={{
-          type: "spring",
-          stiffness: 150,
-          damping: 30,
-          duration: 0.8
+          duration: 0.5,
+          ease: [0.4, 0, 0.2, 1]
         }}
       >
         <div className="flex items-center justify-between py-3 relative z-50">
