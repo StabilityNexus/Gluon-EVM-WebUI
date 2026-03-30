@@ -1,20 +1,29 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ManagementActionCardProps {
-  title: string
-  description: string
-  icon: React.ReactNode
-  action: "mint" | "burn" | "transfer" | "pause" | "settings"
-  coinSymbol: string
-  onAction: (action: string, data: any) => void
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  action: "mint" | "burn" | "transfer" | "pause" | "settings";
+  coinSymbol: string;
+  onAction: (
+    action: "mint" | "burn" | "transfer" | "pause" | "settings",
+    data: { amount?: number; recipient?: string },
+  ) => void | Promise<void>;
 }
 
 export function ManagementActionCard({
@@ -25,28 +34,32 @@ export function ManagementActionCard({
   coinSymbol,
   onAction,
 }: ManagementActionCardProps) {
-  const [amount, setAmount] = useState("")
-  const [recipient, setRecipient] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [amount, setAmount] = useState("");
+  const [recipient, setRecipient] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     const data =
-      action === "transfer" ? { amount: Number.parseFloat(amount), recipient } : { amount: Number.parseFloat(amount) }
+      action === "transfer"
+        ? { amount: Number.parseFloat(amount), recipient }
+        : { amount: Number.parseFloat(amount) };
 
-    await onAction(action, data)
-    setIsLoading(false)
-    setAmount("")
-    setRecipient("")
-  }
+    await onAction(action, data);
+    setIsLoading(false);
+    setAmount("");
+    setRecipient("");
+  };
 
   return (
     <Card className="bg-card/50 border-border/50 hover:bg-card/80 transition-colors">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary">{icon}</div>
+          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            {icon}
+          </div>
           <div>
             <CardTitle className="text-lg">{title}</CardTitle>
             <CardDescription className="text-sm">{description}</CardDescription>
@@ -92,12 +105,16 @@ export function ManagementActionCard({
               </div>
             )}
 
-            <Button type="submit" disabled={isLoading || !amount} className="w-full">
+            <Button
+              type="submit"
+              disabled={isLoading || !amount}
+              className="w-full"
+            >
               {isLoading ? "Processing..." : `${title} ${coinSymbol}`}
             </Button>
           </form>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

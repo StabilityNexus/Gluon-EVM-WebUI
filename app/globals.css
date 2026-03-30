@@ -151,14 +151,6 @@
 .border-big-dashed:hover {
   border-color: rgba(255, 255, 255, 0.8);
 }
-/* RainbowKit button styling - make wallet buttons smaller */
-[data-rk] button {
-  font-size: 0.75rem !important;
-  padding: 0.375rem 0.75rem !important;
-  min-height: auto !important;
-  height: auto !important;
-}
-
 /* FlowButton in navbar - ensure proper size */
 button.flow-button-nav {
   font-size: 16px !important;

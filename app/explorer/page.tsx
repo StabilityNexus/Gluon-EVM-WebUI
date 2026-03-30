@@ -1,17 +1,23 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useReadContract, useChainId } from "wagmi"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, ExternalLink, Activity, Shield, AlertTriangle, Rocket } from "lucide-react"
-import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory"
-import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin"
-import { StableCoinFactories } from "@/utils/addresses"
-import Shuffle from "@/components/Shuffle"
-import TargetCursor from "@/components/TargetCursor"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import { useReadContract, useChainId } from "wagmi";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Search,
+  ExternalLink,
+  Activity,
+  AlertTriangle,
+  Rocket,
+} from "lucide-react";
+import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory";
+import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin";
+import { StableCoinFactories } from "@/utils/addresses";
+import Shuffle from "@/components/Shuffle";
+import TargetCursor from "@/components/TargetCursor";
+import Link from "next/link";
 
 // Simple reactor card component
 function SimpleReactorCard({ address }: { address: string }) {
@@ -19,59 +25,59 @@ function SimpleReactorCard({ address }: { address: string }) {
   const { data: vaultName } = useReadContract({
     address: address as `0x${string}`,
     abi: StableCoinReactorABI,
-    functionName: 'vaultName',
-  })
+    functionName: "vaultName",
+  });
 
   // Get neutron and proton token addresses directly from reactor
   const { data: neutronAddress } = useReadContract({
     address: address as `0x${string}`,
     abi: StableCoinReactorABI,
-    functionName: 'NEUTRON_TOKEN',
-  })
+    functionName: "NEUTRON_TOKEN",
+  });
 
   const { data: protonAddress } = useReadContract({
     address: address as `0x${string}`,
     abi: StableCoinReactorABI,
-    functionName: 'PROTON_TOKEN',
-  })
+    functionName: "PROTON_TOKEN",
+  });
 
   // Get neutron token details
   const { data: neutronName } = useReadContract({
     address: neutronAddress as `0x${string}`,
     abi: ERC20ABI,
-    functionName: 'name',
+    functionName: "name",
     query: {
       enabled: !!neutronAddress,
-    }
-  })
+    },
+  });
 
   const { data: neutronSymbol } = useReadContract({
     address: neutronAddress as `0x${string}`,
     abi: ERC20ABI,
-    functionName: 'symbol',
+    functionName: "symbol",
     query: {
       enabled: !!neutronAddress,
-    }
-  })
+    },
+  });
 
   // Get proton token details
   const { data: protonName } = useReadContract({
     address: protonAddress as `0x${string}`,
     abi: ERC20ABI,
-    functionName: 'name',
+    functionName: "name",
     query: {
       enabled: !!protonAddress,
-    }
-  })
+    },
+  });
 
   const { data: protonSymbol } = useReadContract({
     address: protonAddress as `0x${string}`,
     abi: ERC20ABI,
-    functionName: 'symbol',
+    functionName: "symbol",
     query: {
       enabled: !!protonAddress,
-    }
-  })
+    },
+  });
 
   return (
     <Card className="cursor-target bg-black/70 backdrop-blur-md border-big-dashed shadow-xl hover:shadow-2xl rounded-none">
@@ -92,12 +98,16 @@ function SimpleReactorCard({ address }: { address: string }) {
           <div className="flex items-center gap-2 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-yellow-500 rounded-none border border-yellow-400"></div>
-              <span className="text-yellow-500 font-bold tracking-wider">{neutronSymbol || "NEUTRON"}</span>
+              <span className="text-yellow-500 font-bold tracking-wider">
+                {neutronSymbol || "NEUTRON"}
+              </span>
             </div>
             <span className="text-muted-foreground font-bold">|</span>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-red-500 rounded-none border border-red-400"></div>
-              <span className="text-red-500 font-bold tracking-wider">{protonSymbol || "PROTON"}</span>
+              <span className="text-red-500 font-bold tracking-wider">
+                {protonSymbol || "PROTON"}
+              </span>
             </div>
           </div>
         </div>
@@ -134,48 +144,62 @@ function SimpleReactorCard({ address }: { address: string }) {
         </Link>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export default function ExplorerPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid")
-  const chainId = useChainId()
+  const [searchTerm, setSearchTerm] = useState("");
+  const viewMode: "grid" | "table" = "grid";
+  const chainId = useChainId();
 
   // Get current chain's factory address
-  const factoryAddress = StableCoinFactories[chainId as keyof typeof StableCoinFactories]
+  const factoryAddress =
+    StableCoinFactories[chainId as keyof typeof StableCoinFactories];
 
   // Get all deployed reactors
-  const { data: deployedReactors, isLoading: isLoadingReactors, error: reactorsError } = useReadContract({
+  const {
+    data: deployedReactors,
+    isLoading: isLoadingReactors,
+    error: reactorsError,
+  } = useReadContract({
     address: factoryAddress,
     abi: StableCoinFactoryABI,
-    functionName: 'getAllDeployedReactors',
-  })
+    functionName: "getAllDeployedReactors",
+  });
 
   // Get reactor count for UI
   const { data: reactorCount, error: countError } = useReadContract({
     address: factoryAddress,
     abi: StableCoinFactoryABI,
-    functionName: 'getDeployedReactorsCount',
-  })
+    functionName: "getDeployedReactorsCount",
+  });
 
   // Debug logging
   useEffect(() => {
-    console.log('Explorer Debug:', {
+    console.log("Explorer Debug:", {
       chainId,
       factoryAddress,
       deployedReactors,
       reactorCount: reactorCount?.toString(),
       isLoadingReactors,
       reactorsError: reactorsError?.message,
-      countError: countError?.message
-    })
-  }, [chainId, factoryAddress, deployedReactors, reactorCount, isLoadingReactors, reactorsError, countError])
+      countError: countError?.message,
+    });
+  }, [
+    chainId,
+    factoryAddress,
+    deployedReactors,
+    reactorCount,
+    isLoadingReactors,
+    reactorsError,
+    countError,
+  ]);
 
   // Filter reactors by search term (basic filtering for addresses)
-  const filteredReactorAddresses = deployedReactors?.filter((address: string) =>
-    address.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || []
+  const filteredReactorAddresses =
+    deployedReactors?.filter((address: string) =>
+      address.toLowerCase().includes(searchTerm.toLowerCase()),
+    ) || [];
 
   // Check if current chain is supported
   if (!factoryAddress) {
@@ -185,7 +209,8 @@ export default function ExplorerPage() {
           <AlertTriangle className="h-16 w-16 text-yellow-500 mx-auto" />
           <h2 className="text-2xl font-bold">Unsupported Chain</h2>
           <p className="text-muted-foreground max-w-md">
-            Chain ID {chainId} is not supported. Please switch to one of the supported networks:
+            Chain ID {chainId} is not supported. Please switch to one of the
+            supported networks:
           </p>
           <div className="space-y-2 text-sm">
             <div>• Citrea Testnet (Chain ID: 5115)</div>
@@ -194,19 +219,20 @@ export default function ExplorerPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div
       className="min-h-screen"
-      style={{ fontFamily: "'Space Mono', 'Syne', 'Orbitron', 'Courier New', monospace", fontWeight: 500 }}
+      style={{
+        fontFamily:
+          "'Space Mono', 'Syne', 'Orbitron', 'Courier New', monospace",
+        fontWeight: 500,
+      }}
     >
       {/* Target Cursor Effect */}
-      <TargetCursor
-        spinDuration={2}
-        hideDefaultCursor={true}
-      />
+      <TargetCursor spinDuration={2} hideDefaultCursor={true} />
 
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
@@ -232,7 +258,9 @@ export default function ExplorerPage() {
         {(reactorsError || countError) && (
           <div className="text-center py-16">
             <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4 opacity-50" />
-            <p className="text-red-400 mb-2">Failed to connect to factory contract</p>
+            <p className="text-red-400 mb-2">
+              Failed to connect to factory contract
+            </p>
             <p className="text-sm text-red-300 font-mono mb-4">
               Factory: {StableCoinFactories[534351]}
             </p>
@@ -302,12 +330,13 @@ export default function ExplorerPage() {
               <div className="text-center py-16">
                 <div className="mb-4">
                   <Activity className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                  <p className="text-muted-foreground mb-2">No reactors found</p>
+                  <p className="text-muted-foreground mb-2">
+                    No reactors found
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {deployedReactors && deployedReactors.length === 0
                       ? "No reactors have been deployed yet."
-                      : "Try adjusting your search criteria."
-                    }
+                      : "Try adjusting your search criteria."}
                   </p>
                 </div>
                 {searchTerm ? (
@@ -332,5 +361,5 @@ export default function ExplorerPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

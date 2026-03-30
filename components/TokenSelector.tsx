@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { useChainId } from "wagmi";
 import { getChainNameForTokenList } from "@/utils/chainMapping";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
       setManualAddress(value);
       // Check if value matches any token in the list
       const matchingToken = tokens.find(
-        (token) => token.contract_address.toLowerCase() === value.toLowerCase()
+        (token) => token.contract_address.toLowerCase() === value.toLowerCase(),
       );
       if (!matchingToken) {
         setIsManualInput(true);
@@ -96,7 +97,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
       (token) =>
         token.name.toLowerCase().includes(query) ||
         token.symbol.toLowerCase().includes(query) ||
-        token.contract_address.toLowerCase().includes(query)
+        token.contract_address.toLowerCase().includes(query),
     );
   }, [tokens, searchQuery]);
 
@@ -127,16 +128,20 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
   const selectedToken = useMemo(() => {
     if (!value || isManualInput) return null;
     return tokens.find(
-      (token) => token.contract_address.toLowerCase() === value.toLowerCase()
+      (token) => token.contract_address.toLowerCase() === value.toLowerCase(),
     );
   }, [value, tokens, isManualInput]);
 
   const fieldBaseClasses =
-    "bg-[#0B0E15] border border-white/30 text-[13px] font-semibold tracking-[0.2em] text-white/85 placeholder:text-white/35 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70 focus:border-white/60 transition-colors duration-200 px-4 rounded-none font-mono cursor-text"
-  const inputClasses = `${fieldBaseClasses} h-12`
+    "bg-[#0B0E15] border border-white/30 text-[13px] font-semibold tracking-[0.2em] text-white/85 placeholder:text-white/35 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70 focus:border-white/60 transition-colors duration-200 px-4 rounded-none font-mono cursor-text";
+  const inputClasses = `${fieldBaseClasses} h-12`;
 
   return (
     <div className={`w-full space-y-2 ${className}`}>
+      <p className="text-[11px] uppercase tracking-[0.35em] text-white/60">
+        {label}
+        {required ? " *" : ""}
+      </p>
       <div className="flex gap-2">
         <div className="flex-1 relative">
           {selectedToken && !isManualInput ? (
@@ -147,10 +152,13 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
                 error ? "border-red-500" : ""
               }`}
             >
-              <img
+              <Image
                 src={selectedToken.image || "/stability.svg"}
                 alt={selectedToken.symbol}
                 className="w-6 h-6 rounded-full"
+                width={24}
+                height={24}
+                unoptimized
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/stability.svg";
                 }}
@@ -181,7 +189,9 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
       </div>
 
       {error && (
-        <p className="text-red-400 text-xs font-mono tracking-[0.1em]">{error}</p>
+        <p className="text-red-400 text-xs font-mono tracking-[0.1em]">
+          {error}
+        </p>
       )}
 
       {/* Token Selection Modal */}
@@ -196,7 +206,9 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
           >
             {/* Modal Header */}
             <div className="flex justify-between items-center p-6 border-b border-white/20">
-              <h2 className="text-lg font-bold text-white/85 uppercase tracking-[0.3em] font-mono">Select Token</h2>
+              <h2 className="text-lg font-bold text-white/85 uppercase tracking-[0.3em] font-mono">
+                Select Token
+              </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-white/60 hover:text-white/85 text-2xl leading-none w-8 h-8 flex items-center justify-center transition-colors font-mono"
@@ -252,10 +264,13 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
                       onClick={() => handleTokenSelect(token)}
                       className="w-full flex items-center gap-3 p-3 rounded-none hover:bg-[#0F1419] transition-colors text-left border border-transparent hover:border-white/20"
                     >
-                      <img
+                      <Image
                         src={token.image || "/stability.svg"}
                         alt={token.symbol}
                         className="w-10 h-10 rounded-full flex-shrink-0"
+                        width={40}
+                        height={40}
+                        unoptimized
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = "/stability.svg";
                         }}
@@ -300,4 +315,3 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
 };
 
 export default TokenSelector;
-

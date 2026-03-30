@@ -1,12 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import {
-  useAccount,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-  useChainId,
-} from "wagmi";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits } from "viem";
 import {
   useForm,
@@ -19,7 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Wallet, CheckCircle, Zap } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { ChainSwitcher } from "@/components/ui/ChainSwitcher";
+import { useWalletConnection } from "@/hooks/useWalletConnection";
+import { type SupportedChainId } from "@/lib/chains";
 import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory";
 import { StableCoinFactories } from "@/utils/addresses";
 import { toast } from "sonner";
@@ -32,8 +29,30 @@ import {
 } from "@/lib/validation/reactor";
 
 export default function CreatePage() {
-  const { address, isConnected } = useAccount();
-  const chainId = useChainId();
+  const {
+    address,
+    chainId,
+    isConnected,
+    isConnecting,
+    isSwitchingChain,
+    networkStatus,
+    connectionError,
+    switchError,
+    connectWallet,
+    disconnectWallet,
+    switchToChain,
+    supportedChains,
+  } = useWalletConnection();
+  const [selectedChainId, setSelectedChainId] = useState<SupportedChainId>(
+    supportedChains[0].id as SupportedChainId,
+  );
+
+  useEffect(() => {
+    const matching = supportedChains.find((chain) => chain.id === chainId);
+    if (matching) {
+      setSelectedChainId(matching.id);
+    }
+  }, [chainId, supportedChains]);
 
   const {
     control,
@@ -54,10 +73,10 @@ export default function CreatePage() {
       peggedAssetSymbol: "",
       protonName: "",
       protonSymbol: "",
-      baseToken: "",
-      oracleAddress: "",
+      baseToken: "" as `0x${string}`,
+      oracleAddress: "" as `0x${string}`,
       priceId: "",
-      treasury: address || "",
+      treasury: (address || "") as `0x${string}`,
       criticalReserveRatio: 400,
     },
   });
@@ -157,6 +176,32 @@ export default function CreatePage() {
   const onInvalidSubmit: SubmitErrorHandler<CreateReactorFormValues> = () => {
     toast.error("Please fix the highlighted form errors before deploying");
   };
+  const triggerDeploy = handleSubmit(onValidSubmit, onInvalidSubmit);
+  const walletStatusMessage = useMemo(() => {
+    if (!isConnected) return "Wallet disconnected. Connect to deploy.";
+    if (isConnecting) return "Connecting wallet...";
+    if (isSwitchingChain) return "Switching network in wallet...";
+    if (networkStatus === "wrong")
+      return "Wrong network. Switch to a supported chain.";
+    if (networkStatus === "unknown")
+      return "Unknown network detected. Switch to a supported chain.";
+    if (isDeploying) return "Transaction submission in progress...";
+    if (isConfirming) return "Waiting for transaction confirmation...";
+    return "Wallet connected. Ready to deploy.";
+  }, [
+    isConnected,
+    isConnecting,
+    isSwitchingChain,
+    networkStatus,
+    isDeploying,
+    isConfirming,
+  ]);
+  const firstValidationMessage = useMemo(() => {
+    const candidates = Object.values(errors)
+      .map((value) => value?.message)
+      .filter((message): message is string => typeof message === "string");
+    return candidates[0] ?? null;
+  }, [errors]);
 
   const fieldBaseClasses =
     "bg-[#0B0E15] border border-white/30 text-[13px] font-semibold tracking-[0.2em] text-white/85 placeholder:text-white/35 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70 focus:border-white/60 transition-colors duration-200 px-4 rounded-none font-mono cursor-text";
@@ -421,87 +466,86 @@ export default function CreatePage() {
               </div>
 
               <div className="space-y-4">
-                <ConnectButton.Custom>
-                  {({
-                    account,
-                    chain,
-                    openConnectModal,
-                    openChainModal,
-                    mounted,
-                  }) => {
-                    const ready = mounted;
-                    const connected = ready && account && chain;
-
-                    if (!ready) {
-                      return (
-                        <Button
-                          size="lg"
-                          className="w-full h-14 rounded-none border border-white/60 bg-white text-black uppercase tracking-[0.3em] text-xs"
-                          disabled
-                        >
-                          <Wallet className="mr-2 h-5 w-5" />
-                          Loading Wallet
-                        </Button>
-                      );
-                    }
-
-                    if (!connected) {
-                      return (
-                        <Button
-                          size="lg"
-                          className="w-full h-14 rounded-none border border-white/60 bg-white text-black hover:bg-[#C6FFDD] hover:text-[#050608] transition-colors duration-200 uppercase tracking-[0.3em] text-xs cursor-pointer"
-                          onClick={openConnectModal}
-                        >
-                          <Wallet className="mr-2 h-5 w-5" />
-                          Connect Wallet
-                        </Button>
-                      );
-                    }
-
-                    if (chain?.unsupported) {
-                      return (
-                        <Button
-                          size="lg"
-                          className="w-full h-14 rounded-none border border-white/60 bg-white text-black hover:bg-[#C6FFDD] hover:text-[#050608] transition-colors duration-200 uppercase tracking-[0.3em] text-xs cursor-pointer"
-                          onClick={openChainModal}
-                        >
-                          Switch Network
-                        </Button>
-                      );
-                    }
-
-                    return (
+                <p className="text-xs uppercase tracking-[0.2em] text-white/60">
+                  {walletStatusMessage}
+                </p>
+                {!isConnected ? (
+                  <Button
+                    size="lg"
+                    className="w-full h-14 rounded-none border border-white/60 bg-white text-black hover:bg-[#C6FFDD] hover:text-[#050608] transition-colors duration-200 uppercase tracking-[0.3em] text-xs cursor-pointer"
+                    onClick={() => void connectWallet()}
+                    disabled={isConnecting}
+                  >
+                    <Wallet className="mr-2 h-5 w-5" />
+                    {isConnecting ? "Connecting Wallet" : "Connect Wallet"}
+                  </Button>
+                ) : networkStatus === "wrong" || networkStatus === "unknown" ? (
+                  <div className="space-y-3 border border-white/30 bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.3em] text-[#FCA5A5]">
+                      {networkStatus === "wrong"
+                        ? "Wrong Network"
+                        : "Unknown Network"}
+                    </p>
+                    <ChainSwitcher
+                      value={selectedChainId}
+                      onValueChange={setSelectedChainId}
+                      onSwitch={() => void switchToChain(selectedChainId)}
+                      isSwitching={isSwitchingChain}
+                    />
+                    <div className="flex gap-2">
                       <Button
-                        size="lg"
-                        className="w-full h-14 rounded-none border border-white/60 bg-white text-black hover:bg-[#C6FFDD] hover:text-[#050608] transition-colors duration-200 uppercase tracking-[0.3em] text-xs cursor-pointer"
-                        onClick={handleSubmit(onValidSubmit, onInvalidSubmit)}
-                        disabled={
-                          !isValid ||
-                          isDeploying ||
-                          isConfirming ||
-                          isSubmitting
-                        }
+                        type="button"
+                        variant="outline"
+                        className="flex-1 rounded-none border-white/60 text-white hover:bg-white/10"
+                        onClick={disconnectWallet}
                       >
-                        {isDeploying ? (
-                          <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-black" />
-                            Deploying
-                          </>
-                        ) : isConfirming ? (
-                          <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-black" />
-                            Confirming
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="mr-2 h-5 w-5" />
-                            Deploy Reactor
-                          </>
-                        )}
+                        Disconnect
                       </Button>
-                    );
-                  }}
-                </ConnectButton.Custom>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    size="lg"
+                    className="w-full h-14 rounded-none border border-white/60 bg-white text-black hover:bg-[#C6FFDD] hover:text-[#050608] transition-colors duration-200 uppercase tracking-[0.3em] text-xs cursor-pointer"
+                    onClick={() => void triggerDeploy()}
+                    disabled={
+                      !isValid || isDeploying || isConfirming || isSubmitting
+                    }
+                  >
+                    {isDeploying ? (
+                      <>
+                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-black" />
+                        Deploying
+                      </>
+                    ) : isConfirming ? (
+                      <>
+                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-black" />
+                        Confirming
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-5 w-5" />
+                        Deploy Reactor
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                {connectionError ? (
+                  <p className="text-xs text-red-400">
+                    {connectionError.message}
+                  </p>
+                ) : null}
+                {switchError ? (
+                  <p className="text-xs text-red-400">{switchError.message}</p>
+                ) : null}
+                {isConnected && networkStatus === "correct" && !isValid ? (
+                  <p className="text-xs text-[#FCA5A5]">
+                    Validation blocked:{" "}
+                    {firstValidationMessage ??
+                      "Please fix the highlighted form fields."}
+                  </p>
+                ) : null}
 
                 {isSuccess && (
                   <div className="border border-[#34D399]/40 bg-[#10221A] px-5 py-4">

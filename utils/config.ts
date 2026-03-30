@@ -1,23 +1,12 @@
-// src/utils/config.ts
-import { scrollSepolia } from 'wagmi/chains'
-import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { citreaTestnet } from '@/components/CitreaTestnet'
-import { rootstockTestnet } from '@/components/RootstockTestnet'
+import { createConfig, http } from "wagmi";
+import { SUPPORTED_CHAINS } from "@/lib/chains";
 
-  
-// Sanitize the project ID to avoid stray quotes/semicolons that break the WalletConnect API URL
-const walletConnectProjectId = (process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '').replace(/["';]/g, '').trim()
-
-// Fallback project ID if not provided - this prevents Coinbase wallet errors
-const projectId = walletConnectProjectId || 'fallback-project-id-for-development'
-
-export const config = getDefaultConfig({
-  appName: 'StableCoin',
-  projectId: projectId,
-  chains: [
-    scrollSepolia,
-    citreaTestnet,
-    rootstockTestnet,
-  ],
+export const config = createConfig({
+  chains: SUPPORTED_CHAINS,
+  transports: {
+    534351: http(),
+    5115: http(),
+    31: http(),
+  },
   ssr: true,
-})
+});

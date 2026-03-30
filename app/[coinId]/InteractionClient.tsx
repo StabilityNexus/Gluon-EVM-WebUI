@@ -4,7 +4,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  useAccount,
   useReadContract,
   useWriteContract,
   useWaitForTransactionReceipt,
@@ -36,7 +35,9 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useWalletConnection } from "@/hooks/useWalletConnection";
+import { ChainSwitcher } from "@/components/ui/ChainSwitcher";
+import { type SupportedChainId } from "@/lib/chains";
 import LightRays from "@/components/LightRays";
 import Shuffle from "@/components/Shuffle";
 import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin";
@@ -225,7 +226,20 @@ const formatWad = (value?: bigint, precision = 4) => {
 };
 
 export default function InteractionClient({ coinId }: { coinId: string }) {
-  const { address } = useAccount();
+  const {
+    address,
+    chainId,
+    isConnected,
+    isConnecting,
+    isSwitchingChain,
+    networkStatus,
+    connectionError,
+    switchError,
+    connectWallet,
+    disconnectWallet,
+    switchToChain,
+    supportedChains,
+  } = useWalletConnection();
   const searchParams = useSearchParams();
   const reactorAddress = coinId === "c" ? searchParams.get("coin") : coinId;
 
@@ -242,6 +256,16 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
   const [isLoadingPythPrice, setIsLoadingPythPrice] = useState(false);
   const [pythPriceError, setPythPriceError] = useState<string | null>(null);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [selectedChainId, setSelectedChainId] = useState<SupportedChainId>(
+    supportedChains[0].id as SupportedChainId,
+  );
+
+  useEffect(() => {
+    const matching = supportedChains.find((chain) => chain.id === chainId);
+    if (matching) {
+      setSelectedChainId(matching.id);
+    }
+  }, [chainId, supportedChains]);
 
   useEffect(() => {
     if (address && recipient === "" && !hasSetDefaultRecipient) {
@@ -1376,6 +1400,24 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
     };
   }, [interactionValidationResult]);
 
+  const walletStatusMessage = useMemo(() => {
+    if (!isConnected) return "Wallet disconnected. Connect to continue.";
+    if (isConnecting) return "Connecting wallet...";
+    if (isSwitchingChain) return "Switching network in wallet...";
+    if (networkStatus === "wrong")
+      return "Wrong network. Switch to a supported chain.";
+    if (networkStatus === "unknown")
+      return "Unknown network detected. Switch to a supported chain.";
+    if (isProcessing) return "Transaction flow in progress...";
+    return "Wallet connected. Ready to submit.";
+  }, [
+    isConnected,
+    isConnecting,
+    isSwitchingChain,
+    networkStatus,
+    isProcessing,
+  ]);
+
   const resolveOracleTipValue = useCallback(
     (tipInput: string): bigint | null => {
       if (tipInput.length === 0) {
@@ -2436,104 +2478,127 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                   </p>
                 )}
               </div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">
+                {walletStatusMessage}
+              </p>
 
-              <ConnectButton.Custom>
-                {({ account, chain, openConnectModal, mounted }) => {
-                  const ready = mounted;
-                  const connected = ready && account && chain;
+              {!isConnected ? (
+                <Button
+                  onClick={() => void connectWallet()}
+                  disabled={isConnecting}
+                  className="w-full h-14 bg-[#E8BA10] hover:bg-[#d0a60e] text-black font-semibold text-lg border-0"
+                >
+                  <Zap className="mr-2 h-5 w-5" />
+                  {isConnecting ? "Connecting..." : "Connect Wallet"}
+                </Button>
+              ) : networkStatus === "wrong" || networkStatus === "unknown" ? (
+                <div className="space-y-3 rounded-none border border-white/40 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#FCA5A5]">
+                    {networkStatus === "wrong"
+                      ? "Wrong Network"
+                      : "Unknown Network"}
+                  </p>
+                  <ChainSwitcher
+                    value={selectedChainId}
+                    onValueChange={setSelectedChainId}
+                    onSwitch={() => void switchToChain(selectedChainId)}
+                    isSwitching={isSwitchingChain}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-white/40 hover:bg-white/10"
+                    onClick={disconnectWallet}
+                  >
+                    Disconnect Wallet
+                  </Button>
+                </div>
+              ) : (
+                (() => {
+                  if (!route) {
+                    return (
+                      <Button
+                        disabled
+                        className="w-full h-14 bg-muted text-muted-foreground"
+                      >
+                        Select a valid pair
+                      </Button>
+                    );
+                  }
+
+                  if (!interactionValidationResult.success) {
+                    return (
+                      <Button
+                        disabled
+                        className="w-full h-14 bg-muted text-muted-foreground"
+                      >
+                        {amount.trim().length === 0 &&
+                        recipient.trim().length === 0
+                          ? "Enter amount and recipient"
+                          : "Fix highlighted input errors"}
+                      </Button>
+                    );
+                  }
+
+                  if (needsApproval) {
+                    return (
+                      <Button
+                        onClick={handleApprove}
+                        disabled={isProcessing}
+                        className="w-full h-14 bg-[#E8BA10] hover:bg-[#d0a60e] text-black font-semibold text-lg border-0"
+                      >
+                        {isApproving || isApprovingTx ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2" />
+                            Approving...
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="mr-2 h-5 w-5" />
+                            Approve {baseSymbolText}
+                          </>
+                        )}
+                      </Button>
+                    );
+                  }
 
                   return (
-                    <div
-                      {...(!ready && {
-                        "aria-hidden": true,
-                        style: {
-                          opacity: 0,
-                          pointerEvents: "none",
-                          userSelect: "none",
-                        },
-                      })}
+                    <Button
+                      onClick={handleSwap}
+                      disabled={isProcessing}
+                      className="w-full h-14 bg-[#E8BA10] hover:bg-[#d0a60e] text-black font-semibold text-lg border-0 disabled:opacity-60"
                     >
-                      {(() => {
-                        if (!connected) {
-                          return (
-                            <Button
-                              onClick={openConnectModal}
-                              className="w-full h-14 bg-[#E8BA10] hover:bg-[#d0a60e] text-black font-semibold text-lg border-0"
-                            >
-                              <Zap className="mr-2 h-5 w-5" />
-                              Connect Wallet
-                            </Button>
-                          );
-                        }
-
-                        if (!route) {
-                          return (
-                            <Button
-                              disabled
-                              className="w-full h-14 bg-muted text-muted-foreground"
-                            >
-                              Select a valid pair
-                            </Button>
-                          );
-                        }
-
-                        if (!interactionValidationResult.success) {
-                          return (
-                            <Button
-                              disabled
-                              className="w-full h-14 bg-muted text-muted-foreground"
-                            >
-                              {amount.trim().length === 0 &&
-                              recipient.trim().length === 0
-                                ? "Enter amount and recipient"
-                                : "Fix highlighted input errors"}
-                            </Button>
-                          );
-                        }
-
-                        if (needsApproval) {
-                          return (
-                            <Button
-                              onClick={handleApprove}
-                              disabled={isProcessing}
-                              className="w-full h-14 bg-[#E8BA10] hover:bg-[#d0a60e] text-black font-semibold text-lg border-0"
-                            >
-                              {isApproving || isApprovingTx ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2" />
-                                  Approving…
-                                </>
-                              ) : (
-                                <>
-                                  <Shield className="mr-2 h-5 w-5" />
-                                  Approve {baseSymbolText}
-                                </>
-                              )}
-                            </Button>
-                          );
-                        }
-
-                        return (
-                          <Button
-                            onClick={handleSwap}
-                            disabled={isProcessing}
-                            className="w-full h-14 bg-[#E8BA10] hover:bg-[#d0a60e] text-black font-semibold text-lg border-0 disabled:opacity-60"
-                          >
-                            {isProcessing ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2" />
-                                Processing…
-                              </>
-                            ) : (
-                              actionLabel
-                            )}
-                          </Button>
-                        );
-                      })()}
-                    </div>
+                      {isProcessing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2" />
+                          Processing...
+                        </>
+                      ) : (
+                        actionLabel
+                      )}
+                    </Button>
                   );
-                }}
-              </ConnectButton.Custom>
+                })()
+              )}
+              {connectionError ? (
+                <p className="text-xs text-red-400">
+                  {connectionError.message}
+                </p>
+              ) : null}
+              {switchError ? (
+                <p className="text-xs text-red-400">{switchError.message}</p>
+              ) : null}
+              {isConnected &&
+              networkStatus === "correct" &&
+              !interactionValidationResult.success ? (
+                <p className="text-xs text-[#FCA5A5]">
+                  Validation blocked:{" "}
+                  {interactionFieldErrors.amount ||
+                    interactionFieldErrors.recipient ||
+                    interactionFieldErrors.oracleTip ||
+                    "Fix the highlighted input fields."}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         </div>
