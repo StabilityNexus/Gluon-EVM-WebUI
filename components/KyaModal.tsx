@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
-
 interface KyaModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUnderstand: () => void;
 }
 
-export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProps) {
+export default function KyaModal({
+  isOpen,
+  onClose,
+  onUnderstand,
+}: KyaModalProps) {
   if (!isOpen) return null;
 
   const handleUnderstand = () => {
@@ -39,17 +41,19 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
 
         <div className="p-4 sm:p-6 space-y-4 text-white/85 text-xs sm:text-sm leading-relaxed font-mono">
           <p>
-            This decentralized application is composed of smart contracts running on a blockchain
-            and a website that eases your interaction with the smart contracts.
+            This decentralized application is composed of smart contracts
+            running on a blockchain and a website that eases your interaction
+            with the smart contracts.
           </p>
 
           <p>
-            The smart contracts and the website were developed by The Stable Order, an organization
-            dedicated to making the world more stable.
+            The smart contracts and the website were developed by The Stable
+            Order, an organization dedicated to making the world more stable.
           </p>
 
           <p>
-            The source code of the smart contracts and of the website can be found in{" "}
+            The source code of the smart contracts and of the website can be
+            found in{" "}
             <a
               href="https://github.com/StabilityNexus"
               target="_blank"
@@ -58,9 +62,10 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
             >
               https://github.com/StabilityNexus
             </a>
-            . We strongly recommend that you do your own research and inspect the source code of
-            any blockchain application that you wish to interact with. The source code is the only
-            source of truth about the applications that you use.
+            . We strongly recommend that you do your own research and inspect
+            the source code of any blockchain application that you wish to
+            interact with. The source code is the only source of truth about the
+            applications that you use.
           </p>
 
           <p className="font-semibold">Please note:</p>
@@ -68,114 +73,130 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
           <ul className="list-disc pl-6 space-y-2">
             <li>
               <strong>
-                When you interact with any smart contract on any blockchain through any application,
-                your transactions are recorded anonymously forever on the blockchain.
+                When you interact with any smart contract on any blockchain
+                through any application, your transactions are recorded
+                anonymously forever on the blockchain.
               </strong>
               <ul className="list-circle pl-6 mt-1">
                 <li>
-                  Transactions are final and irreversible once they are confirmed on the blockchain.
+                  Transactions are final and irreversible once they are
+                  confirmed on the blockchain.
                 </li>
               </ul>
             </li>
             <li>
               <strong>
-                The smart contracts made by The Stable Order are immutable and autonomous.
+                The smart contracts made by The Stable Order are immutable and
+                autonomous.
               </strong>
               <ul className="list-circle pl-6 mt-1">
                 <li>
-                  No one can change or update the smart contracts deployed on the blockchain.
+                  No one can change or update the smart contracts deployed on
+                  the blockchain.
                 </li>
                 <li>
-                  The smart contracts are executed autonomously by the blockchain's block validators.
+                  The smart contracts are executed autonomously by the
+                  blockchain&apos;s block validators.
                 </li>
               </ul>
             </li>
             <li>
               <strong>
-                The websites made by The Stable Order are lean static serverless frontends.
+                The websites made by The Stable Order are lean static serverless
+                frontends.
               </strong>
               <ul className="list-circle pl-6 mt-1">
                 <li>They do not collect your data on any server.</li>
                 <li>
-                  They rely solely on data available publicly on blockchains or on data stored
-                  locally in your own device.
+                  They rely solely on data available publicly on blockchains or
+                  on data stored locally in your own device.
                 </li>
                 <li>
-                  You may run the websites locally in your own computer. So, even if, for any
-                  reason, the websites deployed in our own domains become unavailable, you can still
-                  interact with the smart contracts.
+                  You may run the websites locally in your own computer. So,
+                  even if, for any reason, the websites deployed in our own
+                  domains become unavailable, you can still interact with the
+                  smart contracts.
                 </li>
               </ul>
             </li>
             <li>
-              Some of our projects may depend on external infrastructure, such as oracles and
-              blockchain explorers.
+              Some of our projects may depend on external infrastructure, such
+              as oracles and blockchain explorers.
             </li>
           </ul>
 
           <p>
-            Interacting with blockchain applications may involve risks such as the following
-            (non-exhaustively):
+            Interacting with blockchain applications may involve risks such as
+            the following (non-exhaustively):
           </p>
 
           <ul className="list-disc pl-6 space-y-2">
             <li>
-              You may lose your wallet password, recovery phrases or private keys, thereby losing
-              access to your assets.
+              You may lose your wallet password, recovery phrases or private
+              keys, thereby losing access to your assets.
             </li>
             <li>
-              Hackers may succeed in obtaining your wallet password, recovery phrases or private
-              keys, thereby gaining access to your assets.
+              Hackers may succeed in obtaining your wallet password, recovery
+              phrases or private keys, thereby gaining access to your assets.
             </li>
             <li>
-              The blockchain may become congested or unavailable, resulting in delays in the
-              confirmation of your transactions.
+              The blockchain may become congested or unavailable, resulting in
+              delays in the confirmation of your transactions.
             </li>
             <li>
-              If you are interacting with a centralized blockchain (a.k.a. "L2", "sidechain",
-              "Proof-of-Authority blockchain", ...), the block validators may decide to stop
+              If you are interacting with a centralized blockchain (a.k.a.
+              &quot;L2&quot;, &quot;sidechain&quot;, &quot;Proof-of-Authority
+              blockchain&quot;, ...), the block validators may decide to stop
               operating the blockchain.
             </li>
             <li>
-              The external infrastructure on which a decentralized application depends may
-              experience issues or become unavailable.
+              The external infrastructure on which a decentralized application
+              depends may experience issues or become unavailable.
               <ul className="list-circle pl-6 mt-1">
-                <li>Oracles, in particular, may suffer delays or manipulations.</li>
+                <li>
+                  Oracles, in particular, may suffer delays or manipulations.
+                </li>
               </ul>
             </li>
             <li>
-              The source code of the smart contracts and the website may contain bugs that may cause
-              the application to behave unexpectedly and unfavourably.
+              The source code of the smart contracts and the website may contain
+              bugs that may cause the application to behave unexpectedly and
+              unfavourably.
             </li>
             <li>
-              The algorithms and protocols implemented by the code may have unforeseen behaviors.
+              The algorithms and protocols implemented by the code may have
+              unforeseen behaviors.
             </li>
           </ul>
 
           <p>
-            While we do our best to ensure that we implement good algorithms and protocols, that the
-            implementations are free from bugs, and that the deployed applications are fully or
-            minimally dependent on external infrastructure, you use the applications at your own
-            risk. You are solely responsible for your assets. You are solely responsible for the
-            security of your wallet (and its password, recovery phrase and private keys). The Stable
-            Order does not operate any blockchain, server or external infrastructure on which the
-            application depends, and hence The Stable Order is not responsible for their operation.
+            While we do our best to ensure that we implement good algorithms and
+            protocols, that the implementations are free from bugs, and that the
+            deployed applications are fully or minimally dependent on external
+            infrastructure, you use the applications at your own risk. You are
+            solely responsible for your assets. You are solely responsible for
+            the security of your wallet (and its password, recovery phrase and
+            private keys). The Stable Order does not operate any blockchain,
+            server or external infrastructure on which the application depends,
+            and hence The Stable Order is not responsible for their operation.
           </p>
 
           <p>
-            We will never ask for your password, recovery phrase or private keys. Anyone asking this
-            information from you is almost certainly a scammer.
+            We will never ask for your password, recovery phrase or private
+            keys. Anyone asking this information from you is almost certainly a
+            scammer.
           </p>
 
           <p>
-            We do not provide support of any kind. We do research and development. Uses of the
-            algorithms, protocols, smart contracts, websites and applications that result from our
-            research and development are at your own risk.
+            We do not provide support of any kind. We do research and
+            development. Uses of the algorithms, protocols, smart contracts,
+            websites and applications that result from our research and
+            development are at your own risk.
           </p>
 
           <p>
-            By using this application, you confirm that you understand and agree with everything
-            stated above and with our detailed{" "}
+            By using this application, you confirm that you understand and agree
+            with everything stated above and with our detailed{" "}
             <a
               href="https://terms.stability.nexus"
               target="_blank"
@@ -206,4 +227,3 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
     </div>
   );
 }
-

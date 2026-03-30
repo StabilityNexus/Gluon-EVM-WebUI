@@ -1,22 +1,20 @@
 import React, { useId } from "react";
 
 interface SolanaTokenIconProps {
-  className?: string;    // control rendered size, e.g. "w-8 h-8"
-  symbol?: string;       // e.g. "SOL", "USDC"
-  showSymbol?: boolean;  // show ticker pill or not
-  bgColor?: string;      // inner circle color
-  ringColor?: string;    // subtle rim stroke color
-  fromColor?: string;    // gradient start for shard
-  toColor?: string;      // gradient end for shard
+  className?: string; // control rendered size, e.g. "w-8 h-8"
+  symbol?: string; // e.g. "SOL", "USDC"
+  bgColor?: string; // inner circle color
+  ringColor?: string; // subtle rim stroke color
+  fromColor?: string; // gradient start for shard
+  toColor?: string; // gradient end for shard
 }
 
 const SolanaTokenIcon: React.FC<SolanaTokenIconProps> = ({
   className = "w-8 h-8",
-  showSymbol = true,
-  bgColor = "#14162B",          // deep indigo fill
+  bgColor = "#14162B", // deep indigo fill
   ringColor = "rgba(255,255,255,0.12)",
-  fromColor = "#627EEA",        // classic Ethereum blue
-  toColor = "#9EB5FF",          // lighter accent
+  fromColor = "#627EEA", // classic Ethereum blue
+  toColor = "#9EB5FF", // lighter accent
 }) => {
   const gradientId = useId();
   const glowId = `${gradientId}-glow`;
@@ -71,7 +69,14 @@ const SolanaTokenIcon: React.FC<SolanaTokenIconProps> = ({
       />
 
       {/* Subtle glow */}
-      <ellipse cx={32} cy={30} rx={18} ry={22} fill={`url(#${glowId})`} opacity={0.6} />
+      <ellipse
+        cx={32}
+        cy={30}
+        rx={18}
+        ry={22}
+        fill={`url(#${glowId})`}
+        opacity={0.6}
+      />
 
       {/* Ethereum diamond */}
       <g>
