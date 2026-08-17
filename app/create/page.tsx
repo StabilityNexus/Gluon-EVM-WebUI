@@ -25,7 +25,6 @@ interface ReactorConfig {
   protonSymbol: string
   baseToken: string
   oracleAddress: string
-  priceId: string
   treasury: string
   criticalReserveRatio: string
 }
@@ -43,7 +42,6 @@ export default function CreatePage() {
     protonSymbol: "",
     baseToken: "",
     oracleAddress: "",
-    priceId: "",
     treasury: address || "",
     criticalReserveRatio: "400",
   })
@@ -79,7 +77,6 @@ export default function CreatePage() {
            config.baseToken && 
            config.oracleAddress &&
            config.treasury &&
-           config.priceId &&
            config.criticalReserveRatio
   }
 
@@ -160,12 +157,6 @@ export default function CreatePage() {
       return
     }
 
-    const trimmedPriceId = config.priceId.trim()
-    if (!/^0x[0-9a-fA-F]{64}$/.test(trimmedPriceId)) {
-      toast.error("Price feed ID must be a 32-byte hex value")
-      return
-    }
-
     const treasuryAddress = config.treasury.trim()
     if (!/^0x[0-9a-fA-F]{40}$/.test(treasuryAddress)) {
       toast.error("Treasury address must be a 20-byte checksum address")
@@ -200,7 +191,6 @@ export default function CreatePage() {
           peggedAssetSymbol,
           baseToken as `0x${string}`,
           oracleAddress as `0x${string}`,
-          trimmedPriceId as `0x${string}`,
           protonName,
           protonSymbol,
           treasuryAddress as `0x${string}`,
@@ -321,7 +311,7 @@ export default function CreatePage() {
 
                 <div className="space-y-2">
                   <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
-                    Oracle (Pyth) Address
+                    Oracle Adapter Address
                   </Label>
                   <Input
                     placeholder="0x..."
@@ -331,7 +321,7 @@ export default function CreatePage() {
                   />
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6">
                   <div className="space-y-2">
                     <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
                       Critical Reserve Ratio (%)
@@ -344,17 +334,6 @@ export default function CreatePage() {
                       value={config.criticalReserveRatio}
                       onChange={(e) => updateConfig("criticalReserveRatio", e.target.value)}
                       className={inputClasses}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
-                      Price Feed ID
-                    </Label>
-                    <Input
-                      value={config.priceId}
-                      placeholder="0x..."
-                      onChange={(e) => updateConfig("priceId", e.target.value)}
-                      className={`${inputClasses} font-mono text-xs`}
                     />
                   </div>
                 </div>
