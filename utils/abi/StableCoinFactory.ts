@@ -27,6 +27,71 @@ export const StableCoinFactoryABI = [
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "EmptyBaseName",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyBaseSymbol",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyPegName",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyPegSymbol",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyProtonName",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyProtonSymbol",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyVaultName",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidBase",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidCriticalReserveRatio",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidFissionFee",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidFusionFee",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidOracle",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidTreasury",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -110,6 +175,12 @@ export const StableCoinFactoryABI = [
       },
       {
         "indexed": false,
+        "internalType": "address",
+        "name": "oracleAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "fissionFee",
         "type": "uint256"
@@ -128,31 +199,6 @@ export const StableCoinFactoryABI = [
       }
     ],
     "name": "ReactorDeployed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "reactor",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "base",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes32",
-        "name": "basePriceId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "ReactorDeployedWithOracle",
     "type": "event"
   },
   {
@@ -208,13 +254,8 @@ export const StableCoinFactoryABI = [
       },
       {
         "internalType": "address",
-        "name": "pythOracleParam",
+        "name": "oracleParam",
         "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "priceIdParam",
-        "type": "bytes32"
       },
       {
         "internalType": "string",
