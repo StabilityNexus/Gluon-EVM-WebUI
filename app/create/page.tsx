@@ -85,6 +85,7 @@ export default function CreatePage() {
   const latestChainIdRef = useRef(chainId)
   const adapterDeploymentInProgressRef = useRef(false)
   const isChainlinkSupported = CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)
+  const isAdapterDeploymentBusy = isAdapterDeploying || isAdapterConfirming
 
   // Contract interaction
   const { data: hash, isPending: isDeploying, writeContractAsync } = useWriteContract()
@@ -471,6 +472,7 @@ export default function CreatePage() {
                     <button
                       type="button"
                       aria-pressed={oracleProvider === "existing"}
+                      disabled={isAdapterDeploymentBusy}
                       onClick={() => {
                         if (oracleProvider !== "existing") {
                           updateConfig("oracleAddress", "")
@@ -489,7 +491,7 @@ export default function CreatePage() {
                     <button
                       type="button"
                       aria-pressed={oracleProvider === "chainlink"}
-                      disabled={!isChainlinkSupported}
+                      disabled={!isChainlinkSupported || isAdapterDeploymentBusy}
                       onClick={() => {
                         if (oracleProvider !== "chainlink") {
                           updateConfig("oracleAddress", "")
@@ -531,6 +533,7 @@ export default function CreatePage() {
                       </Label>
                       <Input
                         placeholder="0x..."
+                        disabled={isAdapterDeploymentBusy}
                         value={chainlinkFeed}
                         onChange={(e) => {
                           setChainlinkFeed(e.target.value)
@@ -542,10 +545,10 @@ export default function CreatePage() {
                       <button
                         type="button"
                         onClick={handleDeployChainlinkAdapter}
-                        disabled={isAdapterDeploying || isAdapterConfirming}
+                        disabled={isAdapterDeploymentBusy}
                         className="h-12 w-full border border-white/30 bg-white/5 text-[11px] uppercase tracking-[0.25em] text-white/80 transition-colors hover:border-[#8FF7FF] hover:text-[#8FF7FF] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {isAdapterDeploying || isAdapterConfirming
+                        {isAdapterDeploymentBusy
                           ? "Deploying Adapter..."
                           : "Deploy Chainlink Adapter"}
                       </button>
