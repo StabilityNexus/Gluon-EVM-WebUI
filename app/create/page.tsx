@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, useDeployContract, usePublicClient } from "wagmi"
 import { parseUnits } from "viem"
 import { Button } from "@/components/ui/button"
@@ -82,6 +82,8 @@ export default function CreatePage() {
   const [oracleProvider, setOracleProvider] = useState<OracleProvider>("existing")
   const [chainlinkFeed, setChainlinkFeed] = useState("")
   const [isAdapterConfirming, setIsAdapterConfirming] = useState(false)
+  const latestChainIdRef = useRef(chainId)
+  const adapterDeploymentInProgressRef = useRef(false)
   const isChainlinkSupported = CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)
 
   // Contract interaction
@@ -98,6 +100,7 @@ export default function CreatePage() {
   const [hasSetDefaultTreasury, setHasSetDefaultTreasury] = useState(false)
 
   useEffect(() => {
+    latestChainIdRef.current = chainId
     setChainlinkFeed("")
     setConfig((prev) => ({ ...prev, oracleAddress: "" }))
 
@@ -155,33 +158,45 @@ export default function CreatePage() {
       return
     }
 
-    try {
-      const [, roundData] = await Promise.all([
-        publicClient.readContract({
-          address: feedAddress as `0x${string}`,
-          abi: ChainlinkFeedABI,
-          functionName: "decimals",
-        }),
-        publicClient.readContract({
-          address: feedAddress as `0x${string}`,
-          abi: ChainlinkFeedABI,
-          functionName: "latestRoundData",
-        }),
-      ])
-
-      if (roundData[1] <= BigInt(0)) {
-        toast.error("Chainlink feed returned an invalid price")
-        return
-      }
-    } catch (error) {
-      console.error("Chainlink feed validation error:", error)
-      toast.error("Address is not a valid Chainlink feed")
+    if (adapterDeploymentInProgressRef.current) {
       return
     }
 
+    const deploymentChainId = chainId
+    adapterDeploymentInProgressRef.current = true
     setIsAdapterConfirming(true)
 
     try {
+      try {
+        // decimals() also confirms that the address exposes the expected feed interface.
+        const [, roundData] = await Promise.all([
+          publicClient.readContract({
+            address: feedAddress as `0x${string}`,
+            abi: ChainlinkFeedABI,
+            functionName: "decimals",
+          }),
+          publicClient.readContract({
+            address: feedAddress as `0x${string}`,
+            abi: ChainlinkFeedABI,
+            functionName: "latestRoundData",
+          }),
+        ])
+
+        if (roundData[1] <= BigInt(0)) {
+          toast.error("Chainlink feed returned an invalid price")
+          return
+        }
+      } catch (error) {
+        console.error("Chainlink feed validation error:", error)
+        toast.error("Unable to validate Chainlink feed. Check the address or network connection.")
+        return
+      }
+
+      if (latestChainIdRef.current !== deploymentChainId) {
+        toast.error("Network changed during deployment. Please try again.")
+        return
+      }
+
       const hash = await deployContractAsync({
         abi: ChainlinkToOracleAdapterABI,
         bytecode: ChainlinkToOracleAdapterBytecode,
@@ -189,6 +204,16 @@ export default function CreatePage() {
       })
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+      if (latestChainIdRef.current !== deploymentChainId) {
+        toast.error("Network changed during deployment. The adapter was not applied.")
+        return
+      }
+
+      if (receipt.status !== "success") {
+        toast.error("Adapter deployment transaction reverted")
+        return
+      }
 
       if (!receipt.contractAddress) {
         toast.error("Adapter deployment did not return an address")
@@ -201,6 +226,7 @@ export default function CreatePage() {
       console.error("Chainlink adapter deployment error:", error)
       toast.error("Failed to deploy Chainlink adapter")
     } finally {
+      adapterDeploymentInProgressRef.current = false
       setIsAdapterConfirming(false)
     }
   }
@@ -444,6 +470,7 @@ export default function CreatePage() {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
+                      aria-pressed={oracleProvider === "existing"}
                       onClick={() => {
                         if (oracleProvider !== "existing") {
                           updateConfig("oracleAddress", "")
@@ -461,6 +488,7 @@ export default function CreatePage() {
 
                     <button
                       type="button"
+                      aria-pressed={oracleProvider === "chainlink"}
                       disabled={!isChainlinkSupported}
                       onClick={() => {
                         if (oracleProvider !== "chainlink") {
