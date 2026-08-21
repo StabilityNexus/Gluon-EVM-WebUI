@@ -1,13 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import {
   useAccount,
   useReadContract,
   useWriteContract,
   useWaitForTransactionReceipt,
-  usePublicClient,
 } from "wagmi"
 import { parseUnits, formatUnits } from "viem"
 import { Button } from "@/components/ui/button"
@@ -24,7 +23,6 @@ import {
 import {
   AlertTriangle,
   ArrowLeftRight,
-  ChevronDown,
   Copy,
   Info,
   Shield,
@@ -35,7 +33,6 @@ import { ConnectButton } from "@rainbow-me/rainbowkit"
 import LightRays from "@/components/LightRays"
 import Shuffle from "@/components/Shuffle"
 import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin"
-import { PythABI } from "@/utils/abi/Pyth"
 import { toast } from "sonner"
 
 type TokenOption = "BASE" | "BUNDLE" | "NEUTRON" | "PROTON"
@@ -105,13 +102,6 @@ const shortenAddress = (value?: string, guard = 4) => {
 const WAD = 10n ** 18n
 const PEGGED_ASSET_WAD = 10n ** 18n
 
-type PythPriceData = {
-  price: number
-  expo: number
-  conf: number
-  publishTime: number
-}
-
 const mulDiv = (a: bigint, b: bigint, denominator: bigint) => {
   if (denominator === 0n) return 0n
   return (a * b) / denominator
@@ -122,20 +112,6 @@ const scaleToWad = (value?: bigint, decimals?: number) => {
   if (decimals === 0) return value * WAD
   const scale = pow10(decimals)
   return scale === 0n ? undefined : mulDiv(value, WAD, scale)
-}
-
-const pythPriceToWad = (priceData: PythPriceData | null): bigint | undefined => {
-  if (!priceData) return undefined
-  const { price, expo } = priceData
-  if (price <= 0 || !Number.isFinite(price)) return undefined
-  const unsignedPrice = BigInt(Math.trunc(price))
-  if (unsignedPrice <= 0n) return undefined
-  if (expo >= 0) {
-    const scale = 10n ** BigInt(expo)
-    return unsignedPrice * scale * WAD
-  }
-  const scale = 10n ** BigInt(-expo)
-  return scale === 0n ? undefined : (unsignedPrice * WAD) / scale
 }
 
 const computeQWad = (
@@ -214,13 +190,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
   const [amount, setAmount] = useState("")
   const [recipient, setRecipient] = useState("")
   const [hasSetDefaultRecipient, setHasSetDefaultRecipient] = useState(false)
-  const [oracleTip, setOracleTip] = useState("")
-  const [isOracleTipExpanded, setIsOracleTipExpanded] = useState(false)
   const [copiedValue, setCopiedValue] = useState<string | null>(null)
-  const [isFetchingOracleUpdate, setIsFetchingOracleUpdate] = useState(false)
-  const [pythPrice, setPythPrice] = useState<PythPriceData | null>(null)
-  const [isLoadingPythPrice, setIsLoadingPythPrice] = useState(false)
-  const [pythPriceError, setPythPriceError] = useState<string | null>(null)
 
   useEffect(() => {
     if (address && recipient === "" && !hasSetDefaultRecipient) {
@@ -240,8 +210,6 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
     const key = `${fromToken}->${toToken}`
     return routeMap[key] || null
   }, [fromToken, toToken])
-
-  const publicClient = usePublicClient()
 
   if (!reactorAddress) {
     return (
@@ -264,80 +232,8 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
   const { data: oracleAddress } = useReadContract({
     address: reactorAddress as `0x${string}`,
     abi: StableCoinReactorABI,
-    functionName: "PYTH_ORACLE",
+    functionName: "ORACLE",
   })
-
-  const { data: reactorPriceId } = useReadContract({
-    address: reactorAddress as `0x${string}`,
-    abi: StableCoinReactorABI,
-    functionName: "PRICE_ID",
-  })
-
-  useEffect(() => {
-    if (!reactorPriceId) {
-      setPythPrice(null)
-      setPythPriceError("Price feed unavailable for this reactor")
-      setIsLoadingPythPrice(false)
-      return
-    }
-
-    let isCancelled = false
-    let intervalId: ReturnType<typeof setInterval> | null = null
-
-    const fetchPrice = async () => {
-      setIsLoadingPythPrice(true)
-      try {
-        const response = await fetch("/api/pyth-price", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ priceId: reactorPriceId }),
-        })
-        const payload = (await response.json().catch(() => ({}))) as
-          | (PythPriceData & { error?: undefined })
-          | { error?: string }
-
-        if (!response.ok || !("price" in payload)) {
-          throw new Error(
-            "error" in payload && payload.error
-              ? payload.error
-              : `Pyth price request failed (${response.status})`,
-          )
-        }
-
-        if (!isCancelled) {
-          setPythPrice({
-            price: payload.price,
-            expo: payload.expo,
-            conf: payload.conf,
-            publishTime: payload.publishTime,
-          })
-          setPythPriceError(null)
-        }
-      } catch (error) {
-        console.error("Failed to fetch Pyth price:", error)
-        if (!isCancelled) {
-          setPythPrice(null)
-          setPythPriceError(error instanceof Error ? error.message : "Failed to fetch price")
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingPythPrice(false)
-        }
-      }
-    }
-
-    fetchPrice()
-    intervalId = setInterval(fetchPrice, 15000)
-
-    return () => {
-      isCancelled = true
-      if (intervalId) {
-        clearInterval(intervalId)
-      }
-    }
-  }, [reactorPriceId])
 
   const {
     data: baseToken,
@@ -581,13 +477,11 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
     [protonTotalSupply, protonDecimalsNumber],
   )
   const basePriceWad = useMemo(() => {
-    const fromPyth = pythPrice ? pythPriceToWad(pythPrice) : undefined
-    if (fromPyth && fromPyth > 0n) return fromPyth
     if (typeof onChainBasePriceWad === "bigint" && onChainBasePriceWad > 0n) {
       return onChainBasePriceWad
     }
     return undefined
-  }, [pythPrice, onChainBasePriceWad])
+  }, [onChainBasePriceWad])
   const qWad = useMemo(
     () => computeQWad(reserveWad, neutronSupplyWad, basePriceWad, criticalReserveRatio),
     [reserveWad, neutronSupplyWad, basePriceWad, criticalReserveRatio],
@@ -670,11 +564,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
   const basePricePeggedText =
     basePricePegged !== undefined
       ? `${formatWad(basePricePegged)} ${peggedSymbolText}/${baseSymbolText}`
-      : isLoadingPythPrice
-        ? "Loading…"
-        : pythPriceError
-          ? "Oracle unavailable"
-          : "—"
+      : "—"
   const reserveRatioText = (() => {
     if (reserve === undefined) return "—"
     if (reserve === 0n) return "0%"
@@ -682,7 +572,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
       return "∞ (bootstrap)"
     }
     if (reserveRatio === undefined) {
-      return isLoadingPythPrice ? "Loading…" : pythPriceError ? "Oracle unavailable" : "—"
+      return "—"
     }
     return formatPercentFromWad(reserveRatio)
   })()
@@ -745,9 +635,6 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
       void refetchNeutronToken()
       void refetchProtonToken()
       setAmount("")
-      if (isFissionSuccess || isProtonToNeutronSuccess || isNeutronToProtonSuccess) {
-        setOracleTip("")
-      }
     }
   }, [
     isApproveSuccess,
@@ -813,8 +700,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
     isProtonToNeutronPending ||
     isProtonToNeutronTx ||
     isNeutronToProtonPending ||
-    isNeutronToProtonTx ||
-    isFetchingOracleUpdate
+    isNeutronToProtonTx
 
   const fromLabel = useMemo(() => {
     switch (fromToken) {
@@ -898,73 +784,18 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
             toast.error("Base token decimals not available yet")
             return
           }
+
           const parsed = safeParseUnits(amount, baseDecimalsNumber)
           if (parsed === null) {
             toast.error("Invalid base amount")
             return
           }
 
-          let tipValue = 0n
-          if (shouldShowOracleTip) {
-            const resolvedTip = resolveOracleTipValue()
-            if (resolvedTip === null) return
-            tipValue = resolvedTip
-          }
-
-          let updateData: `0x${string}`[] = []
-
-          if (tipValue > 0n) {
-            try {
-              const { updateData: payload, requiredFee } = await fetchOracleUpdatePayload()
-              updateData = payload
-              if (requiredFee !== undefined && tipValue < requiredFee) {
-                toast.error("Oracle tip is below the required Pyth fee")
-                return
-              }
-            } catch (error) {
-              console.error("Failed to fetch oracle update data:", error)
-              toast.error(
-                error instanceof Error ? error.message : "Failed to fetch oracle update data",
-              )
-              return
-            }
-          }
-
-          if (tipValue === 0n && publicClient) {
-            try {
-              await publicClient.simulateContract({
-                address: reactorAddress as `0x${string}`,
-                abi: StableCoinReactorABI,
-                functionName: "fission",
-                args: [parsed, recipient as `0x${string}`, []],
-                value: 0n,
-                account: address ? (address as `0x${string}`) : undefined,
-              })
-            } catch (simulationError) {
-              console.error("Fission simulation failed:", simulationError)
-              toast.error(
-                shouldShowOracleTip
-                  ? "Oracle price appears stale. Provide an oracle tip to refresh before splitting."
-                  : "Oracle price appears stale. Please retry once the oracle updates.",
-              )
-              return
-            }
-          }
-
-          console.debug("Submitting fission", {
-            vault: reactorAddress,
-            baseAmount: parsed.toString(),
-            recipient,
-            oracleTip: tipValue.toString(),
-            updateDataLength: updateData.length,
-          })
-
           await writeFission({
             address: reactorAddress as `0x${string}`,
             abi: StableCoinReactorABI,
             functionName: "fission",
-            args: [parsed, recipient as `0x${string}`, updateData],
-            value: tipValue,
+            args: [parsed, recipient as `0x${string}`],
           })
           break
         }
@@ -991,43 +822,18 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
             toast.error("Proton token decimals not available")
             return
           }
+
           const parsed = safeParseUnits(amount, protonDecimalsNumber)
           if (parsed === null) {
             toast.error("Invalid proton amount")
             return
           }
 
-          let tipValue = 0n
-          if (shouldShowOracleTip) {
-            const resolvedTip = resolveOracleTipValue()
-            if (resolvedTip === null) return
-            tipValue = resolvedTip
-          }
-
-          let updateData: `0x${string}`[] = []
-          if (tipValue > 0n) {
-            try {
-              const { updateData: payload, requiredFee } = await fetchOracleUpdatePayload()
-              updateData = payload
-              if (requiredFee !== undefined && tipValue < requiredFee) {
-                toast.error("Oracle tip is below the required Pyth fee")
-                return
-              }
-            } catch (error) {
-              console.error("Failed to fetch oracle update data:", error)
-              toast.error(
-                error instanceof Error ? error.message : "Failed to fetch oracle update data",
-              )
-              return
-            }
-          }
-
           await writeProtonToNeutron({
             address: reactorAddress as `0x${string}`,
             abi: StableCoinReactorABI,
             functionName: "transmuteProtonToNeutron",
-            args: [parsed, recipient as `0x${string}`, updateData],
-            value: tipValue,
+            args: [parsed, recipient as `0x${string}`],
           })
           break
         }
@@ -1036,43 +842,18 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
             toast.error("Neutron token decimals not available")
             return
           }
+
           const parsed = safeParseUnits(amount, neutronDecimalsNumber)
           if (parsed === null) {
             toast.error("Invalid neutron amount")
             return
           }
 
-          let tipValue = 0n
-          if (shouldShowOracleTip) {
-            const resolvedTip = resolveOracleTipValue()
-            if (resolvedTip === null) return
-            tipValue = resolvedTip
-          }
-
-          let updateData: `0x${string}`[] = []
-          if (tipValue > 0n) {
-            try {
-              const { updateData: payload, requiredFee } = await fetchOracleUpdatePayload()
-              updateData = payload
-              if (requiredFee !== undefined && tipValue < requiredFee) {
-                toast.error("Oracle tip is below the required Pyth fee")
-                return
-              }
-            } catch (error) {
-              console.error("Failed to fetch oracle update data:", error)
-              toast.error(
-                error instanceof Error ? error.message : "Failed to fetch oracle update data",
-              )
-              return
-            }
-          }
-
           await writeNeutronToProton({
             address: reactorAddress as `0x${string}`,
             abi: StableCoinReactorABI,
             functionName: "transmuteNeutronToProton",
-            args: [parsed, recipient as `0x${string}`, updateData],
-            value: tipValue,
+            args: [parsed, recipient as `0x${string}`],
           })
           break
         }
@@ -1191,92 +972,6 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
 
   const isFissionRoute = route === "FISSION"
   const isFusionRoute = route === "FUSION"
-  const shouldShowOracleTip = useMemo(() => {
-    if (route === "FISSION") {
-      if (protonTotalSupply === undefined) {
-        return true
-      }
-      return protonTotalSupply === 0n
-    }
-    return route === "PROTON_TO_NEUTRON" || route === "NEUTRON_TO_PROTON"
-  }, [route, protonTotalSupply])
-
-  useEffect(() => {
-    if (!shouldShowOracleTip) {
-      setIsOracleTipExpanded(false)
-      setOracleTip("")
-    }
-  }, [shouldShowOracleTip])
-
-  const resolveOracleTipValue = useCallback((): bigint | null => {
-    if (oracleTip.trim().length === 0) {
-      return 0n
-    }
-    try {
-      return parseUnits(oracleTip.trim(), 18)
-    } catch (error) {
-      console.error("Invalid oracle tip:", error)
-      toast.error("Oracle tip must be a valid ETH amount")
-      return null
-    }
-  }, [oracleTip])
-
-  const fetchOracleUpdatePayload = useCallback(async () => {
-    if (!oracleAddress) {
-      throw new Error("Oracle address unavailable for this reactor")
-    }
-    if (!reactorPriceId) {
-      throw new Error("Price feed ID unavailable for this reactor")
-    }
-
-    setIsFetchingOracleUpdate(true)
-    try {
-      const response = await fetch("/api/hermes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          priceId: reactorPriceId,
-          oracleAddress,
-        }),
-      })
-
-      const payload = (await response.json().catch(() => ({}))) as {
-        updateData?: string[]
-        error?: string
-      }
-
-      if (!response.ok) {
-        const message = typeof payload.error === "string" ? payload.error : undefined
-        throw new Error(message ?? `Hermes proxy failed (${response.status})`)
-      }
-
-      const updateData = (payload.updateData ?? []).map((entry) => entry as `0x${string}`)
-      if (updateData.length === 0) {
-        throw new Error("Hermes proxy returned no update data")
-      }
-
-      let requiredFee: bigint | undefined
-      if (publicClient) {
-        try {
-          requiredFee = await publicClient.readContract({
-            address: oracleAddress as `0x${string}`,
-            abi: PythABI,
-            functionName: "getUpdateFee",
-            args: [updateData],
-          })
-        } catch (feeError) {
-          console.error("Failed to estimate oracle fee:", feeError)
-        }
-      }
-
-      return { updateData, requiredFee }
-    } finally {
-      setIsFetchingOracleUpdate(false)
-    }
-  }, [oracleAddress, reactorPriceId, publicClient])
-
   const fissionBreakdown = useMemo(() => {
     if (!isFissionRoute) return null
     if (!baseAmountRaw || baseAmountRaw <= 0n) return null
@@ -1707,7 +1402,6 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
 
   const treasuryAddress = typeof treasury === "string" ? treasury : undefined
   const oracleAddressText = typeof oracleAddress === "string" ? oracleAddress : undefined
-  const priceFeedIdText = typeof reactorPriceId === "string" ? reactorPriceId : undefined
   const baseTokenAddress = typeof baseToken === "string" ? baseToken : undefined
 
   const reserveBalanceText =
@@ -1786,8 +1480,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
       items: [
         { label: "Vault Address", value: reactorAddress ?? "—", monospace: true },
         { label: "Treasury", value: treasuryAddress ?? "—", monospace: true },
-        { label: "Oracle (Pyth)", value: oracleAddressText ?? "—", monospace: true },
-        { label: "Price Feed ID", value: priceFeedIdText ?? "—", monospace: true },
+        { label: "Oracle", value: oracleAddressText ?? "—", monospace: true },
         { label: "Base Token", value: baseTokenAddress ?? "—", monospace: true },
       ],
     })
@@ -1817,7 +1510,6 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
     reactorAddress,
     treasuryAddress,
     oracleAddressText,
-    priceFeedIdText,
     baseTokenAddress,
     reserveBalanceText,
     reserveRatioText,
@@ -1939,43 +1631,6 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                   )}
                 </div>
               </div>
-
-              {shouldShowOracleTip && (
-                <div className="rounded-none border border-dashed border-white/30 bg-white/5 px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsOracleTipExpanded((prev) => !prev)}
-                    className="flex w-full items-center justify-between text-xs uppercase tracking-[0.25em] text-muted-foreground"
-                  >
-                    <span className="flex items-center gap-2 text-foreground">
-                      <Zap className="h-4 w-4 text-primary" />
-                      Oracle Tip
-                    </span>
-                    <ChevronDown
-                      className={`h-4 w-4 text-foreground transition-transform ${
-                        isOracleTipExpanded ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                  {isOracleTipExpanded && (
-                    <div className="mt-3 space-y-2">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.0001"
-                        placeholder="0.00"
-                        value={oracleTip}
-                        onChange={(event) => setOracleTip(event.target.value)}
-                        className="font-mono text-sm bg-background/60"
-                      />
-                      <p className="text-[11px] text-muted-foreground">
-                        Provide an ETH tip to push a fresh Pyth price update before executing this
-                        conversion.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
 
               <div className="flex justify-center">
                 <Button
