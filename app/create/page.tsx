@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi"
+import { useEffect, useRef, useState } from "react"
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, useDeployContract, usePublicClient } from "wagmi"
 import { parseUnits } from "viem"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,8 +9,12 @@ import { Label } from "@/components/ui/label"
 import { Wallet, CheckCircle, Zap } from "lucide-react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory"
+import {
+  ChainlinkToOracleAdapterABI,
+  ChainlinkToOracleAdapterBytecode,
+} from "@/utils/abi/ChainlinkToOracleAdapter"
 import { StableCoinFactories } from "@/utils/addresses"
-import { toast } from "sonner"
+import { Toaster, toast } from "sonner"
 import Shuffle from "@/components/Shuffle"
 import TargetCursor from "@/components/TargetCursor"
 import TokenSelector from "@/components/TokenSelector"
@@ -29,9 +33,38 @@ interface ReactorConfig {
   criticalReserveRatio: string
 }
 
+type OracleProvider = "existing" | "chainlink"
+
+const CHAINLINK_SUPPORTED_CHAIN_IDS = new Set<number>([11155111])
+
+const ChainlinkFeedABI = [
+  {
+    inputs: [],
+    name: "decimals",
+    outputs: [{ type: "uint8" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "latestRoundData",
+    outputs: [
+      { type: "uint80" },
+      { type: "int256" },
+      { type: "uint256" },
+      { type: "uint256" },
+      { type: "uint80" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const
+
 export default function CreatePage() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
+  const publicClient = usePublicClient()
+  const { deployContractAsync, isPending: isAdapterDeploying } = useDeployContract()
   const [config, setConfig] = useState<ReactorConfig>({
     vaultName: "",
     baseAssetName: "",
@@ -46,6 +79,14 @@ export default function CreatePage() {
     criticalReserveRatio: "400",
   })
 
+  const [oracleProvider, setOracleProvider] = useState<OracleProvider>("existing")
+  const [chainlinkFeed, setChainlinkFeed] = useState("")
+  const [isAdapterConfirming, setIsAdapterConfirming] = useState(false)
+  const latestChainIdRef = useRef(chainId)
+  const adapterDeploymentInProgressRef = useRef(false)
+  const isChainlinkSupported = CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)
+  const isAdapterDeploymentBusy = isAdapterDeploying || isAdapterConfirming
+
   // Contract interaction
   const { data: hash, isPending: isDeploying, writeContractAsync } = useWriteContract()
 
@@ -58,6 +99,16 @@ export default function CreatePage() {
   }
 
   const [hasSetDefaultTreasury, setHasSetDefaultTreasury] = useState(false)
+
+  useEffect(() => {
+    latestChainIdRef.current = chainId
+    setChainlinkFeed("")
+    setConfig((prev) => ({ ...prev, oracleAddress: "" }))
+
+    if (!CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)) {
+      setOracleProvider("existing")
+    }
+  }, [chainId])
 
   useEffect(() => {
     if (isConnected && address && config.treasury === "" && !hasSetDefaultTreasury) {
@@ -80,6 +131,107 @@ export default function CreatePage() {
            config.criticalReserveRatio
   }
 
+  const handleDeployChainlinkAdapter = async () => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first")
+      return
+    }
+
+    if (!publicClient) {
+      toast.error("Network client is not available")
+      return
+    }
+
+    if (!isChainlinkSupported) {
+      toast.error("Chainlink is not supported on this network")
+      return
+    }
+
+    const factoryAddress = StableCoinFactories[chainId as keyof typeof StableCoinFactories]
+    if (!factoryAddress) {
+      toast.error("Current chain is not supported")
+      return
+    }
+
+    const feedAddress = chainlinkFeed.trim()
+    if (!/^0x[0-9a-fA-F]{40}$/.test(feedAddress)) {
+      toast.error("Chainlink feed must be a valid 20-byte address")
+      return
+    }
+
+    if (adapterDeploymentInProgressRef.current) {
+      return
+    }
+
+    const deploymentChainId = chainId
+    adapterDeploymentInProgressRef.current = true
+    setIsAdapterConfirming(true)
+
+    try {
+      try {
+        // decimals() also confirms that the address exposes the expected feed interface.
+        const [, roundData] = await Promise.all([
+          publicClient.readContract({
+            address: feedAddress as `0x${string}`,
+            abi: ChainlinkFeedABI,
+            functionName: "decimals",
+          }),
+          publicClient.readContract({
+            address: feedAddress as `0x${string}`,
+            abi: ChainlinkFeedABI,
+            functionName: "latestRoundData",
+          }),
+        ])
+
+        if (roundData[1] <= BigInt(0)) {
+          toast.error("Chainlink feed returned an invalid price")
+          return
+        }
+      } catch (error) {
+        console.error("Chainlink feed validation error:", error)
+        toast.error("Unable to validate Chainlink feed. Check the address or network connection.")
+        return
+      }
+
+      if (latestChainIdRef.current !== deploymentChainId) {
+        toast.error("Network changed during deployment. Please try again.")
+        return
+      }
+
+      const hash = await deployContractAsync({
+        abi: ChainlinkToOracleAdapterABI,
+        bytecode: ChainlinkToOracleAdapterBytecode,
+        args: [feedAddress as `0x${string}`],
+      })
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+      if (latestChainIdRef.current !== deploymentChainId) {
+        toast.error("Network changed during deployment. The adapter was not applied.")
+        return
+      }
+
+      if (receipt.status !== "success") {
+        toast.error("Adapter deployment transaction reverted")
+        return
+      }
+
+      if (!receipt.contractAddress) {
+        toast.error("Adapter deployment did not return an address")
+        return
+      }
+
+      updateConfig("oracleAddress", receipt.contractAddress)
+      toast.success("Chainlink adapter deployed")
+    } catch (error) {
+      console.error("Chainlink adapter deployment error:", error)
+      toast.error("Failed to deploy Chainlink adapter")
+    } finally {
+      adapterDeploymentInProgressRef.current = false
+      setIsAdapterConfirming(false)
+    }
+  }
+
   const handleDeploy = async () => {
     if (!isConnected) {
       toast.error("Please connect your wallet first")
@@ -99,7 +251,7 @@ export default function CreatePage() {
     const factoryAddress = StableCoinFactories[chainId as keyof typeof StableCoinFactories]
 
     if (!factoryAddress) {
-      toast.error(`Chain ID ${chainId} is not supported. Please switch to Citrea Testnet, Rootstock Testnet, or Scroll Sepolia.`)
+      toast.error(`Chain ID ${chainId} is not supported. Please switch to Ethereum Sepolia, Scroll Sepolia, Citrea Testnet, or Rootstock Testnet.`)
       return
     }
 
@@ -214,6 +366,8 @@ export default function CreatePage() {
       className="min-h-screen bg-[#050608] text-white"
       style={{ fontFamily: "'Space Mono', 'Syne', 'Orbitron', 'Courier New', monospace", fontWeight: "500" }}
     >
+      <Toaster position="bottom-right" richColors />
+
       {/* Target Cursor Effect */}
       <TargetCursor 
         spinDuration={2}
@@ -309,16 +463,103 @@ export default function CreatePage() {
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
-                    Oracle Adapter Address
+                    Oracle Provider
                   </Label>
-                  <Input
-                    placeholder="0x..."
-                    value={config.oracleAddress}
-                    onChange={(e) => updateConfig("oracleAddress", e.target.value)}
-                    className={`${inputClasses} font-mono`}
-                  />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      aria-pressed={oracleProvider === "existing"}
+                      disabled={isAdapterDeploymentBusy}
+                      onClick={() => {
+                        if (oracleProvider !== "existing") {
+                          updateConfig("oracleAddress", "")
+                        }
+                        setOracleProvider("existing")
+                      }}
+                      className={`h-12 border text-[11px] uppercase tracking-[0.25em] transition-colors ${
+                        oracleProvider === "existing"
+                          ? "border-[#8FF7FF] bg-[#8FF7FF]/10 text-[#8FF7FF]"
+                          : "border-white/25 bg-[#0B0E15] text-white/60 hover:border-white/50"
+                      }`}
+                    >
+                      Existing Adapter
+                    </button>
+
+                    <button
+                      type="button"
+                      aria-pressed={oracleProvider === "chainlink"}
+                      disabled={!isChainlinkSupported || isAdapterDeploymentBusy}
+                      onClick={() => {
+                        if (oracleProvider !== "chainlink") {
+                          updateConfig("oracleAddress", "")
+                        }
+                        setOracleProvider("chainlink")
+                      }}
+                      className={`h-12 border text-[11px] uppercase tracking-[0.25em] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                        oracleProvider === "chainlink"
+                          ? "border-[#8FF7FF] bg-[#8FF7FF]/10 text-[#8FF7FF]"
+                          : "border-white/25 bg-[#0B0E15] text-white/60 hover:border-white/50"
+                      }`}
+                    >
+                      Chainlink
+                    </button>
+                  </div>
+
+                  {!isChainlinkSupported && (
+                    <p className="text-[11px] text-white/45">
+                      Chainlink feeds are not configured for this network.
+                    </p>
+                  )}
+
+                  {oracleProvider === "existing" ? (
+                    <div className="space-y-2">
+                      <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                        Oracle Adapter Address
+                      </Label>
+                      <Input
+                        placeholder="0x..."
+                        value={config.oracleAddress}
+                        onChange={(e) => updateConfig("oracleAddress", e.target.value)}
+                        className={`${inputClasses} font-mono`}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                        Chainlink Feed Address
+                      </Label>
+                      <Input
+                        placeholder="0x..."
+                        disabled={isAdapterDeploymentBusy}
+                        value={chainlinkFeed}
+                        onChange={(e) => {
+                          setChainlinkFeed(e.target.value)
+                          updateConfig("oracleAddress", "")
+                        }}
+                        className={`${inputClasses} font-mono`}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={handleDeployChainlinkAdapter}
+                        disabled={isAdapterDeploymentBusy}
+                        className="h-12 w-full border border-white/30 bg-white/5 text-[11px] uppercase tracking-[0.25em] text-white/80 transition-colors hover:border-[#8FF7FF] hover:text-[#8FF7FF] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isAdapterDeploymentBusy
+                          ? "Deploying Adapter..."
+                          : "Deploy Chainlink Adapter"}
+                      </button>
+
+                      {config.oracleAddress && (
+                        <p className="break-all font-mono text-[11px] text-[#8FF7FF]">
+                          Adapter: {config.oracleAddress}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid gap-6">

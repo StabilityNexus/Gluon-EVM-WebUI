@@ -1,5 +1,5 @@
 // src/utils/config.ts
-import { scrollSepolia } from 'wagmi/chains'
+import { scrollSepolia, sepolia } from 'wagmi/chains'
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { citreaTestnet } from '@/components/CitreaTestnet'
 import { rootstockTestnet } from '@/components/RootstockTestnet'
@@ -15,6 +15,7 @@ export const config = getDefaultConfig({
   appName: 'StableCoin',
   projectId: projectId,
   chains: [
+    sepolia,
     scrollSepolia,
     citreaTestnet,
     rootstockTestnet,
