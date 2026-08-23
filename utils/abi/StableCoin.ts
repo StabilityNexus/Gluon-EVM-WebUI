@@ -33,13 +33,8 @@ export const StableCoinReactorABI = [
       },
       {
         "internalType": "address",
-        "name": "pythOracleParam",
+        "name": "oracleParam",
         "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "priceIdParam",
-        "type": "bytes32"
       },
       {
         "internalType": "string",
@@ -196,31 +191,6 @@ export const StableCoinReactorABI = [
     "inputs": [
       {
         "indexed": true,
-        "internalType": "bytes32",
-        "name": "priceId",
-        "type": "bytes32"
-      },
-      {
-        "indexed": false,
-        "internalType": "int64",
-        "name": "price",
-        "type": "int64"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
-      }
-    ],
-    "name": "PriceUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
         "internalType": "address",
         "name": "from",
         "type": "address"
@@ -304,6 +274,19 @@ export const StableCoinReactorABI = [
   },
   {
     "inputs": [],
+    "name": "ORACLE",
+    "outputs": [
+      {
+        "internalType": "contract IOracle",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "BASE_TOKEN",
     "outputs": [
       {
@@ -356,19 +339,6 @@ export const StableCoinReactorABI = [
   },
   {
     "inputs": [],
-    "name": "MAXIMUM_AGE",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "NEUTRON_TOKEN",
     "outputs": [
       {
@@ -395,36 +365,10 @@ export const StableCoinReactorABI = [
   },
   {
     "inputs": [],
-    "name": "PRICE_ID",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "PROTON_TOKEN",
     "outputs": [
       {
         "internalType": "contract Tokeon",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "PYTH_ORACLE",
-    "outputs": [
-      {
-        "internalType": "contract IPyth",
         "name": "",
         "type": "address"
       }
@@ -692,19 +636,6 @@ export const StableCoinReactorABI = [
   {
     "inputs": [
       {
-        "internalType": "bytes[]",
-        "name": "updateData",
-        "type": "bytes[]"
-      }
-    ],
-    "name": "updatePriceFeeds",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "amountIn",
         "type": "uint256"
@@ -713,16 +644,11 @@ export const StableCoinReactorABI = [
         "internalType": "address",
         "name": "to",
         "type": "address"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "updateData",
-        "type": "bytes[]"
       }
     ],
     "name": "fission",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -754,11 +680,6 @@ export const StableCoinReactorABI = [
         "internalType": "address",
         "name": "to",
         "type": "address"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "updateData",
-        "type": "bytes[]"
       }
     ],
     "name": "transmuteProtonToNeutron",
@@ -774,7 +695,7 @@ export const StableCoinReactorABI = [
         "type": "uint256"
       }
     ],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -788,11 +709,6 @@ export const StableCoinReactorABI = [
         "internalType": "address",
         "name": "to",
         "type": "address"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "updateData",
-        "type": "bytes[]"
       }
     ],
     "name": "transmuteNeutronToProton",
@@ -808,7 +724,7 @@ export const StableCoinReactorABI = [
         "type": "uint256"
       }
     ],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ] as const
