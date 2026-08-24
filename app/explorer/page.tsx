@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useReadContract, useChainId } from "wagmi"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -153,24 +153,11 @@ export default function ExplorerPage() {
   })
 
   // Get reactor count for UI
-  const { data: reactorCount, error: countError } = useReadContract({
+  const { error: countError } = useReadContract({
     address: factoryAddress,
     abi: StableCoinFactoryABI,
     functionName: 'getDeployedReactorsCount',
   })
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Explorer Debug:', {
-      chainId,
-      factoryAddress,
-      deployedReactors,
-      reactorCount: reactorCount?.toString(),
-      isLoadingReactors,
-      reactorsError: reactorsError?.message,
-      countError: countError?.message
-    })
-  }, [chainId, factoryAddress, deployedReactors, reactorCount, isLoadingReactors, reactorsError, countError])
 
   // Filter reactors by search term (basic filtering for addresses)
   const filteredReactorAddresses = deployedReactors?.filter((address: string) =>
@@ -188,6 +175,7 @@ export default function ExplorerPage() {
             Chain ID {chainId} is not supported. Please switch to one of the supported networks:
           </p>
           <div className="space-y-2 text-sm">
+            <div>• Ethereum Sepolia (Chain ID: 11155111)</div>
             <div>• Citrea Testnet (Chain ID: 5115)</div>
             <div>• Rootstock Testnet (Chain ID: 31)</div>
             <div>• Scroll Sepolia (Chain ID: 534351)</div>
@@ -234,7 +222,7 @@ export default function ExplorerPage() {
             <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4 opacity-50" />
             <p className="text-red-400 mb-2">Failed to connect to factory contract</p>
             <p className="text-sm text-red-300 font-mono mb-4">
-              Factory: {StableCoinFactories[534351]}
+              Factory: {factoryAddress}
             </p>
             <p className="text-xs text-red-300">
               {reactorsError?.message || countError?.message}
