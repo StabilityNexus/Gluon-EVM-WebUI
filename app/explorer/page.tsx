@@ -9,6 +9,7 @@ import { Search, ExternalLink, Activity, Shield, AlertTriangle, Rocket } from "l
 import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory"
 import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin"
 import { StableCoinFactories } from "@/utils/addresses"
+import { GLUON_NETWORKS } from "@/utils/networks"
 import Shuffle from "@/components/Shuffle"
 import TargetCursor from "@/components/TargetCursor"
 import Link from "next/link"
@@ -175,10 +176,11 @@ export default function ExplorerPage() {
             Chain ID {chainId} is not supported. Please switch to one of the supported networks:
           </p>
           <div className="space-y-2 text-sm">
-            <div>• Ethereum Sepolia (Chain ID: 11155111)</div>
-            <div>• Citrea Testnet (Chain ID: 5115)</div>
-            <div>• Rootstock Testnet (Chain ID: 31)</div>
-            <div>• Scroll Sepolia (Chain ID: 534351)</div>
+            {GLUON_NETWORKS.map(({ chain, displayName }) => (
+              <div key={chain.id}>
+                • {displayName} (Chain ID: {chain.id})
+              </div>
+            ))}
           </div>
         </div>
       </div>
