@@ -19,6 +19,11 @@ import { Toaster, toast } from "sonner"
 import Shuffle from "@/components/Shuffle"
 import TargetCursor from "@/components/TargetCursor"
 import TokenSelector from "@/components/TokenSelector"
+import OraclePreflightPanel from "@/components/OraclePreflightPanel"
+import {
+  runOraclePreflight,
+  type OraclePreflightResult,
+} from "@/utils/oraclePreflight"
 
 interface ReactorConfig {
   vaultName: string
@@ -83,8 +88,13 @@ export default function CreatePage() {
   const [oracleProvider, setOracleProvider] = useState<OracleProvider>("existing")
   const [chainlinkFeed, setChainlinkFeed] = useState("")
   const [isAdapterConfirming, setIsAdapterConfirming] = useState(false)
+  const [oraclePreflight, setOraclePreflight] =
+    useState<OraclePreflightResult | null>(null)
+  const [preflightError, setPreflightError] = useState<string | null>(null)
+  const [isOracleChecking, setIsOracleChecking] = useState(false)
   const latestChainIdRef = useRef(chainId)
   const adapterDeploymentInProgressRef = useRef(false)
+  const preflightRequestRef = useRef(0)
   const isChainlinkSupported = CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)
   const isAdapterDeploymentBusy = isAdapterDeploying || isAdapterConfirming
 
@@ -99,10 +109,88 @@ export default function CreatePage() {
     setConfig((prev) => ({ ...prev, [field]: value }))
   }
 
+  const invalidateOraclePreflight = () => {
+    preflightRequestRef.current += 1
+    setOraclePreflight(null)
+    setPreflightError(null)
+    setIsOracleChecking(false)
+  }
+
+  const setOracleAddress = (value: string) => {
+    invalidateOraclePreflight()
+    updateConfig("oracleAddress", value)
+  }
+
+  const checkOracleAddress = async (
+    oracleAddress: string
+  ): Promise<OraclePreflightResult | null> => {
+    if (!publicClient) {
+      invalidateOraclePreflight()
+      setPreflightError("Network client is not available.")
+      return null
+    }
+
+    const checkedChainId = chainId
+    const requestId = preflightRequestRef.current + 1
+
+    preflightRequestRef.current = requestId
+    setIsOracleChecking(true)
+    setOraclePreflight(null)
+    setPreflightError(null)
+
+    try {
+      const result = await runOraclePreflight(
+        publicClient,
+        oracleAddress,
+        checkedChainId
+      )
+
+      if (
+        preflightRequestRef.current !== requestId ||
+        latestChainIdRef.current !== checkedChainId
+      ) {
+        return null
+      }
+
+      setOraclePreflight(result)
+      return result
+    } catch (error) {
+      if (
+        preflightRequestRef.current !== requestId ||
+        latestChainIdRef.current !== checkedChainId
+      ) {
+        return null
+      }
+
+      console.error("Oracle preflight failed:", error)
+      setPreflightError(
+        "Unable to reach the current network. Check your connection and try again."
+      )
+      return null
+    } finally {
+      if (preflightRequestRef.current === requestId) {
+        setIsOracleChecking(false)
+      }
+    }
+  }
+
+  const isOraclePreflightCurrent =
+    oraclePreflight !== null &&
+    oraclePreflight.chainId === chainId &&
+    oraclePreflight.address.toLowerCase() ===
+      config.oracleAddress.trim().toLowerCase()
+
+  const isOracleReady =
+    isOraclePreflightCurrent && oraclePreflight.status !== "blocked"
+
   const [hasSetDefaultTreasury, setHasSetDefaultTreasury] = useState(false)
 
   useEffect(() => {
     latestChainIdRef.current = chainId
+    preflightRequestRef.current += 1
+    setOraclePreflight(null)
+    setPreflightError(null)
+    setIsOracleChecking(false)
     setChainlinkFeed("")
     setConfig((prev) => ({ ...prev, oracleAddress: "" }))
 
@@ -222,8 +310,25 @@ export default function CreatePage() {
         return
       }
 
-      updateConfig("oracleAddress", receipt.contractAddress)
-      toast.success("Chainlink adapter deployed")
+      setOracleAddress(receipt.contractAddress)
+
+      const preflightResult = await checkOracleAddress(
+        receipt.contractAddress
+      )
+
+      if (!preflightResult) {
+        toast.error(
+          "Adapter deployed, but the oracle preflight could not be completed."
+        )
+        return
+      }
+
+      if (preflightResult.status === "blocked") {
+        toast.error("Adapter deployed, but it failed the IOracle preflight.")
+        return
+      }
+
+      toast.success("Chainlink adapter deployed and compatible")
     } catch (error) {
       console.error("Chainlink adapter deployment error:", error)
       toast.error("Failed to deploy Chainlink adapter")
@@ -249,7 +354,9 @@ export default function CreatePage() {
       return
     }
 
-    const factoryAddress = StableCoinFactories[chainId as keyof typeof StableCoinFactories]
+    const deploymentChainId = chainId
+    const factoryAddress =
+      StableCoinFactories[deploymentChainId as keyof typeof StableCoinFactories]
 
     if (!factoryAddress) {
       toast.error(`Chain ID ${chainId} is not supported. Please switch to ${GLUON_NETWORKS.map(({ displayName }) => displayName).join(", ")}.`)
@@ -328,11 +435,29 @@ export default function CreatePage() {
       return
     }
 
+    const deploymentPreflight = await checkOracleAddress(oracleAddress)
+
+    if (!deploymentPreflight) {
+      toast.error("Oracle preflight could not be completed.")
+      return
+    }
+
+    if (deploymentPreflight.status === "blocked") {
+      toast.error("Oracle is not compatible with the current IOracle interface.")
+      return
+    }
+
+    if (latestChainIdRef.current !== deploymentChainId) {
+      toast.error("Network changed during preflight. Please try again.")
+      return
+    }
+
     const account = address as `0x${string}`
 
     try {
       await writeContractAsync({
         account,
+        chainId: deploymentChainId,
         address: factoryAddress,
         abi: StableCoinFactoryABI,
         functionName: 'deployReactor',
@@ -476,7 +601,7 @@ export default function CreatePage() {
                       disabled={isAdapterDeploymentBusy}
                       onClick={() => {
                         if (oracleProvider !== "existing") {
-                          updateConfig("oracleAddress", "")
+                          setOracleAddress("")
                         }
                         setOracleProvider("existing")
                       }}
@@ -495,7 +620,7 @@ export default function CreatePage() {
                       disabled={!isChainlinkSupported || isAdapterDeploymentBusy}
                       onClick={() => {
                         if (oracleProvider !== "chainlink") {
-                          updateConfig("oracleAddress", "")
+                          setOracleAddress("")
                         }
                         setOracleProvider("chainlink")
                       }}
@@ -523,9 +648,22 @@ export default function CreatePage() {
                       <Input
                         placeholder="0x..."
                         value={config.oracleAddress}
-                        onChange={(e) => updateConfig("oracleAddress", e.target.value)}
+                        onChange={(e) => setOracleAddress(e.target.value)}
                         className={`${inputClasses} font-mono`}
                       />
+
+                      {config.oracleAddress.trim() && (
+                        <OraclePreflightPanel
+                          result={
+                            isOraclePreflightCurrent ? oraclePreflight : null
+                          }
+                          isChecking={isOracleChecking}
+                          error={preflightError}
+                          onCheck={() => {
+                            void checkOracleAddress(config.oracleAddress)
+                          }}
+                        />
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -538,7 +676,7 @@ export default function CreatePage() {
                         value={chainlinkFeed}
                         onChange={(e) => {
                           setChainlinkFeed(e.target.value)
-                          updateConfig("oracleAddress", "")
+                          setOracleAddress("")
                         }}
                         className={`${inputClasses} font-mono`}
                       />
@@ -555,9 +693,22 @@ export default function CreatePage() {
                       </button>
 
                       {config.oracleAddress && (
-                        <p className="break-all font-mono text-[11px] text-[#8FF7FF]">
-                          Adapter: {config.oracleAddress}
-                        </p>
+                        <>
+                          <p className="break-all font-mono text-[11px] text-[#8FF7FF]">
+                            Adapter: {config.oracleAddress}
+                          </p>
+
+                          <OraclePreflightPanel
+                            result={
+                              isOraclePreflightCurrent ? oraclePreflight : null
+                            }
+                            isChecking={isOracleChecking}
+                            error={preflightError}
+                            onCheck={() => {
+                              void checkOracleAddress(config.oracleAddress)
+                            }}
+                          />
+                        </>
                       )}
                     </div>
                   )}
@@ -679,7 +830,13 @@ export default function CreatePage() {
                         size="lg"
                         className="w-full h-14 rounded-none border border-white/60 bg-white text-black hover:bg-[#C6FFDD] hover:text-[#050608] transition-colors duration-200 uppercase tracking-[0.3em] text-xs cursor-pointer"
                         onClick={handleDeploy}
-                        disabled={!isFormValid() || isDeploying || isConfirming}
+                        disabled={
+                          !isFormValid() ||
+                          !isOracleReady ||
+                          isOracleChecking ||
+                          isDeploying ||
+                          isConfirming
+                        }
                       >
                         {isDeploying ? (
                           <>
