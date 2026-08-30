@@ -14,6 +14,7 @@ import {
   ChainlinkToOracleAdapterBytecode,
 } from "@/utils/abi/ChainlinkToOracleAdapter"
 import { StableCoinFactories } from "@/utils/addresses"
+import { GLUON_NETWORKS } from "@/utils/networks"
 import { Toaster, toast } from "sonner"
 import Shuffle from "@/components/Shuffle"
 import TargetCursor from "@/components/TargetCursor"
@@ -251,7 +252,7 @@ export default function CreatePage() {
     const factoryAddress = StableCoinFactories[chainId as keyof typeof StableCoinFactories]
 
     if (!factoryAddress) {
-      toast.error(`Chain ID ${chainId} is not supported. Please switch to Ethereum Sepolia, Scroll Sepolia, Citrea Testnet, or Rootstock Testnet.`)
+      toast.error(`Chain ID ${chainId} is not supported. Please switch to ${GLUON_NETWORKS.map(({ displayName }) => displayName).join(", ")}.`)
       return
     }
 

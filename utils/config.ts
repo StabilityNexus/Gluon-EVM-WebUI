@@ -1,8 +1,6 @@
 // src/utils/config.ts
-import { scrollSepolia, sepolia } from 'wagmi/chains'
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { citreaTestnet } from '@/components/CitreaTestnet'
-import { rootstockTestnet } from '@/components/RootstockTestnet'
+import { GLUON_CHAINS } from '@/utils/networks'
 
   
 // Sanitize the project ID to avoid stray quotes/semicolons that break the WalletConnect API URL
@@ -14,11 +12,6 @@ const projectId = walletConnectProjectId || 'fallback-project-id-for-development
 export const config = getDefaultConfig({
   appName: 'StableCoin',
   projectId: projectId,
-  chains: [
-    sepolia,
-    scrollSepolia,
-    citreaTestnet,
-    rootstockTestnet,
-  ],
+  chains: GLUON_CHAINS,
   ssr: true,
 })
