@@ -142,21 +142,43 @@
     linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
 }
 
-/* Custom dashed borders with bigger dashes and proper spacing */
+/* Reactor card border follows the active theme */
 .border-big-dashed {
-  border: 3px dashed rgba(255, 255, 255, 0.5);
-  transition: all 0.3s ease;
+  border: 2px dashed rgba(0, 0, 0, 0.22);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .border-big-dashed:hover {
-  border-color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.42);
 }
-/* RainbowKit button styling - make wallet buttons smaller */
-[data-rk] button {
+
+.dark .border-big-dashed {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.dark .border-big-dashed:hover {
+  border-color: rgba(255, 255, 255, 0.60);
+}
+/* Only the navbar wallet control is compact.
+   Do not resize every RainbowKit modal button. */
+.wallet-nav-compact button {
   font-size: 0.75rem !important;
   padding: 0.375rem 0.75rem !important;
   min-height: auto !important;
-  height: auto !important;
+}
+
+/* Keep RainbowKit modal close controls clearly visible. */
+[data-rk] button[aria-label*="close" i] {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  padding: 8px !important;
+}
+
+[data-rk] button[aria-label*="close" i] svg {
+  width: 16px !important;
+  height: 16px !important;
 }
 
 /* FlowButton in navbar - ensure proper size */

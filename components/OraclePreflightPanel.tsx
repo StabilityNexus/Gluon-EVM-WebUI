@@ -67,8 +67,8 @@ function formatAge(seconds?: bigint) {
 
 function StatusLabel({ status }: { status: PanelStatus }) {
   const styles: Record<PanelStatus, string> = {
-    required: "text-white/45",
-    checking: "text-white/60",
+    required: "text-muted-foreground/80",
+    checking: "text-muted-foreground",
     compatible: "text-[#34D399]",
     warning: "text-[#FFE66D]",
     blocked: "text-[#FF7A7A]",
@@ -104,10 +104,10 @@ function DataRow({
 
   return (
     <div className="flex items-baseline justify-between gap-6 py-2.5">
-      <span className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-white/35">
+      <span className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">
         {label}
       </span>
-      <span className="text-right font-mono text-[12px] text-white/80">
+      <span className="text-right font-mono text-[12px] text-foreground/80">
         {value}
       </span>
     </div>
@@ -128,16 +128,16 @@ export default function OraclePreflightPanel({
 
   if (!result && !isChecking && !error) {
     return (
-      <div className="border border-white/15 bg-black/20">
+      <div className="border border-border/70 bg-muted/25 dark:bg-black/20">
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-[10px] uppercase tracking-[0.28em] text-white/55">
+          <span className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
             Oracle Preflight
           </span>
           <StatusLabel status="required" />
         </div>
 
-        <div className="border-t border-white/10 px-4 py-4">
-          <p className="mb-4 text-[11px] leading-5 text-white/45">
+        <div className="border-t border-border/60 px-4 py-4">
+          <p className="mb-4 text-[11px] leading-5 text-muted-foreground/80">
             Check that this oracle is compatible with Gluon before deploying the
             Reactor.
           </p>
@@ -145,7 +145,7 @@ export default function OraclePreflightPanel({
           <button
             type="button"
             onClick={onCheck}
-            className="border border-white/25 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/65 transition-colors hover:border-[#8FF7FF]/60 hover:text-[#8FF7FF]"
+            className="border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/70 transition-colors hover:border-[#8FF7FF]/60 hover:text-[#8FF7FF]"
           >
             Run Preflight
           </button>
@@ -156,16 +156,16 @@ export default function OraclePreflightPanel({
 
   if (isChecking) {
     return (
-      <div className="border border-white/15 bg-black/20">
+      <div className="border border-border/70 bg-muted/25 dark:bg-black/20">
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-[10px] uppercase tracking-[0.28em] text-white/55">
+          <span className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
             Oracle Preflight
           </span>
           <StatusLabel status="checking" />
         </div>
 
-        <div className="border-t border-white/10 px-4 py-4">
-          <p className="font-mono text-[11px] text-white/45">
+        <div className="border-t border-border/60 px-4 py-4">
+          <p className="font-mono text-[11px] text-muted-foreground/80">
             Reading oracle contract...
           </p>
         </div>
@@ -177,7 +177,7 @@ export default function OraclePreflightPanel({
     return (
       <div className="border border-[#FFE66D]/25 bg-[#FFE66D]/[0.02]">
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-[10px] uppercase tracking-[0.28em] text-white/55">
+          <span className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
             Oracle Preflight
           </span>
           <StatusLabel status="unavailable" />
@@ -189,7 +189,7 @@ export default function OraclePreflightPanel({
           <button
             type="button"
             onClick={onCheck}
-            className="mt-4 border border-white/20 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/45 hover:text-white"
+            className="mt-4 border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
           >
             Retry
           </button>
@@ -228,30 +228,30 @@ export default function OraclePreflightPanel({
       className={`border ${
         result.status === "compatible"
           ? "bg-[#34D399]/[0.025]"
-          : "bg-black/20"
+          : "bg-muted/25 dark:bg-black/20"
       } ${borderClass}`}
     >
       <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-[10px] uppercase tracking-[0.28em] text-white/55">
+        <span className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
           Oracle Preflight
         </span>
         <StatusLabel status={result.status} />
       </div>
 
-      <div className="border-t border-white/10 px-4 py-4">
+      <div className="border-t border-border/60 px-4 py-4">
         {result.description && (
           <div className="mb-3">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-white/30">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
               Oracle
             </div>
-            <div className="mt-1 text-sm font-semibold text-white/90">
+            <div className="mt-1 text-sm font-semibold text-foreground">
               {result.description}
             </div>
           </div>
         )}
 
         {(value || range || age) && (
-          <div className="divide-y divide-white/[0.07]">
+          <div className="divide-y divide-border/70">
             <DataRow label="Value" value={value} />
             <DataRow label="Range" value={range} />
             <DataRow label="Updated" value={age} />
@@ -285,7 +285,7 @@ export default function OraclePreflightPanel({
         )}
 
         {result.status === "compatible" && (
-          <p className="mt-3 text-[11px] text-white/35">
+          <p className="mt-3 text-[11px] text-muted-foreground/70">
             Compatible with the current Gluon IOracle interface.
           </p>
         )}
@@ -294,7 +294,7 @@ export default function OraclePreflightPanel({
           <button
             type="button"
             onClick={onCheck}
-            className="mt-4 border border-white/20 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/45 hover:text-white"
+            className="mt-4 border border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
           >
             Check Again
           </button>

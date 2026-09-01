@@ -14,7 +14,7 @@ import { useTheme } from 'next-themes'
 const queryClient = new QueryClient()
 
 function RainbowKitThemeProvider({ children }: { children: ReactNode }) {
-  const { theme } = useTheme()
+  const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -23,7 +23,7 @@ function RainbowKitThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <RainbowKitProvider
-      theme={mounted && theme === 'dark' ? darkTheme({
+      theme={mounted && resolvedTheme === 'dark' ? darkTheme({
         accentColor: 'hsl(var(--primary))',
         accentColorForeground: 'white',
         borderRadius: 'medium',

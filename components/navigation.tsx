@@ -137,22 +137,16 @@ export default function Navigation() {
           marginRight: isScrolled ? '16px' : '8px',
           paddingLeft: isScrolled ? '24px' : '16px',
           paddingRight: isScrolled ? '24px' : '16px',
-          backgroundColor: isScrolled 
-            ? (isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)')
-            : 'rgba(0, 0, 0, 0)',
-          borderRadius: isScrolled ? '16px' : '0px',
-          border: isScrolled 
-            ? (isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.18)')
-            : '1px solid rgba(255, 255, 255, 0)',
-          boxShadow: isScrolled 
-            ? (isDark ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)' : '0 8px 32px 0 rgba(0, 0, 0, 0.1)')
-            : 'none',
+          backgroundColor: 'rgba(0, 0, 0, 0)',
+          borderRadius: '0px',
+          border: '1px solid rgba(255, 255, 255, 0)',
+          boxShadow: 'none',
           marginTop: '8px',
           y: 0,
         }}
         style={{
-          backdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
-          WebkitBackdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
         }}
         transition={{
           duration: 0.5,
@@ -206,9 +200,33 @@ export default function Navigation() {
           </motion.div>
 
          
-          <div className="absolute left-1/2 transform -translate-x-1/2">
+          <div
+            className="absolute left-1/2 transform -translate-x-1/2 px-2 py-1.5 transition-all duration-500"
+            style={{
+              backgroundColor: isScrolled
+                ? (isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)')
+                : 'rgba(0, 0, 0, 0)',
+              borderRadius: isScrolled ? '9999px' : '0px',
+              border: isScrolled
+                ? (isDark
+                    ? '1px solid rgba(255, 255, 255, 0.18)'
+                    : '1px solid rgba(0, 0, 0, 0.18)')
+                : '1px solid rgba(255, 255, 255, 0)',
+              boxShadow: isScrolled
+                ? (isDark
+                    ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+                    : '0 8px 32px 0 rgba(0, 0, 0, 0.1)')
+                : 'none',
+              backdropFilter: isScrolled
+                ? 'blur(60px) saturate(180%)'
+                : 'none',
+              WebkitBackdropFilter: isScrolled
+                ? 'blur(60px) saturate(180%)'
+                : 'none',
+            }}
+          >
             <motion.nav
-              className="flex items-center gap-8"
+              className="flex items-center gap-1"
               initial={{ opacity: 0, scale: 0.97, y: -2 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ 
@@ -217,7 +235,12 @@ export default function Navigation() {
               }}
             >
               {navItems.map((item) => (
-                <FlowButton key={item.href} text={item.label} href={item.href} />
+                <FlowButton
+                  key={item.href}
+                  text={item.label}
+                  href={item.href}
+                  active={pathname === item.href}
+                />
               ))}
             </motion.nav>
           </div>
@@ -236,7 +259,7 @@ export default function Navigation() {
             <div className="flex items-center gap-1">
               <ThemeToggle />
               <div className={cn(
-                "[&_button]:!text-foreground",
+                "wallet-nav-compact [&_button]:!text-foreground",
                 "[&_button]:transition-colors"
               )}>
                 <ConnectButton />

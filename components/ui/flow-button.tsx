@@ -2,54 +2,98 @@
 
 import Link from 'next/link';
 import { type ReactNode } from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface FlowButtonProps {
   text?: string;
   href?: string;
   onClick?: () => void;
+  active?: boolean;
   'aria-label'?: string;
 }
 
-export function FlowButton({ 
-  text = "Modern Button", 
-  href, 
+export function FlowButton({
+  text = 'Modern Button',
+  href,
   onClick,
-  'aria-label': ariaLabel 
+  active = false,
+  'aria-label': ariaLabel,
 }: FlowButtonProps): ReactNode {
-  const buttonClasses = "flow-button-nav group relative flex items-center gap-1 overflow-hidden rounded-[100px] border-[1px] border-transparent bg-transparent font-semibold text-black dark:text-white cursor-pointer transition-all duration-[800ms] ease-[cubic-bezier(0.23,1,0.32,1)] hover:border-black dark:hover:border-white hover:text-white dark:hover:text-black hover:rounded-[12px] hover:scale-[1.02] active:scale-[0.95] !text-[16px] !px-[20px] !py-[10px]";
-  const buttonStyle = { padding: '10px 20px', fontSize: '16px' };
+  const inner = (
+    <motion.span
+      className="group relative inline-flex items-center justify-center rounded-full px-6 py-2.5 text-[17px] font-semibold tracking-[-0.01em]"
+      whileHover={{ y: -1, scale: 1.025 }}
+      whileTap={{ y: 0, scale: 0.97 }}
+      transition={{
+        type: 'spring',
+        stiffness: 420,
+        damping: 28,
+      }}
+    >
+      {active && (
+        <motion.span
+          layoutId="desktop-navbar-active-pill"
+          className="absolute inset-0 rounded-full bg-foreground shadow-sm"
+          transition={{
+            type: 'spring',
+            stiffness: 380,
+            damping: 30,
+            mass: 0.7,
+          }}
+          aria-hidden="true"
+        />
+      )}
 
-  const content = (
-    <>
-      <span className="relative z-[1] -translate-x-3 group-hover:translate-x-0 transition-all duration-[1000ms] ease-out !text-[16px]" style={{ fontSize: '16px' }}>
+      {!active && (
+        <span
+          aria-hidden="true"
+          className="
+            absolute inset-0 rounded-full
+            bg-foreground/[0.09]
+            opacity-0 scale-[0.82]
+            transition-[opacity,transform]
+            duration-300 ease-out
+            group-hover:opacity-100
+            group-hover:scale-100
+          "
+        />
+      )}
+
+      <span
+        className={cn(
+          'relative z-10 transition-colors duration-200',
+          active
+            ? 'text-background'
+            : 'text-foreground'
+        )}
+      >
         {text}
       </span>
-      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-black dark:bg-white rounded-full opacity-0 group-hover:w-[120px] group-hover:h-[120px] group-hover:opacity-100 transition-all duration-[1200ms] ease-[cubic-bezier(0.19,1,0.22,1)]" style={{ backdropFilter: 'blur(10px)' }} aria-hidden="true"></span>
-    </>
+    </motion.span>
   );
 
   if (href) {
     return (
-      <Link 
-        href={href} 
-        className={buttonClasses} 
-        style={buttonStyle}
+      <Link
+        href={href}
         aria-label={ariaLabel || text}
+        aria-current={active ? 'page' : undefined}
+        className="inline-flex rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        {content}
+        {inner}
       </Link>
     );
   }
 
   return (
-    <button 
-      className={buttonClasses}
-      style={buttonStyle}
+    <button
+      type="button"
       onClick={onClick}
       aria-label={ariaLabel || text}
-      type="button"
+      className="inline-flex rounded-full"
     >
-      {content}
+      {inner}
     </button>
   );
 }

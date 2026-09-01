@@ -1571,7 +1571,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
         </div>
 
         <div className="max-w-xl mx-auto">
-          <Card className="backdrop-blur-md bg-background/60 border-white/40 shadow-2xl rounded-none">
+          <Card className="backdrop-blur-md bg-background/60 border-border dark:border-white/40 shadow-2xl rounded-none">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-semibold flex items-center gap-2 text-foreground">
                 <Sparkles className="h-5 w-5 text-primary" />
@@ -1580,10 +1580,10 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
               <p className="text-sm text-muted-foreground">{swapDescription}</p>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-3 rounded-none border border-white/40 bg-white/5 p-4">
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-white/70">
+              <div className="space-y-3 rounded-none border border-border bg-muted/35 dark:border-white/40 dark:bg-white/5 p-4">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted-foreground dark:text-white/70">
                   <span>From</span>
-                  <span className="font-mono text-xs text-white/80">{fromBalanceDisplay}</span>
+                  <span className="font-mono text-xs text-foreground/80 dark:text-white/80">{fromBalanceDisplay}</span>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:h-14">
                   <Select value={fromToken} onValueChange={(value) => setFromToken(value as TokenOption)}>
@@ -1623,7 +1623,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="w-full sm:w-auto h-12 sm:h-14 border-white/40 hover:bg-white/10"
+                      className="w-full sm:w-auto h-12 sm:h-14 border-border hover:bg-muted dark:border-white/40 dark:hover:bg-white/10"
                       onClick={handleMaxClick}
                     >
                       Max
@@ -1636,7 +1636,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="rounded-none h-12 w-12 p-0 bg-white/10 hover:bg-white/20"
+                  className="rounded-none h-12 w-12 p-0 bg-muted/60 hover:bg-muted dark:bg-white/10 dark:hover:bg-white/20"
                   onClick={() => {
                     const newFrom = toToken
                     const newTo = allowedTargets[newFrom][0]
@@ -1648,8 +1648,8 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                 </Button>
               </div>
 
-              <div className="space-y-3 rounded-none border border-white/40 bg-white/5 p-4">
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-white/70">
+              <div className="space-y-3 rounded-none border border-border bg-muted/35 dark:border-white/40 dark:bg-white/5 p-4">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted-foreground dark:text-white/70">
                   <span>To</span>
                   <div className="flex items-center gap-2">
                     {breakdownPopover && (
@@ -1657,7 +1657,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                         <PopoverTrigger asChild>
                           <button
                             type="button"
-                            className="rounded-none border border-white/40 p-1 text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+                            className="rounded-none border border-border p-1 text-foreground/70 transition-colors hover:border-foreground/40 hover:text-foreground dark:border-white/40 dark:hover:border-white/40"
                           >
                             <Info className="h-4 w-4" />
                           </button>
@@ -1814,7 +1814,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
         {infoSections.length > 0 && (
           <div className="max-w-4xl mx-auto mt-16 sm:mt-24 lg:mt-40">
             <Card
-              className="bg-background/50 border-white/40"
+              className="bg-background/50 border-border dark:border-white/40"
               style={{
                 fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
               }}
@@ -1829,9 +1829,9 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                 {infoSections.map((section) => (
                   <section
                     key={section.title}
-                    className="rounded-xl border border-white/20 bg-white/5 px-5 py-6 backdrop-blur-sm"
+                    className="rounded-xl border border-border bg-muted/25 px-5 py-6 backdrop-blur-sm dark:border-white/20 dark:bg-white/5"
                   >
-                    <div className="flex flex-col gap-1 border-b border-white/10 pb-4">
+                    <div className="flex flex-col gap-1 border-b border-border/70 pb-4 dark:border-white/10">
                       <h3 className="text-sm font-semibold tracking-wide text-foreground">{section.title}</h3>
                       {section.description ? (
                         <p className="text-xs text-muted-foreground/80">{section.description}</p>
@@ -1845,7 +1845,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                           : "text-sm"
 
                         return (
-                          <div key={`${section.title}-${row.label}`} className="rounded-lg bg-white/[0.03] px-3 py-3">
+                          <div key={`${section.title}-${row.label}`} className="rounded-lg bg-muted/25 px-3 py-3 dark:bg-white/[0.03]">
                             <dt className="text-xs uppercase tracking-wide text-muted-foreground">{row.label}</dt>
                             <dd
                               className={`mt-1 text-foreground ${emphasisClasses} ${
@@ -1858,7 +1858,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 rounded-full border border-white/20 bg-white/5"
+                                    className="h-7 w-7 rounded-full border border-border bg-background hover:bg-muted dark:border-white/20 dark:bg-white/5"
                                     onClick={() => void handleCopy(row.value)}
                                   >
                                     <Copy className="h-4 w-4" />
