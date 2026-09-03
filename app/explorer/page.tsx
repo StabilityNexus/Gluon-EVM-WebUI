@@ -11,7 +11,6 @@ import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin"
 import { StableCoinFactories } from "@/utils/addresses"
 import { GLUON_NETWORKS } from "@/utils/networks"
 import Shuffle from "@/components/Shuffle"
-import TargetCursor from "@/components/TargetCursor"
 import Link from "next/link"
 
 // Simple reactor card component
@@ -75,7 +74,7 @@ function SimpleReactorCard({ address }: { address: string }) {
   })
 
   return (
-    <Card className="cursor-target bg-background/95 dark:bg-black/70 backdrop-blur-md border-big-dashed shadow-xl hover:shadow-2xl rounded-none">
+    <Card className="group bg-card/55 dark:bg-black/55 backdrop-blur-sm border-big-dashed shadow-sm hover:shadow-xl rounded-xl overflow-hidden transition-[transform,box-shadow,border-color,background-color] duration-300 hover:-translate-y-1">
       <CardHeader className="pb-3">
         <div className="space-y-3">
           <div className="flex items-start justify-between">
@@ -128,7 +127,7 @@ function SimpleReactorCard({ address }: { address: string }) {
         </div>
 
         <Link href={`/c?coin=${address}`}>
-          <Button className="w-full" size="sm">
+          <Button className="w-full h-11 rounded-lg font-medium transition-transform duration-200 active:scale-[0.99]" size="sm">
             <ExternalLink className="h-4 w-4 mr-2" />
             Interact
           </Button>
@@ -146,15 +145,27 @@ export default function ExplorerPage() {
   // Get current chain's factory address
   const factoryAddress = StableCoinFactories[chainId as keyof typeof StableCoinFactories]
 
+  const currentNetwork = GLUON_NETWORKS.find(
+    ({ chain }) => chain.id === chainId
+  )
+
   // Get all deployed reactors
-  const { data: deployedReactors, isLoading: isLoadingReactors, error: reactorsError } = useReadContract({
+  const {
+    data: deployedReactors,
+    isLoading: isLoadingReactors,
+    error: reactorsError,
+    refetch: refetchReactors,
+  } = useReadContract({
     address: factoryAddress,
     abi: StableCoinFactoryABI,
     functionName: 'getAllDeployedReactors',
   })
 
   // Get reactor count for UI
-  const { error: countError } = useReadContract({
+  const {
+    error: countError,
+    refetch: refetchCount,
+  } = useReadContract({
     address: factoryAddress,
     abi: StableCoinFactoryABI,
     functionName: 'getDeployedReactorsCount',
@@ -188,47 +199,67 @@ export default function ExplorerPage() {
   }
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ fontFamily: "'Space Mono', 'Syne', 'Orbitron', 'Courier New', monospace", fontWeight: 500 }}
-    >
-      {/* Target Cursor Effect */}
-      <TargetCursor
-        spinDuration={2}
-        hideDefaultCursor={true}
-      />
-
-      <div className="container mx-auto px-4 py-12">
+    <div className="min-h-[calc(100vh-12rem)]">
+      <div className="container mx-auto px-0 py-8 sm:py-12">
         {/* Header */}
-        <div className="mb-12 text-center">
+        <header className="mb-10 text-center">
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            Protocol Registry
+          </p>
+
           <Shuffle
             text="StableCoin Reactor Explorer"
             tag="h1"
-            className="text-2xl sm:text-4xl lg:text-5xl mb-2"
+            className="text-3xl sm:text-4xl font-semibold tracking-[-0.03em]"
             shuffleDirection="right"
             duration={0.35}
             animationMode="evenodd"
             shuffleTimes={1}
             ease="power3.out"
-            stagger={0.03}
+            stagger={0.025}
             threshold={0.1}
             triggerOnce={true}
             triggerOnHover={true}
             respectReducedMotion={true}
           />
-        </div>
+
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+            Browse deployed reactors and open one to inspect its live state
+            or interact with its token pair.
+          </p>
+        </header>
 
         {/* Error State */}
         {(reactorsError || countError) && (
-          <div className="text-center py-16">
-            <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4 opacity-50" />
-            <p className="text-red-400 mb-2">Failed to connect to factory contract</p>
-            <p className="text-sm text-red-300 font-mono mb-4">
-              Factory: {factoryAddress}
+          <div className="mx-auto my-10 max-w-2xl rounded-xl border border-red-500/20 bg-red-500/[0.04] px-6 py-8 text-center">
+            <AlertTriangle className="mx-auto h-8 w-8 text-red-500/80" />
+
+            <h2 className="mt-4 text-base font-semibold text-foreground">
+              Unable to load reactors
+            </h2>
+
+            <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
+              We couldn&apos;t read the reactor registry on{" "}
+              {currentNetwork?.displayName || `chain ${chainId}`}.
+              This can happen when the network RPC is temporarily unavailable
+              or the configured factory cannot be reached.
             </p>
-            <p className="text-xs text-red-300">
-              {reactorsError?.message || countError?.message}
+
+            <p className="mt-3 font-mono text-[10px] text-muted-foreground/70">
+              Factory {factoryAddress.slice(0, 8)}…{factoryAddress.slice(-6)}
             </p>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-5 rounded-lg"
+              onClick={() => {
+                void refetchReactors()
+                void refetchCount()
+              }}
+            >
+              Try Again
+            </Button>
           </div>
         )}
 
@@ -241,23 +272,31 @@ export default function ExplorerPage() {
         )}
 
         {/* Search and Filters */}
-        {!isLoadingReactors && (
+        {!isLoadingReactors && !reactorsError && !countError && (
           <>
-            <div className="mb-8 max-w-4xl mx-auto">
-              <div className="relative mb-6">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search by reactor address..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-12 bg-transparent border border-border focus:border-foreground/40 hover:border-foreground/25 rounded-full transition-all duration-300 shadow-sm focus:shadow-md cursor-target"
-                />
+            <div className="mb-8 mx-auto max-w-4xl">
+              <div className="rounded-2xl border border-border bg-card/30 p-3 sm:p-4">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+                  <Input
+                    placeholder="Search by reactor address..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-12 rounded-full border-border bg-background/80 pl-11 pr-28 shadow-sm transition-[border-color,box-shadow] duration-200 hover:border-foreground/20 focus:border-foreground/35 focus:shadow-md"
+                  />
+
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                    {filteredReactorAddresses.length}{" "}
+                    {filteredReactorAddresses.length === 1 ? "vault" : "vaults"}
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Content */}
             {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
                 {filteredReactorAddresses.map((address) => (
                   <SimpleReactorCard key={address} address={address} />
                 ))}
@@ -266,7 +305,7 @@ export default function ExplorerPage() {
               <div className="max-w-4xl mx-auto space-y-2">
                 {filteredReactorAddresses.map((address) => (
                   <Link key={address} href={`/c?coin=${address}`}>
-                    <div className="bg-background/95 dark:bg-black/70 backdrop-blur-md border-big-dashed group cursor-target shadow-lg hover:shadow-xl rounded-none p-4">
+                    <div className="bg-background/95 dark:bg-black/70 backdrop-blur-md border-big-dashed group shadow-lg hover:shadow-xl rounded-none p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className="font-mono text-sm text-muted-foreground">
@@ -288,7 +327,7 @@ export default function ExplorerPage() {
             )}
 
             {/* Empty State */}
-            {filteredReactorAddresses.length === 0 && !isLoadingReactors && (
+            {filteredReactorAddresses.length === 0 && !isLoadingReactors && !reactorsError && !countError && (
               <div className="text-center py-16">
                 <div className="mb-4">
                   <Activity className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

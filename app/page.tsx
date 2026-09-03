@@ -13,10 +13,7 @@ import { motion } from "framer-motion"
 
 export default function HomePage() {
   return (
-    <div
-      className="min-h-screen relative"
-      style={{ fontFamily: "'Inter', 'Helvetica Neue', 'Arial', sans-serif", fontWeight: 400 }}
-    >
+    <div className="min-h-screen relative">
       {/* Target Cursor Effect */}
       <TargetCursor
         spinDuration={2}
@@ -24,6 +21,21 @@ export default function HomePage() {
       />
 
       {/* Full Page Light Rays Background Effect */}
+      {/* Softer rays for light mode */}
+      <LightRays
+        raysOrigin="top-center"
+        raysColor="#9CA3AF"
+        raysSpeed={1.5}
+        lightSpread={0.8}
+        rayLength={1.2}
+        followMouse={true}
+        mouseInfluence={0.1}
+        noiseAmount={0.1}
+        distortion={0.05}
+        className="fixed inset-0 pointer-events-none opacity-70 dark:hidden"
+      />
+
+      {/* Original brighter rays for dark mode */}
       <LightRays
         raysOrigin="top-center"
         raysColor="#F7F7F7"
@@ -34,7 +46,7 @@ export default function HomePage() {
         mouseInfluence={0.1}
         noiseAmount={0.1}
         distortion={0.05}
-        className="fixed inset-0 pointer-events-none"
+        className="fixed inset-0 pointer-events-none hidden dark:block"
       />
 
       {/* Hero Section with Grid Background */}
@@ -60,28 +72,44 @@ export default function HomePage() {
 
       {/* How It Works Section */}
       <section className="relative min-h-screen flex items-center z-[5]">
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <Particles
-            particleColors={["#ffffff", "#d9e2ff"]}
-            particleCount={180}
-            particleSpread={12}
-            speed={0.08}
-            particleBaseSize={80}
-            moveParticlesOnHover
-            alphaParticles={false}
-            disableRotation={false}
-            className="pointer-events-none w-full h-full"
-          />
-        </div>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <Card className="grid container py-6 sm:py-8 p-4 sm:p-6 lg:p-8 grid-cols-1 gap-6 sm:gap-8 items-center lg:grid-cols-2 bg-transparent backdrop-blur-0 rounded-none shadow-lg border border-white/40">
+            <Card className="relative isolate overflow-hidden grid container py-6 sm:py-8 p-4 sm:p-6 lg:p-8 grid-cols-1 gap-6 sm:gap-8 items-center lg:grid-cols-2 bg-transparent backdrop-blur-0 rounded-none shadow-lg border border-white/40">
+              {/* Light mode particles need enough contrast against white */}
+              <div className="pointer-events-none absolute inset-0 z-0 dark:hidden">
+                <Particles
+                  particleColors={["#475569", "#94A3B8"]}
+                  particleCount={180}
+                  particleSpread={12}
+                  speed={0.08}
+                  particleBaseSize={80}
+                  moveParticlesOnHover
+                  alphaParticles={false}
+                  disableRotation={false}
+                  className="pointer-events-none h-full w-full"
+                />
+              </div>
+
+              {/* Preserve the existing dark mode particles */}
+              <div className="pointer-events-none absolute inset-0 z-0 hidden dark:block">
+                <Particles
+                  particleColors={["#ffffff", "#d9e2ff"]}
+                  particleCount={180}
+                  particleSpread={12}
+                  speed={0.08}
+                  particleBaseSize={80}
+                  moveParticlesOnHover
+                  alphaParticles={false}
+                  disableRotation={false}
+                  className="pointer-events-none h-full w-full"
+                />
+              </div>
               <motion.div
-                className="flex gap-10 flex-col"
+                className="relative z-10 flex gap-10 flex-col"
                 initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
@@ -148,7 +176,7 @@ export default function HomePage() {
                 </div>
               </motion.div>
               <motion.div
-                className="rounded-none h-full w-full p-4 flex flex-col items-center justify-center space-y-4"
+                className="relative z-10 rounded-none h-full w-full p-4 flex flex-col items-center justify-center space-y-4"
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
@@ -180,19 +208,6 @@ export default function HomePage() {
               </motion.div>
             </Card>
           </motion.div>
-        </div>
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <Particles
-            particleColors={["#ffffff", "#d9e2ff"]}
-            particleCount={180}
-            particleSpread={12}
-            speed={0.08}
-            particleBaseSize={80}
-            moveParticlesOnHover
-            alphaParticles={false}
-            disableRotation={false}
-            className="pointer-events-none w-full h-full"
-          />
         </div>
       </section>
 
@@ -245,22 +260,20 @@ export default function HomePage() {
               viewport={{ once: true, amount: 0.3 }}
               transition={{ delay: 0.1, duration: 0.5 }}
             >
-              <Card className="p-4 bg-background/50 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-colors">
-                <Link href="https://eprint.iacr.org/2025/1372" target="_blank" className="block group">
-                  <div className="relative aspect-square overflow-hidden rounded-lg">
-                    <Image
-                      unoptimized
-                      fetchPriority="high"
-                      loading="lazy"
-                      src="/GluonPaper.png"
-                      alt="Gluon Solana Research Paper"
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </Link>
-              </Card>
+              <Link href="https://eprint.iacr.org/2025/1372" target="_blank" className="block group">
+                <div className="relative aspect-square overflow-hidden rounded-lg">
+                  <Image
+                    unoptimized
+                    fetchPriority="high"
+                    loading="lazy"
+                    src="/GluonPaper.png"
+                    alt="Gluon Solana Research Paper"
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </Link>
             </motion.div>
           </div>
         </div>

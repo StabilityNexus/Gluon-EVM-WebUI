@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import Link from "next/link"
+import Shuffle from "@/components/Shuffle"
 import {
   useAccount,
   useReadContract,
@@ -22,16 +24,14 @@ import {
 } from "@/components/ui/select"
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowLeftRight,
   Copy,
   Info,
   Shield,
-  Sparkles,
   Zap,
 } from "lucide-react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
-import LightRays from "@/components/LightRays"
-import Shuffle from "@/components/Shuffle"
 import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin"
 import { toast } from "sonner"
 
@@ -49,11 +49,6 @@ const routeMap: Record<string, SwapRoute> = {
   "BUNDLE->BASE": "FUSION",
   "PROTON->NEUTRON": "PROTON_TO_NEUTRON",
   "NEUTRON->PROTON": "NEUTRON_TO_PROTON",
-}
-
-const containerStyle = {
-  fontFamily: "'Orbitron', 'Space Mono', 'Courier New', monospace",
-  fontWeight: "500",
 }
 
 const formatPercentFromWad = (value?: bigint) => {
@@ -657,8 +652,10 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
   ])
 
   const vaultHeading =
-    typeof vaultName === "string" && vaultName.length > 0
-      ? `${vaultName} Reactor`
+    typeof vaultName === "string" && vaultName.trim().length > 0
+      ? /reactor$/i.test(vaultName.trim())
+        ? vaultName.trim()
+        : `${vaultName.trim()} Reactor`
       : "StableCoin Reactor"
 
   useEffect(() => {
@@ -1535,52 +1532,59 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
 
 
   return (
-    <div className="min-h-screen relative" style={containerStyle}>
-      <LightRays
-        raysOrigin="top-center"
-        raysColor="#F7F7F7"
-        raysSpeed={1.5}
-        lightSpread={0.8}
-        rayLength={1.2}
-        followMouse
-        mouseInfluence={0.1}
-        noiseAmount={0.1}
-        distortion={0.05}
-        className="fixed inset-0 z-[1]"
-      />
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto w-full max-w-6xl py-8 sm:py-12">
+        <div className="mx-auto mb-10 max-w-4xl">
+          <Link
+            href="/explorer"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to reactors
+          </Link>
 
-      <div className="container mx-auto px-4 py-8 relative z-[5]">
-        <div className="text-center mb-10 space-y-2">
-          <Shuffle
-            text={vaultHeading}
-            tag="h1"
-            className="text-4xl lg:text-5xl text-foreground"
-            shuffleDirection="right"
-            duration={0.35}
-            animationMode="evenodd"
-            shuffleTimes={1}
-            ease="power3.out"
-            stagger={0.03}
-            threshold={0.1}
-            triggerOnce
-            respectReducedMotion
-          />
-          <p className="text-sm text-muted-foreground">
-            Manage flows between {baseAssetDisplay} and the {neutronSymbolText}/{protonSymbolText} bundle.
-          </p>
+          <header className="mt-6 text-center">
+            <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Reactor Workspace
+            </p>
+
+            <Shuffle
+              text={vaultHeading}
+              tag="h1"
+              className="text-3xl sm:text-4xl font-semibold tracking-[-0.03em]"
+              shuffleDirection="right"
+              duration={0.35}
+              animationMode="evenodd"
+              shuffleTimes={1}
+              ease="power3.out"
+              stagger={0.025}
+              threshold={0.1}
+              triggerOnce
+              triggerOnHover
+              respectReducedMotion
+            />
+
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+              Convert assets through this reactor and inspect its live reserve,
+              pricing, fee, and contract configuration.
+            </p>
+
+            <p className="mt-3 font-mono text-[11px] text-muted-foreground">
+              {shortenAddress(reactorAddress)}
+            </p>
+          </header>
         </div>
 
-        <div className="max-w-xl mx-auto">
-          <Card className="backdrop-blur-md bg-background/60 border-border dark:border-white/40 shadow-2xl rounded-none">
+        <div className="mx-auto max-w-2xl">
+          <Card className="rounded-2xl border border-border bg-card/55 shadow-sm">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-semibold flex items-center gap-2 text-foreground">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Swap Anywhere, Anytime
+              <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
+                Convert assets
               </CardTitle>
               <p className="text-sm text-muted-foreground">{swapDescription}</p>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-3 rounded-none border border-border bg-muted/35 dark:border-white/40 dark:bg-white/5 p-4">
+              <div className="space-y-3 rounded-xl border border-border bg-muted/25 p-5 dark:border-white/40 dark:bg-white/5">
                 <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted-foreground dark:text-white/70">
                   <span>From</span>
                   <span className="font-mono text-xs text-foreground/80 dark:text-white/80">{fromBalanceDisplay}</span>
@@ -1636,7 +1640,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="rounded-none h-12 w-12 p-0 bg-muted/60 hover:bg-muted dark:bg-white/10 dark:hover:bg-white/20"
+                  className="rounded-full h-12 w-12 p-0 bg-muted/60 hover:bg-muted dark:bg-white/10 dark:hover:bg-white/20"
                   onClick={() => {
                     const newFrom = toToken
                     const newTo = allowedTargets[newFrom][0]
@@ -1648,7 +1652,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                 </Button>
               </div>
 
-              <div className="space-y-3 rounded-none border border-border bg-muted/35 dark:border-white/40 dark:bg-white/5 p-4">
+              <div className="space-y-3 rounded-xl border border-border bg-muted/25 p-5 dark:border-white/40 dark:bg-white/5">
                 <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted-foreground dark:text-white/70">
                   <span>To</span>
                   <div className="flex items-center gap-2">
@@ -1758,7 +1762,10 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
 
                         if (!amount || Number(amount) <= 0 || !recipient) {
                           return (
-                            <Button disabled className="w-full h-14 bg-muted text-muted-foreground">
+                            <Button
+                              disabled
+                              className="w-full h-14 rounded-xl border border-neutral-300 bg-neutral-300 text-neutral-600 shadow-none disabled:pointer-events-none disabled:opacity-100 dark:border-neutral-800 dark:bg-neutral-800 dark:text-neutral-400"
+                            >
                               Enter amount and recipient
                             </Button>
                           )
@@ -1812,32 +1819,31 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
         </div>
 
         {infoSections.length > 0 && (
-          <div className="max-w-4xl mx-auto mt-16 sm:mt-24 lg:mt-40">
+          <div className="mx-auto mt-12 w-full max-w-5xl">
             <Card
-              className="bg-background/50 border-border dark:border-white/40"
-              style={{
-                fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              }}
+              className="border-0 bg-transparent shadow-none"
             >
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold text-foreground">Reactor Parameters</CardTitle>
-                <p className="text-sm text-muted-foreground">
+              <CardHeader className="pb-8 text-center">
+                <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
+                  Reactor Parameters
+                </CardTitle>
+                <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
                   Live configuration, oracle wiring, and treasury context for this vault.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="grid gap-x-16 gap-y-12 px-4 sm:px-6 lg:grid-cols-2">
                 {infoSections.map((section) => (
                   <section
                     key={section.title}
-                    className="rounded-xl border border-border bg-muted/25 px-5 py-6 backdrop-blur-sm dark:border-white/20 dark:bg-white/5"
+                    className="min-w-0 py-1"
                   >
-                    <div className="flex flex-col gap-1 border-b border-border/70 pb-4 dark:border-white/10">
-                      <h3 className="text-sm font-semibold tracking-wide text-foreground">{section.title}</h3>
+                    <div className="flex min-h-[4rem] flex-col gap-1 border-b border-border/60 pb-4 dark:border-white/10">
+                      <h3 className="text-sm font-semibold tracking-[0.01em] text-foreground">{section.title}</h3>
                       {section.description ? (
-                        <p className="text-xs text-muted-foreground/80">{section.description}</p>
+                        <p className="mt-0.5 text-xs leading-5 text-muted-foreground/75">{section.description}</p>
                       ) : null}
                     </div>
-                    <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+                    <dl className="divide-y divide-border/60 dark:divide-white/10">
                       {section.items.map((row) => {
                         const isCopyable = row.monospace && row.value !== "—"
                         const emphasisClasses = row.emphasize
@@ -1845,11 +1851,13 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
                           : "text-sm"
 
                         return (
-                          <div key={`${section.title}-${row.label}`} className="rounded-lg bg-muted/25 px-3 py-3 dark:bg-white/[0.03]">
-                            <dt className="text-xs uppercase tracking-wide text-muted-foreground">{row.label}</dt>
+                          <div key={`${section.title}-${row.label}`} className="grid min-h-12 gap-2 py-3.5 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] sm:items-center sm:gap-8">
+                            <dt className="text-xs leading-5 text-muted-foreground">{row.label}</dt>
                             <dd
-                              className={`mt-1 text-foreground ${emphasisClasses} ${
-                                isCopyable ? "flex items-center gap-2" : ""
+                              className={`text-foreground sm:mt-0 ${emphasisClasses} ${
+                                isCopyable
+                                  ? "flex items-center gap-2 sm:justify-end"
+                                  : "sm:text-right"
                               }`}
                             >
                               {isCopyable ? (

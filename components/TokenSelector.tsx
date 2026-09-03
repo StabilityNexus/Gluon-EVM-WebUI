@@ -132,7 +132,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
   }, [value, tokens, isManualInput]);
 
   const fieldBaseClasses =
-    "bg-background border border-border text-[13px] font-semibold tracking-[0.2em] text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 focus:border-foreground/40 transition-colors duration-200 px-4 rounded-none font-mono cursor-text"
+    "bg-background border border-border text-[13px] font-semibold tracking-[0.2em] text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/25 focus:border-foreground/40 transition-colors duration-200 px-4 rounded-lg cursor-text"
   const inputClasses = `${fieldBaseClasses} h-12`
 
   return (
@@ -174,7 +174,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-3 bg-background hover:bg-muted text-foreground rounded-none border border-border hover:border-foreground/40 transition-colors text-xs whitespace-nowrap font-mono tracking-[0.2em] uppercase"
+          className="px-4 py-3 bg-background hover:bg-muted text-foreground rounded-lg border border-border hover:border-foreground/40 transition-colors text-xs whitespace-nowrap font-mono tracking-[0.2em] uppercase"
         >
           {selectedToken && !isManualInput ? "Change" : "Select"}
         </button>
@@ -191,7 +191,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="bg-background border-2 border-border rounded-none max-w-2xl w-full max-h-[80vh] flex flex-col shadow-xl"
+            className="bg-background border-2 border-border rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -250,7 +250,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
                       key={token.id}
                       type="button"
                       onClick={() => handleTokenSelect(token)}
-                      className="w-full flex items-center gap-3 p-3 rounded-none hover:bg-muted transition-colors text-left border border-transparent hover:border-border"
+                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left border border-transparent hover:border-border"
                     >
                       <img
                         src={token.image || "/stability.svg"}

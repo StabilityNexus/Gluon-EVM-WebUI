@@ -259,7 +259,7 @@ export default function Navigation() {
             <div className="flex items-center gap-1">
               <ThemeToggle />
               <div className={cn(
-                "wallet-nav-compact [&_button]:!text-foreground",
+                "wallet-nav-compact",
                 "[&_button]:transition-colors"
               )}>
                 <ConnectButton />
