@@ -124,19 +124,25 @@ const TargetCursor: React.FC<TargetCursorProps> = ({
 
     const enterHandler = (e: MouseEvent) => {
       const directTarget = e.target as Element;
+      const forcedTarget = directTarget.closest(".cursor-target-force");
 
       const allTargets: Element[] = [];
       let blockedByIgnore = false;
-      let current: Element | null = directTarget;
-      while (current && current !== document.body) {
-        if (ignoreSelector && current.matches(ignoreSelector)) {
-          blockedByIgnore = true;
-          break;
+
+      if (forcedTarget) {
+        allTargets.push(forcedTarget);
+      } else {
+        let current: Element | null = directTarget;
+        while (current && current !== document.body) {
+          if (ignoreSelector && current.matches(ignoreSelector)) {
+            blockedByIgnore = true;
+            break;
+          }
+          if (current.matches(targetSelector)) {
+            allTargets.push(current);
+          }
+          current = current.parentElement;
         }
-        if (current.matches(targetSelector)) {
-          allTargets.push(current);
-        }
-        current = current.parentElement;
       }
 
       if (blockedByIgnore) {

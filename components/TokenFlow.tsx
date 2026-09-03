@@ -88,7 +88,7 @@ const TokenFlow = ({
 
   return (
     <motion.div
-      className={`w-full max-w-[32rem] h-full flex flex-col items-center justify-center space-y-3 border rounded-2xl p-3 sm:p-4 relative z-10 bg-grey-800 backdrop-blur-md border-white/30 ${className}`}
+      className={`w-full max-w-[32rem] h-full flex flex-col items-center justify-center space-y-3 border rounded-2xl p-3 sm:p-4 relative z-10 bg-grey-800 backdrop-blur-md border-slate-400/60 dark:border-white/30 ${className}`}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3, ease: "easeOut" }}

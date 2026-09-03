@@ -127,7 +127,7 @@ function SimpleReactorCard({ address }: { address: string }) {
         </div>
 
         <Link href={`/c?coin=${address}`}>
-          <Button className="w-full h-11 rounded-lg font-medium transition-transform duration-200 active:scale-[0.99]" size="sm">
+          <Button className="cursor-target-force w-full h-11 rounded-lg font-medium transition-transform duration-200 active:scale-[0.99]" size="sm">
             <ExternalLink className="h-4 w-4 mr-2" />
             Interact
           </Button>

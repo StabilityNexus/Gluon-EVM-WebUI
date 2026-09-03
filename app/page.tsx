@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import Image from "next/image"
 import LightRays from "@/components/LightRays"
-import TargetCursor from "@/components/TargetCursor"
 import TokenFlow from "@/components/TokenFlow"
 import Particles from "@/components/Particles"
 import { HeroText } from "@/components/HeroText"
@@ -14,25 +13,22 @@ import { motion } from "framer-motion"
 export default function HomePage() {
   return (
     <div className="min-h-screen relative">
-      {/* Target Cursor Effect */}
-      <TargetCursor
-        spinDuration={2}
-        hideDefaultCursor={true}
-      />
-
       {/* Full Page Light Rays Background Effect */}
-      {/* Softer rays for light mode */}
+      {/* High-contrast light-mode rays */}
       <LightRays
         raysOrigin="top-center"
-        raysColor="#9CA3AF"
-        raysSpeed={1.5}
+        raysColor="#64748B"
+        raysSpeed={0.9}
         lightSpread={0.8}
-        rayLength={1.2}
+        rayLength={1.35}
+        pulsating={true}
+        fadeDistance={1.15}
+        saturation={0.3}
         followMouse={true}
-        mouseInfluence={0.1}
-        noiseAmount={0.1}
-        distortion={0.05}
-        className="fixed inset-0 pointer-events-none opacity-70 dark:hidden"
+        mouseInfluence={0.06}
+        noiseAmount={0.025}
+        distortion={0.02}
+        className="fixed inset-0 pointer-events-none opacity-[0.78] mix-blend-multiply dark:hidden"
       />
 
       {/* Original brighter rays for dark mode */}
@@ -78,7 +74,7 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <Card className="relative isolate overflow-hidden grid container py-6 sm:py-8 p-4 sm:p-6 lg:p-8 grid-cols-1 gap-6 sm:gap-8 items-center lg:grid-cols-2 bg-transparent backdrop-blur-0 rounded-none shadow-lg border border-white/40">
+            <Card className="relative isolate overflow-hidden grid container py-6 sm:py-8 p-4 sm:p-6 lg:p-8 grid-cols-1 gap-6 sm:gap-8 items-center lg:grid-cols-2 bg-transparent backdrop-blur-0 rounded-none shadow-lg border border-slate-400/70 dark:border-white/40">
               {/* Light mode particles need enough contrast against white */}
               <div className="pointer-events-none absolute inset-0 z-0 dark:hidden">
                 <Particles
@@ -120,7 +116,7 @@ export default function HomePage() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.3, duration: 0.3 }}
                   >
-                    <div className="inline-block bg-white/10 px-4 py-2 rounded-none text-sm font-medium mb-4 backdrop-blur-sm border border-white/40">How It Works</div>
+                    <div className="inline-block bg-white/10 px-4 py-2 rounded-none text-sm font-medium mb-4 backdrop-blur-sm border border-slate-400/70 dark:border-white/40">How It Works</div>
                   </motion.div>
                   <div className="flex gap-2 flex-col">
                     <motion.h2

@@ -4,6 +4,7 @@ import './globals.css'
 import { ThemeProvider } from '@/providers/theme-provider'
 import { WalletProvider } from '@/providers/WalletProvider'
 import Navigation from '@/components/navigation'
+import TargetCursor from '@/components/TargetCursor'
 import ClientFooter from '@/components/ClientFooter'
 
 export const metadata: Metadata = {
@@ -105,6 +106,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <TargetCursor
+            targetSelector="button, .cursor-target"
+            spinDuration={2}
+            hideDefaultCursor={true}
+            ignoreSelector=".cursor-normal, input, textarea, select, [role='combobox']"
+          />
           <WalletProvider>
             <Navigation />
             <main className="max-w-8xl mx-4 sm:mx-8 lg:mx-16 xl:mx-32 px-4 sm:px-6 lg:px-8 pt-24 pb-8 flex-grow">

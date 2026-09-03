@@ -247,7 +247,7 @@ export default function Navigation() {
 
          
           <motion.div 
-            className="flex items-center gap-2 z-[1001] flex-shrink-0"
+            className="cursor-normal flex items-center gap-2 z-[1001] flex-shrink-0"
             animate={{
               x: isScrolled ? 16 : 0,
             }}
