@@ -24,6 +24,47 @@ interface OracleReadResults {
   description?: string
 }
 
+function isTransportOrProviderFailure(error: unknown): boolean {
+  const transportErrorNames = new Set([
+    "HttpRequestError",
+    "WebSocketRequestError",
+    "TimeoutError",
+    "SocketClosedError",
+  ])
+
+  const providerFailurePattern =
+    /(?:\b429\b|rate.?limit|too many requests|request limit|temporarily unavailable|service unavailable|bad gateway|gateway timeout|failed to fetch|fetch failed|network error|connection (?:refused|reset|closed)|timed? out|timeout)/i
+
+  let current: unknown = error
+
+  for (let depth = 0; depth < 8 && current; depth += 1) {
+    if (current instanceof Error) {
+      if (
+        transportErrorNames.has(current.name) ||
+        providerFailurePattern.test(current.message)
+      ) {
+        return true
+      }
+
+      current = (current as Error & { cause?: unknown }).cause
+      continue
+    }
+
+    if (
+      typeof current === "object" &&
+      current !== null &&
+      "cause" in current
+    ) {
+      current = (current as { cause?: unknown }).cause
+      continue
+    }
+
+    break
+  }
+
+  return false
+}
+
 export async function runOraclePreflight(
   publicClient: PublicClient,
   addressInput: string,
@@ -105,9 +146,25 @@ export async function runOraclePreflight(
     descriptionResult,
   ].every((result) => result.status === "rejected")
 
-  // If every contract read failed, make sure this was not an RPC outage
-  // before classifying the contract as incompatible.
+  // If all contract reads failed because the provider or transport is
+  // unavailable, let the caller report a network error instead of incorrectly
+  // classifying the oracle as incompatible.
   if (allReadsFailed) {
+    const readFailures = [
+      valueResult,
+      intervalResult,
+      timestampResult,
+      descriptionResult,
+    ].map((result) =>
+      result.status === "rejected" ? result.reason : undefined
+    )
+
+    if (readFailures.every(isTransportOrProviderFailure)) {
+      throw readFailures[0]
+    }
+
+    // Confirm the RPC is still reachable before treating genuine contract-read
+    // failures as interface incompatibility.
     await publicClient.getBlockNumber()
   }
 
