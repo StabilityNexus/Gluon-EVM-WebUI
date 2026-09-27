@@ -14,6 +14,12 @@ export interface Stablecoin {
   description: string
 }
 
+export interface UserCoin extends Stablecoin {
+  balance: number
+  valueUSD: number
+  isOwner: boolean
+}
+
 export const demoStablecoins: Stablecoin[] = [
   {
     id: "1",

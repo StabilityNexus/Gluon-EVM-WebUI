@@ -1,3 +1,6 @@
+/* eslint-disable @next/next/no-page-custom-font */
+// Fonts are loaded from the App Router root layout and therefore apply application-wide.
+
 import '@rainbow-me/rainbowkit/styles.css'
 import type { Metadata } from 'next'
 import './globals.css'

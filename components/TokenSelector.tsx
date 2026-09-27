@@ -1,5 +1,9 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+// Token icons can come from arbitrary token-list URLs, so a fixed Next Image
+// hostname allowlist is not appropriate here.
+
 import { useState, useEffect, useMemo } from "react";
 import { useChainId } from "wagmi";
 import { getChainNameForTokenList } from "@/utils/chainMapping";

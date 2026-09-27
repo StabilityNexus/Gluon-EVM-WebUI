@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en
+early_access: true
+
+chat:
+  auto_reply: true
+
+reviews:
+  profile: assertive
+  auto_review:
+    enabled: true
+    drafts: false
+    ignore_title_keywords:
+      - "WIP"
+    base_branches:
+      - main
+      - develop
+  high_level_summary: true
+  changed_files_summary: true
+  review_status: true
+  request_changes_workflow: true
+  path_filters:
+    - "!node_modules/**"
+    - "!.next/**"
+    - "!out/**"
+    - "!coverage/**"
+  tools:
+    markdownlint:
+      enabled: true
+    github-checks:
+      enabled: true
+      timeout_ms: 90000
+    yamllint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    checkov:
+      enabled: true
+  instructions: >-
+    - Review correctness, maintainability, accessibility, frontend security and Web3 safety.
+    - Flag duplicated logic and unnecessary abstractions.
+    - Verify visible UI changes preserve light and dark themes.
+    - Do not assume mock/demo data is production data.
+    - Allow explicit TODO deployment placeholders while production values are unavailable.
+    - Do not describe OrbOracle as live until protocol integration and deployment exist.
+    - Flag hardcoded contract addresses that should use centralized configuration.
+  path_instructions:
+    - path: "**/*.{ts,tsx}"
+      instructions: |
+        Check type safety, client/server boundaries, hooks/effect cleanup,
+        loading/error/success states, frontend-injection risk and accessibility.
+    - path: "app/create/**/*.{ts,tsx}"
+      instructions: |
+        Verify wallet/chain state, token decimals, approved configuration addresses,
+        approvals and transaction status UX.
+    - path: "app/[coinId]/**/*.{ts,tsx}"
+      instructions: |
+        Review fission/fusion/transmutation transaction preparation, bigint/unit
+        conversion, approvals, rejection, revert, pending and confirmation behavior.
+    - path: "app/globals.css"
+      instructions: |
+        Preserve the monochrome light/dark WebUI theme and treat #D9E2FF as a subtle ambient accent.
+    - path: "**/*.md"
+      instructions: |
+        Keep WebUI and Solidity repository responsibilities distinct. Allow explicit
+        TODO deployment values while unavailable. Flag premature OrbOracle/production claims.

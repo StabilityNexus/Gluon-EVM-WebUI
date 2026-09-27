@@ -17,8 +17,8 @@ const TargetCursor: React.FC<TargetCursorProps> = ({
   ignoreSelector
 }) => {
   const cursorRef = useRef<HTMLDivElement>(null);
-  const cornersRef = useRef<NodeListOf<HTMLDivElement>>(null);
-  const spinTl = useRef<gsap.core.Timeline>(null);
+  const cornersRef = useRef<NodeListOf<HTMLDivElement> | null>(null);
+  const spinTl = useRef<gsap.core.Timeline | null>(null);
   const dotRef = useRef<HTMLDivElement>(null);
   const constants = useMemo(
     () => ({
