@@ -84,11 +84,7 @@ _Generated from the checklist entries below. `[x]` is met, `[~]` is documented N
 - [ ] TODO: verify Scorecard and CodeQL workflow runs after this branch is pushed to GitHub. Configuration is present locally in `.github/workflows/scorecard.yml` and `.github/workflows/codeql.yml`.
 
 ## Current High-Priority Follow-Ups
-1. automated component/unit tests
-2. end-to-end wallet-flow tests
-3. stricter linting
-4. accessibility checks
-5. dependency/security scanning
-6. verified deployment registry
-7. OrbOracle integration
-8. removal of remaining mock/prototype data
+1. end-to-end wallet-flow tests
+2. verified deployment registry
+3. OrbOracle integration
+4. removal of remaining mock/prototype data
