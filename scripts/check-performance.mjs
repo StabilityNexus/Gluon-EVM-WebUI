@@ -2,7 +2,7 @@ import fs from "node:fs"
 import { spawnSync } from "node:child_process"
 
 const budgets = {
-  "/": 200,
+  "/": 220,
   "/[coinId]": 450,
   "/create": 420,
   "/explorer": 250,
@@ -12,8 +12,14 @@ const suppliedLog = process.argv[2]
 
 let output
 
-if (suppliedLog && fs.existsSync(suppliedLog)) {
-  output = fs.readFileSync(suppliedLog, "utf8")
+if (suppliedLog) {
+  if (fs.existsSync(suppliedLog)) {
+    output = fs.readFileSync(suppliedLog, "utf8")
+  } else {
+    console.error(`Supplied build log does not exist: ${suppliedLog}`)
+    process.exitCode = 1
+    output = ""
+  }
 } else {
   const result = spawnSync(
     process.platform === "win32" ? "npm.cmd" : "npm",

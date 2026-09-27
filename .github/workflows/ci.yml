@@ -42,7 +42,9 @@ jobs:
         run: npm run security:audit
 
       - name: Production build
-        run: npm run build 2>&1 | tee /tmp/next-build.log
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee /tmp/next-build.log
 
       - name: Performance budget
         run: npm run performance -- /tmp/next-build.log

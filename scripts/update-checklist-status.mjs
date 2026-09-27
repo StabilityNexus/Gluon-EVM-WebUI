@@ -111,12 +111,30 @@ const color =
         ? "orange"
         : "red"
 
+let existingStatus = null
+
+if (checkOnly && fs.existsSync(statusPath)) {
+  try {
+    existingStatus = JSON.parse(
+      fs.readFileSync(statusPath, "utf8"),
+    )
+  } catch {
+    existingStatus = null
+  }
+}
+
+const statusUpdated =
+  checkOnly &&
+  typeof existingStatus?.updated === "string"
+    ? existingStatus.updated
+    : new Date().toISOString().slice(0, 10)
+
 const status = {
   schemaVersion: 1,
   label: "Best Practices",
   message: `${percent}%`,
   schema: "aossie-best-practices-v1",
-  updated: new Date().toISOString().slice(0, 10),
+  updated: statusUpdated,
   met: totalMet,
   total,
   percent,

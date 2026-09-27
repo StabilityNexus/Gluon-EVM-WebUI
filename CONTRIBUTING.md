@@ -41,9 +41,54 @@ NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_project_id
 
 Anything prefixed with `NEXT_PUBLIC_` is exposed to users. Never place secrets there.
 
+## Development Workflow
+
+Start from an up-to-date `main` branch and create a focused branch for one improvement.
+
+```bash
+git checkout main
+git pull
+git checkout -b docs/your-change
+```
+
+Use a descriptive branch prefix where appropriate:
+
+- `feat/` for new functionality
+- `fix/` for bug fixes
+- `test/` for test changes
+- `docs/` for documentation
+- `chore/` for maintenance work
+
+Keep commits focused and use concise commit messages such as:
+
+```text
+feat: add wallet state handling
+fix: correct token decimal conversion
+test: cover oracle preflight validation
+docs: update deployment guidance
+chore: update repository tooling
+```
+
+Run the application locally with:
+
+```bash
+npm run dev
+```
+
+Before committing, review the intended changes with:
+
+```bash
+git status
+git diff
+```
+
 ## Validation
 ```bash
-npx tsc --noEmit
+npm run typecheck
+npm run lint
+npm test
+npm run test:coverage
+npm run test:a11y
 npm run build
 git diff --check
 ```
@@ -68,6 +113,22 @@ git diff --check
 
 ## OrbOracle
 OrbOracle is planned. Do not present it as live until the protocol-side implementation is merged, a supported deployment exists, and its address/configuration is documented.
+
+## Pull Request Workflow
+
+Before opening a pull request:
+
+1. Keep the change focused on the relevant issue or agreed improvement.
+2. Rebase or update the branch against the latest `main`.
+3. Run the validation commands above.
+4. Push the branch to your fork or authorized remote.
+5. Open a pull request against `main`.
+6. Link the relevant issue and describe how the change was tested.
+7. Include screenshots or recordings when the change visibly affects the WebUI.
+8. Disclose AI assistance according to the repository policy.
+9. Share the pull request with maintainers through the required project communication channel.
+
+Respond to review feedback on the same branch and rerun the relevant checks after meaningful changes.
 
 ## PR Checklist
 - [ ] one focused change

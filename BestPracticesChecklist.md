@@ -55,7 +55,7 @@ _Generated from the checklist entries below. `[x]` is met, `[~]` is documented N
 - [x] npm is used.
 - [x] Open-source build tools are used.
 - [x] Canonical frontend test command exists: `npm test` runs the Vitest suite.
-- [x] Frontend coverage is enforced with `npm run test:coverage`; current measured coverage is 99.03% statements, 96.15% branches, 100% functions, and 99.03% lines for the targeted application logic.
+- [x] Frontend coverage is enforced with `npm run test:coverage`; current measured coverage is 90.24% statements, 84.93% branches, 100% functions, and 90.12% lines for the targeted application logic.03% statements, 96.15% branches, 100% functions, and 99.03% lines for the targeted application logic.
 - [x] Testing expectations are documented.
 - [x] Automated unit/component tests exist under `tests/`; the current suite passes 20/20 tests.
 - [x] TypeScript checking is available.

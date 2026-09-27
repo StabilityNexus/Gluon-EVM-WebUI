@@ -32,8 +32,7 @@ The UI should follow the deployed protocol interface and should not independentl
 - production transaction flows
 - OrbOracle integration after protocol-side support is merged
 - verified on-chain data replacing remaining mock/prototype data
-- automated frontend tests
-- stricter lint/build validation
+- end-to-end wallet-flow tests
 - production deployment configuration
 
 ## OrbOracle
