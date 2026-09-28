@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } f
 import { Pause, Play } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import HeroField from "@/components/home/HeroField"
 
 /*
  * An explanatory model of a single reactor, not live data.
@@ -202,7 +203,9 @@ export default function ReserveInstrument({ className }: { className?: string })
   }
 
   return (
-    <figure className={cn("w-full", className)}>
+    <figure className={cn("relative isolate w-full", className)}>
+      <div className="relative mx-auto max-w-[26rem]">
+        <HeroField className="absolute left-1/2 top-1/2 -z-10 aspect-square w-[350%] -translate-x-1/2 -translate-y-1/2" />
       <svg
         ref={svgRef}
         viewBox="0 0 400 400"
@@ -216,7 +219,7 @@ export default function ReserveInstrument({ className }: { className?: string })
             <circle cx={C} cy={C} r={R} />
           </clipPath>
           <pattern id={hatchId} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="7" stroke="var(--proton)" strokeWidth="1.1" strokeOpacity="0.55" />
+            <line x1="0" y1="0" x2="0" y2="7" stroke="var(--proton)" strokeWidth="1.1" style={{ strokeOpacity: "var(--dial-hatch)" }} />
           </pattern>
         </defs>
 
@@ -229,7 +232,7 @@ export default function ReserveInstrument({ className }: { className?: string })
               x2={t.x2}
               y2={t.y2}
               stroke="var(--foreground)"
-              strokeOpacity={t.major ? 0.34 : 0.14}
+              style={{ strokeOpacity: t.major ? "var(--dial-tick-major)" : "var(--dial-tick)" }}
               strokeWidth={1}
             />
           ))}
@@ -270,6 +273,7 @@ export default function ReserveInstrument({ className }: { className?: string })
 
         <circle ref={markerRef} cx={C} cy={C + R} r={4} fill="var(--background)" stroke="var(--neutron)" strokeWidth={1.75} />
       </svg>
+      </div>
 
       <figcaption className="mx-auto mt-8 max-w-[26rem]">
         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -292,7 +296,7 @@ export default function ReserveInstrument({ className }: { className?: string })
           </div>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-border bg-card p-4">
+        <div className="mt-6 rounded-2xl border border-border bg-card/75 p-4 backdrop-blur-md">
           <div className="flex items-center justify-between gap-3">
             <label htmlFor={`price-${uid}`} className="text-sm text-muted-foreground">
               Base asset price

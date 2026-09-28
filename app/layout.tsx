@@ -116,7 +116,7 @@ export default function RootLayout({
               Skip to content
             </a>
             <Navigation />
-            <main id="main" className="flex-grow pt-16">
+            <main id="main" className="flex-grow pt-20">
               {children}
             </main>
             <ClientFooter />

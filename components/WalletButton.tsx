@@ -86,7 +86,7 @@ export function WalletButton({ mode = "full", className }: { mode?: WalletButton
                     variant="outline"
                     onClick={openChainModal}
                     aria-label={`Network: ${chain.name ?? "unknown"}. Switch network`}
-                    className="px-2.5"
+                    className="bg-transparent px-2.5 hover:bg-foreground/[0.06]"
                   >
                     <ChainMark iconUrl={chain.hasIcon ? chain.iconUrl : undefined} iconBackground={chain.iconBackground} name={chain.name} />
                     <span className="hidden lg:inline">{chain.name}</span>
@@ -98,7 +98,7 @@ export function WalletButton({ mode = "full", className }: { mode?: WalletButton
                   variant="outline"
                   onClick={openAccountModal}
                   aria-label={`Account ${account.displayName}. Open account details`}
-                  className="font-mono text-xs"
+                  className="bg-transparent font-mono text-xs hover:bg-foreground/[0.06]"
                 >
                   {account.displayName}
                 </Button>

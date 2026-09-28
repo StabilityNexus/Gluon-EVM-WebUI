@@ -1,65 +1,15 @@
 import type { CSSProperties } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, ArrowUpRight } from "lucide-react"
+import { ArrowUpRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import ReserveInstrument from "@/components/home/ReserveInstrument"
-import { TokenGlyph, TokenLabel, type TokenKind } from "@/components/home/TokenGlyph"
+import { TokenGlyph } from "@/components/home/TokenGlyph"
+import ReactionFlows from "@/components/home/ReactionFlows"
 import { GLUON_NETWORKS } from "@/utils/networks"
 
 const delay = (ms: number) => ({ "--delay": `${ms}ms` }) as CSSProperties
-
-const reactions: {
-  name: string
-  from: TokenKind[]
-  to: TokenKind[]
-  description: string
-}[] = [
-  {
-    name: "Fission",
-    from: ["base"],
-    to: ["neutron", "proton"],
-    description: "Splits base tokens into Neutron and Proton.",
-  },
-  {
-    name: "Fusion",
-    from: ["neutron", "proton"],
-    to: ["base"],
-    description: "Merges Neutron and Proton back into base tokens.",
-  },
-  {
-    name: "Transmute β⁺",
-    from: ["proton"],
-    to: ["neutron"],
-    description: "Converts Proton into Neutron, with fees that adjust to the reserve balance.",
-  },
-  {
-    name: "Transmute β⁻",
-    from: ["neutron"],
-    to: ["proton"],
-    description: "Converts Neutron into Proton, with pricing driven by system health.",
-  },
-]
-
-function Formula({ from, to }: { from: TokenKind[]; to: TokenKind[] }) {
-  const side = (kinds: TokenKind[]) =>
-    kinds.map((kind, index) => (
-      <span key={kind} className="inline-flex items-center gap-2">
-        {index > 0 && <span className="text-faint-foreground">+</span>}
-        <TokenLabel kind={kind} />
-      </span>
-    ))
-
-  return (
-    <p className="flex flex-wrap items-center gap-2">
-      {side(from)}
-      <span className="sr-only">becomes</span>
-      <ArrowRight aria-hidden="true" className="size-3.5 text-faint-foreground" />
-      {side(to)}
-    </p>
-  )
-}
 
 function explorerAddressUrl(baseUrl: string | undefined, address: string) {
   if (!baseUrl) return null
@@ -70,9 +20,9 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section aria-labelledby="hero-title" className="relative">
-        <div className="container-page grid min-h-[calc(100svh-4rem)] items-center gap-16 py-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12 lg:py-20">
-          <div className="max-w-[38rem]">
+      <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
+        <div className="container-page grid min-h-[calc(100svh-5rem)] items-center gap-16 py-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12 lg:py-20">
+          <div className="relative z-10 max-w-[38rem]">
             <h1 id="hero-title" className="type-display gluon-rise text-balance" style={delay(60)}>
               Fully crypto-backed stablecoins, pegged to anything.
             </h1>
@@ -132,25 +82,7 @@ export default function HomePage() {
           </div>
 
           <div className="lg:col-span-7 lg:pl-6">
-            <div className="rounded-2xl border border-border bg-card">
-              <h3 className="border-b border-border px-6 py-4 text-[15px] font-semibold text-foreground">
-                Reactions
-              </h3>
-              <ul className="divide-y divide-border">
-                {reactions.map((reaction) => (
-                  <li
-                    key={reaction.name}
-                    className="grid gap-3 px-6 py-5 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-6"
-                  >
-                    <p className="font-medium text-foreground">{reaction.name}</p>
-                    <div>
-                      <Formula from={reaction.from} to={reaction.to} />
-                      <p className="mt-2 text-sm text-pretty text-muted-foreground">{reaction.description}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <ReactionFlows />
           </div>
         </div>
       </section>
