@@ -1,18 +1,52 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useReadContract, useChainId } from "wagmi"
+import { Activity, AlertTriangle, ArrowRight, Rocket, Search } from "lucide-react"
+
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, ExternalLink, Activity, Shield, AlertTriangle, Rocket } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { PageHeader } from "@/components/PageHeader"
+import { TokenGlyph } from "@/components/home/TokenGlyph"
 import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory"
 import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin"
 import { StableCoinFactories } from "@/utils/addresses"
 import { GLUON_NETWORKS } from "@/utils/networks"
-import Shuffle from "@/components/Shuffle"
-import TargetCursor from "@/components/TargetCursor"
-import Link from "next/link"
+
+const shortAddress = (address: string) => `${address.slice(0, 8)}…${address.slice(-6)}`
+
+function TokenRow({
+  kind,
+  label,
+  symbol,
+  name,
+}: {
+  kind: "neutron" | "proton"
+  label: string
+  symbol?: string
+  name?: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
+      <dt className="flex shrink-0 items-center gap-2 text-muted-foreground">
+        <TokenGlyph kind={kind} />
+        {label}
+      </dt>
+      <dd className="flex min-w-0 items-center justify-end gap-2">
+        {symbol || name ? (
+          <>
+            <span className="font-medium text-foreground">{symbol}</span>
+            <span className="truncate text-muted-foreground">{name}</span>
+          </>
+        ) : (
+          <Skeleton className="h-4 w-24" />
+        )}
+      </dd>
+    </div>
+  )
+}
 
 // Simple reactor card component
 function SimpleReactorCard({ address }: { address: string }) {
@@ -75,66 +109,39 @@ function SimpleReactorCard({ address }: { address: string }) {
   })
 
   return (
-    <Card className="cursor-target bg-black/70 backdrop-blur-md border-big-dashed shadow-xl hover:shadow-2xl rounded-none">
-      <CardHeader className="pb-3">
-        <div className="space-y-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-lg font-bold tracking-wide">
-                {vaultName || `Vault ${address.slice(-6)}`}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground font-mono mt-1">
-                {address.slice(0, 8)}...{address.slice(-6)}
-              </p>
-            </div>
-          </div>
+    <article className="group flex flex-col rounded-2xl border border-border bg-card p-5 transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-line-strong hover:shadow-[var(--shadow-md)]">
+      <header className="min-w-0">
+        <h2 className="truncate text-base font-semibold tracking-[-0.01em] text-foreground">
+          {vaultName || `Vault ${address.slice(-6)}`}
+        </h2>
+        <p className="mt-1 font-mono text-xs text-muted-foreground" title={address}>
+          {shortAddress(address)}
+        </p>
+      </header>
 
-          {/* Token Pair */}
-          <div className="flex items-center gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded-none border border-yellow-400"></div>
-              <span className="text-yellow-500 font-bold tracking-wider">{neutronSymbol || "NEUTRON"}</span>
-            </div>
-            <span className="text-muted-foreground font-bold">|</span>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-none border border-red-400"></div>
-              <span className="text-red-500 font-bold tracking-wider">{protonSymbol || "PROTON"}</span>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
+      <dl className="mt-5 divide-y divide-border rounded-xl border border-border bg-background">
+        <TokenRow kind="neutron" label="Neutron" symbol={neutronSymbol} name={neutronName} />
+        <TokenRow kind="proton" label="Proton" symbol={protonSymbol} name={protonName} />
+      </dl>
 
-      <CardContent className="space-y-4">
-        {/* Token Names */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <span className="text-muted-foreground">Neutron Token</span>
-            </div>
-            <span className="font-medium text-yellow-500">
-              {neutronName || "Loading..."}
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="text-muted-foreground">Proton Token</span>
-            </div>
-            <span className="font-medium text-red-500">
-              {protonName || "Loading..."}
-            </span>
-          </div>
-        </div>
-
+      <Button asChild variant="outline" className="mt-5 w-full justify-between">
         <Link href={`/c?coin=${address}`}>
-          <Button className="w-full" size="sm">
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Interact
-          </Button>
+          Open reactor
+          <ArrowRight aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5" />
         </Link>
-      </CardContent>
-    </Card>
+      </Button>
+    </article>
+  )
+}
+
+function CardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <Skeleton className="h-5 w-40" />
+      <Skeleton className="mt-2 h-3.5 w-28" />
+      <Skeleton className="mt-5 h-[5.5rem] w-full rounded-xl" />
+      <Skeleton className="mt-5 h-10 w-full rounded-lg" />
+    </div>
   )
 }
 
@@ -168,159 +175,145 @@ export default function ExplorerPage() {
   // Check if current chain is supported
   if (!factoryAddress) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <AlertTriangle className="h-16 w-16 text-yellow-500 mx-auto" />
-          <h2 className="text-2xl font-bold">Unsupported Chain</h2>
-          <p className="text-muted-foreground max-w-md">
-            Chain ID {chainId} is not supported. Please switch to one of the supported networks:
+      <div className="container-page flex min-h-[calc(100vh-12rem)] items-center justify-center py-16">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center">
+          <AlertTriangle aria-hidden="true" className="mx-auto size-8 text-warning" />
+          <h1 className="mt-4 text-lg font-semibold text-foreground">Unsupported network</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Chain ID {chainId} is not supported. Switch your wallet to one of these networks:
           </p>
-          <div className="space-y-2 text-sm">
+          <ul className="mt-5 divide-y divide-border rounded-xl border border-border bg-background text-left text-sm">
             {GLUON_NETWORKS.map(({ chain, displayName }) => (
-              <div key={chain.id}>
-                • {displayName} (Chain ID: {chain.id})
-              </div>
+              <li key={chain.id} className="flex items-center justify-between px-4 py-2.5">
+                <span className="text-foreground">{displayName}</span>
+                <span className="font-mono text-xs text-muted-foreground">{chain.id}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </div>
     )
   }
 
+  const hasError = !!(reactorsError || countError)
+
   return (
-    <div
-      className="min-h-screen"
-      style={{ fontFamily: "'Space Mono', 'Syne', 'Orbitron', 'Courier New', monospace", fontWeight: 500 }}
-    >
-      {/* Target Cursor Effect */}
-      <TargetCursor
-        spinDuration={2}
-        hideDefaultCursor={true}
+    <div className="container-page min-h-[calc(100vh-12rem)] py-10 sm:py-14">
+      <PageHeader
+        title="Reactor explorer"
+        description="Browse deployed reactors and open one to inspect its live state or interact with its token pair."
       />
 
-      <div className="container mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <Shuffle
-            text="StableCoin Reactor Explorer"
-            tag="h1"
-            className="text-2xl sm:text-4xl lg:text-5xl mb-2"
-            shuffleDirection="right"
-            duration={0.35}
-            animationMode="evenodd"
-            shuffleTimes={1}
-            ease="power3.out"
-            stagger={0.03}
-            threshold={0.1}
-            triggerOnce={true}
-            triggerOnHover={true}
-            respectReducedMotion={true}
-          />
+      {/* Error State */}
+      {hasError && (
+        <div role="alert" className="mx-auto max-w-xl rounded-2xl border border-danger/25 bg-danger/[0.04] px-6 py-8 text-center">
+          <AlertTriangle aria-hidden="true" className="mx-auto size-7 text-danger" />
+          <h2 className="mt-4 text-base font-semibold text-foreground">Unable to load reactors</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+            The reactor registry on {currentNetwork?.displayName || `chain ${chainId}`} could not be read.
+            The network RPC may be temporarily unavailable or the factory unreachable.
+          </p>
+          <p className="mt-3 font-mono text-[11px] text-faint-foreground">
+            Factory {shortAddress(factoryAddress)}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-5"
+            onClick={() => {
+              void refetchReactors()
+              void refetchCount()
+            }}
+          >
+            Try again
+          </Button>
         </div>
+      )}
 
-        {/* Error State */}
-        {(reactorsError || countError) && (
-          <div className="text-center py-16">
-            <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4 opacity-50" />
-            <p className="text-red-400 mb-2">Failed to connect to factory contract</p>
-            <p className="text-sm text-red-300 font-mono mb-4">
-              Factory: {factoryAddress}
-            </p>
-            <p className="text-xs text-red-300">
-              {reactorsError?.message || countError?.message}
-            </p>
+      {/* Loading State */}
+      {isLoadingReactors && !hasError && (
+        <div aria-busy="true" aria-label="Loading reactors">
+          <Skeleton className="mx-auto mb-8 h-11 w-full max-w-xl rounded-lg" />
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }, (_, i) => (
+              <CardSkeleton key={i} />
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Loading State */}
-        {isLoadingReactors && !reactorsError && !countError && (
-          <div className="text-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading reactors...</p>
+      {!isLoadingReactors && !hasError && (
+        <>
+          {/* Search */}
+          <div className="relative mx-auto mb-8 max-w-xl">
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              aria-label="Search reactors by address"
+              placeholder="Search by reactor address"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-11 pl-10 pr-24"
+            />
+            <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs tabular-nums text-muted-foreground">
+              {filteredReactorAddresses.length} {filteredReactorAddresses.length === 1 ? "reactor" : "reactors"}
+            </span>
           </div>
-        )}
 
-        {/* Search and Filters */}
-        {!isLoadingReactors && (
-          <>
-            <div className="mb-8 max-w-4xl mx-auto">
-              <div className="relative mb-6">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search by reactor address..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-12 bg-transparent border-2 border-white/20 focus:border-white/40 hover:border-white/30 rounded-full transition-all duration-300 shadow-sm focus:shadow-md cursor-target"
-                />
-              </div>
+          {/* Content */}
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {filteredReactorAddresses.map((address) => (
+                <SimpleReactorCard key={address} address={address} />
+              ))}
             </div>
-
-            {/* Content */}
-            {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                {filteredReactorAddresses.map((address) => (
-                  <SimpleReactorCard key={address} address={address} />
-                ))}
-              </div>
-            ) : (
-              <div className="max-w-4xl mx-auto space-y-2">
-                {filteredReactorAddresses.map((address) => (
-                  <Link key={address} href={`/c?coin=${address}`}>
-                    <div className="bg-black/70 backdrop-blur-md border-big-dashed group cursor-target shadow-lg hover:shadow-xl rounded-none p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="font-mono text-sm text-muted-foreground">
-                            {address.slice(0, 8)}...{address.slice(-6)}
-                          </div>
-                          <div className="text-sm font-medium group-hover:text-primary transition-colors">
-                            Vault {address.slice(-6)}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-primary transition-colors">
-                          <ExternalLink className="h-3 w-3" />
-                          Interact
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {/* Empty State */}
-            {filteredReactorAddresses.length === 0 && !isLoadingReactors && (
-              <div className="text-center py-16">
-                <div className="mb-4">
-                  <Activity className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                  <p className="text-muted-foreground mb-2">No reactors found</p>
-                  <p className="text-sm text-muted-foreground">
-                    {deployedReactors && deployedReactors.length === 0
-                      ? "No reactors have been deployed yet."
-                      : "Try adjusting your search criteria."
-                    }
-                  </p>
-                </div>
-                {searchTerm ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSearchTerm("")}
+          ) : (
+            <ul className="mx-auto max-w-3xl divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+              {filteredReactorAddresses.map((address) => (
+                <li key={address}>
+                  <Link
+                    href={`/c?coin=${address}`}
+                    className="flex items-center justify-between gap-4 px-5 py-4 text-sm outline-none transition-colors duration-150 hover:bg-secondary focus-visible:bg-secondary"
                   >
+                    <span className="flex items-center gap-4">
+                      <span className="font-mono text-xs text-muted-foreground">{shortAddress(address)}</span>
+                      <span className="font-medium text-foreground">Vault {address.slice(-6)}</span>
+                    </span>
+                    <ArrowRight aria-hidden="true" className="size-4 text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Empty State */}
+          {filteredReactorAddresses.length === 0 && (
+            <div className="mx-auto max-w-md py-16 text-center">
+              <Activity aria-hidden="true" className="mx-auto size-8 text-faint-foreground" />
+              <p className="mt-4 font-medium text-foreground">No reactors found</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {deployedReactors && deployedReactors.length === 0
+                  ? "No reactors have been deployed on this network yet."
+                  : "No reactor address matches your search."}
+              </p>
+              <div className="mt-6">
+                {searchTerm ? (
+                  <Button variant="outline" size="sm" onClick={() => setSearchTerm("")}>
                     Clear search
                   </Button>
                 ) : (
-                  <Link href="/create">
-                    <Button>
-                      <Rocket className="h-4 w-4 mr-2" />
-                      Deploy First Reactor
-                    </Button>
-                  </Link>
+                  <Button asChild>
+                    <Link href="/create">
+                      <Rocket aria-hidden="true" />
+                      Deploy the first reactor
+                    </Link>
+                  </Button>
                 )}
               </div>
-            )}
-          </>
-        )}
-      </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

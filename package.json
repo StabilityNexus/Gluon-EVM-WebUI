@@ -17,7 +17,6 @@
     "checklist:check": "node scripts/update-checklist-status.mjs --check"
   },
   "dependencies": {
-    "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -56,12 +55,10 @@
     "embla-carousel-react": "8.5.1",
     "framer-motion": "^12.23.21",
     "geist": "latest",
-    "gsap": "^3.13.0",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "14.2.16",
     "next-themes": "latest",
-    "ogl": "^1.0.11",
     "react": "^18",
     "react-day-picker": "9.8.0",
     "react-dom": "^18",

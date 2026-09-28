@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import Link from "next/link"
+import { PageHeader } from "@/components/PageHeader"
 import {
   useAccount,
   useReadContract,
@@ -228,7 +230,17 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     return routeMap[key] || null
   }, [fromToken, toToken])
 
-
+  if (!reactorAddress) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle aria-hidden="true" className="mx-auto mb-4 size-8 text-danger" />
+          <h2 className="text-2xl font-bold mb-2">No Reactor Address</h2>
+          <p className="text-muted-foreground">Please provide a valid reactor address.</p>
+        </div>
+      </div>
+    )
+  }
 
   const { data: vaultName } = useReadContract({
     address: reactorAddress as `0x${string}`,
@@ -1543,43 +1555,30 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
 
 
   return (
-    <div className="min-h-screen relative" style={containerStyle}>
-      <LightRays
-        raysOrigin="top-center"
-        raysColor="#F7F7F7"
-        raysSpeed={1.5}
-        lightSpread={0.8}
-        rayLength={1.2}
-        followMouse
-        mouseInfluence={0.1}
-        noiseAmount={0.1}
-        distortion={0.05}
-        className="fixed inset-0 z-[1]"
-      />
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="container-page py-10 sm:py-14">
+        <div className="mx-auto max-w-2xl">
+          <Link
+            href="/explorer"
+            className="mb-8 inline-flex items-center gap-1.5 rounded-md text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to reactors
+          </Link>
 
-      <div className="container mx-auto px-4 py-8 relative z-[5]">
-        <div className="text-center mb-10 space-y-2">
-          <Shuffle
-            text={vaultHeading}
-            tag="h1"
-            className="text-4xl lg:text-5xl text-foreground"
-            shuffleDirection="right"
-            duration={0.35}
-            animationMode="evenodd"
-            shuffleTimes={1}
-            ease="power3.out"
-            stagger={0.03}
-            threshold={0.1}
-            triggerOnce
-            respectReducedMotion
+          <PageHeader
+            title={vaultHeading}
+            description="Convert assets through this reactor and inspect its live reserve, pricing, fee, and contract configuration."
+            meta={
+              <span className="rounded-md border border-border bg-card px-2 py-1 font-mono text-xs text-muted-foreground">
+                {shortenAddress(reactorAddress)}
+              </span>
+            }
           />
-          <p className="text-sm text-muted-foreground">
-            Manage flows between {baseAssetDisplay} and the {neutronSymbolText}/{protonSymbolText} bundle.
-          </p>
         </div>
 
-        <div className="max-w-xl mx-auto">
-          <Card className="backdrop-blur-md bg-background/60 border-white/40 shadow-2xl rounded-none">
+        <div className="mx-auto max-w-2xl">
+          <Card className="rounded-2xl border border-border bg-card">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-semibold flex items-center gap-2 text-foreground">
                 <Sparkles className="h-5 w-5 text-primary" />
@@ -1588,10 +1587,10 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
               <p className="text-sm text-muted-foreground">{swapDescription}</p>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-3 rounded-none border border-white/40 bg-white/5 p-4">
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-white/70">
+              <div className="space-y-3 rounded-xl border border-border bg-background p-4 sm:p-5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>From</span>
-                  <span className="font-mono text-xs text-white/80">{fromBalanceDisplay}</span>
+                  <span className="font-mono text-xs text-foreground/80">{fromBalanceDisplay}</span>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:h-14">
                   <Select value={fromToken} onValueChange={(value) => setFromToken(value as TokenOption)}>
@@ -1631,7 +1630,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="w-full sm:w-auto h-12 sm:h-14 border-white/40 hover:bg-white/10"
+                      className="w-full sm:w-auto h-12 sm:h-14 border-border hover:bg-muted"
                       onClick={handleMaxClick}
                     >
                       Max
@@ -1644,7 +1643,8 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                 <Button
                   type="button"
                   variant="ghost"
-                  className="rounded-none h-12 w-12 p-0 bg-white/10 hover:bg-white/20"
+                  aria-label="Reverse conversion direction"
+                  className="size-11 rounded-full border border-border bg-background p-0 hover:bg-secondary"
                   onClick={() => {
                     const newFrom = toToken
                     const newTo = allowedTargets[newFrom][0]
@@ -1656,8 +1656,8 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                 </Button>
               </div>
 
-              <div className="space-y-3 rounded-none border border-white/40 bg-white/5 p-4">
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-white/70">
+              <div className="space-y-3 rounded-xl border border-border bg-background p-4 sm:p-5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>To</span>
                   <div className="flex items-center gap-2">
                     {breakdownPopover && (
@@ -1665,7 +1665,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                         <PopoverTrigger asChild>
                           <button
                             type="button"
-                            className="rounded-none border border-white/40 p-1 text-foreground/70 transition-colors hover:border-white/40 hover:text-foreground"
+                            className="rounded-lg border border-border p-1 text-foreground/70 transition-colors hover:border-foreground/40 hover:text-foreground"
                           >
                             <Info className="h-4 w-4" />
                           </button>
@@ -1748,7 +1748,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                           return (
                             <Button
                               onClick={openConnectModal}
-                              className="w-full h-14 bg-[#E8BA10] hover:bg-[#d0a60e] text-black font-semibold text-lg border-0"
+                              className="w-full h-12 sm:h-14 text-[15px]"
                             >
                               <Zap className="mr-2 h-5 w-5" />
                               Connect Wallet
@@ -1758,7 +1758,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
 
                         if (!route) {
                           return (
-                            <Button disabled className="w-full h-14 bg-muted text-muted-foreground">
+                            <Button disabled className="w-full h-12 sm:h-14 text-[15px] bg-secondary text-muted-foreground disabled:opacity-100">
                               Select a valid pair
                             </Button>
                           )
@@ -1766,7 +1766,10 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
 
                         if (!amount || Number(amount) <= 0 || !recipient) {
                           return (
-                            <Button disabled className="w-full h-14 bg-muted text-muted-foreground">
+                            <Button
+                              disabled
+                              className="w-full h-12 sm:h-14 text-[15px] bg-secondary text-muted-foreground shadow-none disabled:opacity-100"
+                            >
                               Enter amount and recipient
                             </Button>
                           )
@@ -1777,11 +1780,11 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                             <Button
                               onClick={handleApprove}
                               disabled={isProcessing}
-                              className="w-full h-14 bg-[#E8BA10] hover:bg-[#d0a60e] text-black font-semibold text-lg border-0"
+                              className="w-full h-12 sm:h-14 text-[15px]"
                             >
                               {isApproving || isApprovingTx ? (
                                 <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2" />
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
                                   Approving…
                                 </>
                               ) : (
@@ -1798,11 +1801,11 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                           <Button
                             onClick={handleSwap}
                             disabled={isProcessing}
-                            className="w-full h-14 bg-[#E8BA10] hover:bg-[#d0a60e] text-black font-semibold text-lg border-0 disabled:opacity-60"
+                            className="w-full h-12 sm:h-14 text-[15px] disabled:opacity-60"
                           >
                             {isProcessing ? (
                               <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2" />
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
                                 Processing…
                               </>
                             ) : (
@@ -1839,13 +1842,13 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                     key={section.title}
                     className="rounded-xl border border-white/20 bg-white/5 px-5 py-6 backdrop-blur-sm"
                   >
-                    <div className="flex flex-col gap-1 border-b border-white/10 pb-4">
-                      <h3 className="text-sm font-semibold tracking-wide text-foreground">{section.title}</h3>
+                    <div className="flex min-h-[4rem] flex-col gap-1 border-b border-border/60 pb-4">
+                      <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
                       {section.description ? (
                         <p className="text-xs text-muted-foreground/80">{section.description}</p>
                       ) : null}
                     </div>
-                    <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+                    <dl className="divide-y divide-border/60">
                       {section.items.map((row) => {
                         const isCopyable = row.monospace && row.value !== "—"
                         const emphasisClasses = row.emphasize
@@ -1866,7 +1869,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 rounded-full border border-white/20 bg-white/5"
+                                    className="h-7 w-7 rounded-full border border-border bg-background hover:bg-muted"
                                     onClick={() => void handleCopy(row.value)}
                                   >
                                     <Copy className="h-4 w-4" />
@@ -1877,7 +1880,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                                       {shortenAddress(row.value)}
                                     </span>
                                     {copiedValue === row.value ? (
-                                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                      <span className="text-xs text-muted-foreground">
                                         Copied
                                       </span>
                                     ) : null}

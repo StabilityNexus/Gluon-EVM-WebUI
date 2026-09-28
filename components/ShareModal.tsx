@@ -47,31 +47,35 @@ const ShareModal: FC<ShareModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black/90 flex items-center justify-center z-[1000] p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
       onClick={onClose}
     >
       <div
-        className="bg-[#0B0E15] rounded-none max-w-md w-full shadow-xl border border-white/30"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-title"
+        className="bg-popover text-popover-foreground rounded-2xl max-w-md w-full shadow-[var(--shadow-md)] border border-border"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-white/30">
-          <h2 className="text-xl font-semibold tracking-[0.2em] uppercase text-white/85">Share Gluon</h2>
+        <div className="flex justify-between items-center px-6 py-4 border-b border-border">
+          <h2 id="share-title" className="text-lg font-semibold tracking-[-0.01em] text-foreground">Share Gluon</h2>
           <button
             onClick={onClose}
-            className="text-white/60 hover:text-white/85 text-2xl leading-none w-8 h-8 flex items-center justify-center transition-colors"
+            aria-label="Close"
+            className="grid size-9 place-items-center rounded-lg text-2xl leading-none text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             ×
           </button>
         </div>
 
         <div className="p-6">
-          <p className="text-center text-white/60 mb-6 text-sm tracking-[0.1em] uppercase">
+          <p className="text-center text-muted-foreground mb-6 text-sm">
             Share Gluon with your network:
           </p>
 
           <div className="space-y-3">
             <button
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#1da1f2] hover:bg-[#1a91da] text-white rounded-none transition-colors font-semibold tracking-[0.1em] uppercase text-xs"
+              className="w-full h-11 flex items-center justify-center gap-3 px-4 rounded-lg border border-border bg-background text-foreground text-sm font-medium transition-colors hover:bg-secondary"
               onClick={handleTwitterShare}
             >
               <svg
@@ -86,7 +90,7 @@ const ShareModal: FC<ShareModalProps> = ({ isOpen, onClose }) => {
             </button>
 
             <button
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#0088cc] hover:bg-[#0077b5] text-white rounded-none transition-colors font-semibold tracking-[0.1em] uppercase text-xs"
+              className="w-full h-11 flex items-center justify-center gap-3 px-4 rounded-lg border border-border bg-background text-foreground text-sm font-medium transition-colors hover:bg-secondary"
               onClick={handleTelegramShare}
             >
               <svg
@@ -105,7 +109,7 @@ const ShareModal: FC<ShareModalProps> = ({ isOpen, onClose }) => {
             </button>
 
             <button
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#0077b5] hover:bg-[#006399] text-white rounded-none transition-colors font-semibold tracking-[0.1em] uppercase text-xs"
+              className="w-full h-11 flex items-center justify-center gap-3 px-4 rounded-lg border border-border bg-background text-foreground text-sm font-medium transition-colors hover:bg-secondary"
               onClick={handleLinkedInShare}
             >
               <svg
@@ -120,7 +124,7 @@ const ShareModal: FC<ShareModalProps> = ({ isOpen, onClose }) => {
             </button>
 
             <button
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-none transition-colors font-semibold tracking-[0.1em] uppercase text-xs"
+              className="w-full h-11 flex items-center justify-center gap-3 px-4 rounded-lg border border-border bg-background text-foreground text-sm font-medium transition-colors hover:bg-secondary"
               onClick={handleDiscordShare}
             >
               <svg
@@ -135,7 +139,7 @@ const ShareModal: FC<ShareModalProps> = ({ isOpen, onClose }) => {
             </button>
 
             <button
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/10 hover:bg-white/20 text-white/85 rounded-none transition-colors font-semibold tracking-[0.1em] uppercase text-xs border border-white/30"
+              className="w-full h-11 flex items-center justify-center gap-3 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary/85"
               onClick={handleCopyLink}
             >
               <svg

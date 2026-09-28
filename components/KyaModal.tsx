@@ -18,26 +18,31 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
 
   return (
     <div
-      className="fixed inset-0 bg-black/90 flex items-center justify-center z-[1000] p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
       onClick={onClose}
     >
       <div
-        className="bg-[#0B0E15] border-2 border-white/30 rounded-none max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl mx-2 sm:mx-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="kya-title"
+        className="bg-popover text-popover-foreground border border-border rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-[var(--shadow-md)] mx-2 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-4 sm:p-6 border-b border-white/20">
-          <h2 className="text-base sm:text-xl font-bold text-white/85 uppercase tracking-[0.15em] sm:tracking-[0.3em] font-mono">
+        <div className="sticky top-0 flex justify-between items-center gap-4 bg-popover px-5 py-4 sm:px-8 border-b border-border">
+          <h2 id="kya-title"
+            className="text-lg font-semibold tracking-[-0.01em] text-foreground">
             Know Your Assumptions
           </h2>
           <button
             onClick={onClose}
-            className="text-white/60 hover:text-white/85 text-2xl leading-none w-8 h-8 flex items-center justify-center transition-colors font-mono"
+            aria-label="Close"
+            className="grid size-9 place-items-center rounded-lg text-2xl leading-none text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             ×
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-4 text-white/85 text-xs sm:text-sm leading-relaxed font-mono">
+        <div className="px-5 py-6 sm:px-8 space-y-4 text-foreground/85 text-sm leading-relaxed">
           <p>
             This decentralized application is composed of smart contracts running on a blockchain
             and a website that eases your interaction with the smart contracts.
@@ -54,7 +59,7 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
               href="https://github.com/StabilityNexus"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#8FF7FF] hover:text-[#C6FFDD] underline transition-colors"
+              className="text-foreground underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-foreground"
             >
               https://github.com/StabilityNexus
             </a>
@@ -180,23 +185,23 @@ export default function KyaModal({ isOpen, onClose, onUnderstand }: KyaModalProp
               href="https://terms.stability.nexus"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#8FF7FF] hover:text-[#C6FFDD] underline transition-colors"
+              className="text-foreground underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-foreground"
             >
               Terms and Conditions
             </a>
             .
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-white/20">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end pt-5 border-t border-border">
             <button
               onClick={handleUnderstand}
-              className="px-6 py-2 bg-white text-black hover:bg-[#C6FFDD] transition-colors font-mono uppercase tracking-[0.2em] text-xs"
+              className="h-10 rounded-lg px-5 bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary/85"
             >
               I understand and I agree.
             </button>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-[#0F1419] border border-white/30 text-white/85 hover:bg-[#131820] transition-colors font-mono uppercase tracking-[0.2em] text-xs"
+              className="h-10 rounded-lg px-5 border border-input bg-background text-foreground text-sm font-medium transition-colors hover:bg-secondary"
             >
               Close
             </button>
