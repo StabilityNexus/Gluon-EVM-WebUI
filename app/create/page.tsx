@@ -506,7 +506,7 @@ export default function CreatePage() {
           <div className="relative overflow-hidden border border-white/25 bg-[#090B11]/85 shadow-[0_0_60px_rgba(0,0,0,0.65)] backdrop-blur-sm cursor-normal">
             <div className="flex items-center justify-between border-b border-white/20 bg-[#050608]/80 px-8 py-6 uppercase tracking-[0.3em] text-xs text-white/60">
               <div className="flex items-center gap-4 text-white">
-                <span className="text-sm font-bold text-[#8FF7FF]">//</span>
+                <span className="text-sm font-bold text-[#8FF7FF]">{"//"}</span>
                 <Shuffle
                   text="Create Your Reactor"
                   tag="span"

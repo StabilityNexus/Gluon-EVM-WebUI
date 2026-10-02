@@ -1,0 +1,42 @@
+name: Best Practices
+
+on:
+  push:
+    paths:
+      - "BestPracticesChecklist.md"
+      - "checklist-status.json"
+      - "scripts/update-checklist-status.mjs"
+      - "package.json"
+      - ".github/workflows/checklist-score.yml"
+  pull_request:
+    paths:
+      - "BestPracticesChecklist.md"
+      - "checklist-status.json"
+      - "scripts/update-checklist-status.mjs"
+      - "package.json"
+      - ".github/workflows/checklist-score.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate checklist score
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate checklist status
+        run: npm run checklist:check

@@ -181,9 +181,26 @@ const formatWad = (value?: bigint, precision = 4) => {
 }
 
 export default function InteractionClient({ coinId }: { coinId: string }) {
-  const { address } = useAccount()
   const searchParams = useSearchParams()
   const reactorAddress = coinId === "c" ? searchParams.get("coin") : coinId
+
+  if (!reactorAddress) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">No Reactor Address</h2>
+          <p className="text-muted-foreground">Please provide a valid reactor address.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return <ReactorInteractionClient reactorAddress={reactorAddress} />
+}
+
+function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }) {
+  const { address } = useAccount()
 
   const [fromToken, setFromToken] = useState<TokenOption>("BASE")
   const [toToken, setToToken] = useState<TokenOption>("BUNDLE")
@@ -211,17 +228,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
     return routeMap[key] || null
   }, [fromToken, toToken])
 
-  if (!reactorAddress) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">No Reactor Address</h2>
-          <p className="text-muted-foreground">Please provide a valid reactor address.</p>
-        </div>
-      </div>
-    )
-  }
+
 
   const { data: vaultName } = useReadContract({
     address: reactorAddress as `0x${string}`,
@@ -900,8 +907,8 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
     baseDecimalsNumber,
     neutronDecimalsNumber,
     protonDecimalsNumber,
-    neutronSymbol,
-    protonSymbol,
+    neutronSymbolText,
+    protonSymbolText,
   ])
 
   const swapDescription = useMemo(() => {
@@ -1283,6 +1290,7 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
     protonSymbolText,
     protonDecimalsNumber,
     basePricePegged,
+    peggedSymbolText,
     isFusionRoute,
     fusionBreakdown,
   ])
