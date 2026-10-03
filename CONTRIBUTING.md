@@ -1,145 +1,453 @@
 # Contributing to Gluon-EVM WebUI
 
-This repository contains the frontend for the [Gluon-EVM protocol](https://github.com/StabilityNexus/Gluon-EVM).
+⭐ Thank you for considering contributing to Gluon-EVM WebUI! ⭐
 
-## Communication
-- Stability Nexus Discord: https://discord.gg/hjUhu33uAn
-- Issues: https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues
+Gluon-EVM WebUI is the frontend for the
+[Gluon-EVM protocol](https://github.com/StabilityNexus/Gluon-EVM), developed under Stability Nexus.
 
-Discuss large features or architecture changes with maintainers before implementation.
+We welcome useful bug fixes, tests, documentation improvements, accessibility work, wallet-flow
+improvements, and focused Gluon integration changes.
 
-## Useful Contributions
-- frontend bug fixes
-- responsive UI improvements
-- accessibility
-- wallet-flow improvements
-- Gluon-EVM contract integration
-- explorer improvements
-- transaction-state handling
-- documentation
-- testing
-- performance and deployment improvements
+---
 
-## AI-Assisted Contributions
-AI assistance is allowed, but contributors are responsible for every submitted change.
+## 🚨 Discord Communication Is Mandatory
 
-Disclose the tool/model used, what it assisted with, whether suggestions were manually reviewed, and how the change was validated.
+**All project communication should happen on Discord. GitHub should primarily be used for issues,
+code, and pull requests.**
 
-Do not submit generated code you do not understand or cannot explain.
+Before beginning work:
 
-## Setup
+- Join the [Stability Nexus Discord server](https://discord.gg/hjUhu33uAn)
+- Discuss the issue or proposed change in the relevant Discord channel
+- Post updates about your issue or pull request
+- Ask questions when requirements are unclear
+
+---
+
+## 📋 Table of Contents
+
+- [How Can I Contribute?](#-how-can-i-contribute)
+- [Coding with AI](#-coding-with-ai)
+- [Getting Started](#-getting-started)
+- [Development Workflow](#-development-workflow)
+- [Testing Your Changes](#-testing-your-changes)
+- [Pull Request Guidelines](#-pull-request-guidelines)
+- [Frontend Code Guidelines](#-frontend-code-guidelines)
+- [Web3 and Oracle Guidelines](#-web3-and-oracle-guidelines)
+- [Static Deployment Guidelines](#-static-deployment-guidelines)
+- [Documentation Guidelines](#-documentation-guidelines)
+- [Security](#-security)
+- [Community Guidelines](#-community-guidelines)
+
+---
+
+## 🤝 How Can I Contribute?
+
+### Reporting Bugs
+
+Before opening a bug report, search existing issues and pull requests to avoid duplicates.
+
+A useful bug report should include:
+
+- affected page or component
+- tested commit or branch
+- browser and operating system
+- connected wallet
+- chain/network
+- relevant reactor/contract address
+- steps to reproduce
+- expected behavior
+- actual behavior
+- console or transaction error when useful
+- screenshots or recordings for visible defects
+
+Do not publicly report vulnerabilities that could affect users, wallets, or deployed contracts.
+Follow [SECURITY.md](SECURITY.md).
+
+### Suggesting Features
+
+Before proposing a feature:
+
+- search existing issues and pull requests
+- discuss the idea on Discord
+- explain the user problem
+- identify the affected frontend/contract boundary
+- explain whether any protocol change is required
+- keep the proposal focused
+
+Large architecture changes should not be implemented without maintainer agreement.
+
+### Contributing Code
+
+1. Create or identify a relevant issue or agreed task.
+2. Discuss the scope when necessary.
+3. Create a focused branch from the latest `main`.
+4. Implement one improvement.
+5. Add or update tests where appropriate.
+6. Verify light/dark and responsive states for visible UI changes.
+7. Run all required checks.
+8. Open a pull request against `main`.
+9. Add screenshots/recordings for visible UI work.
+10. Share the pull request with maintainers on Discord.
+
+---
+
+## 🤖 Coding with AI
+
+AI-assisted contributions are allowed.
+
+Transparency is required.
+
+Your pull request description should disclose:
+
+- the AI tool/model used
+- what the tool assisted with
+- whether the suggestions were manually reviewed
+- how the implementation was tested
+
+Contributors remain responsible for every line they submit.
+
+Do not submit generated code that you:
+
+- do not understand
+- have not reviewed
+- have not tested
+- cannot explain during review
+
+Avoid unnecessary abstractions, duplicate helpers, speculative features, and unrelated refactors.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Install:
+
+- [Git](https://git-scm.com/)
+- [Node.js 20+](https://nodejs.org/)
+- npm
+
+Verify:
+
+```bash
+git --version
+node --version
+npm --version
+```
+
+### Fork the Repository
+
+Fork:
+
+```text
+https://github.com/StabilityNexus/Gluon-EVM-WebUI
+```
+
+### Clone Your Fork
+
 ```bash
 git clone https://github.com/YOUR_USERNAME/Gluon-EVM-WebUI.git
 cd Gluon-EVM-WebUI
+```
+
+### Add the Upstream Repository
+
+```bash
+git remote add upstream https://github.com/StabilityNexus/Gluon-EVM-WebUI.git
+```
+
+### Install Dependencies
+
+```bash
 npm ci
 ```
 
-Local browser-safe environment example:
-```text
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_project_id
-```
-
-Anything prefixed with `NEXT_PUBLIC_` is exposed to users. Never place secrets there.
-
-## Development Workflow
-
-Start from an up-to-date `main` branch and create a focused branch for one improvement.
+### Browser-Safe Environment
 
 ```bash
-git checkout main
-git pull
-git checkout -b docs/your-change
+cp .env.example .env.local
 ```
 
-Use a descriptive branch prefix where appropriate:
+Anything prefixed with `NEXT_PUBLIC_` is exposed to browser users and must never contain a secret.
 
-- `feat/` for new functionality
-- `fix/` for bug fixes
-- `test/` for test changes
-- `docs/` for documentation
-- `chore/` for maintenance work
+---
 
-Keep commits focused and use concise commit messages such as:
+## 🔄 Development Workflow
 
-```text
-feat: add wallet state handling
-fix: correct token decimal conversion
-test: cover oracle preflight validation
-docs: update deployment guidance
-chore: update repository tooling
-```
-
-Run the application locally with:
+### 1. Update Your Local Main Branch
 
 ```bash
-npm run dev
+git switch main
+git fetch upstream
+git pull --rebase upstream main
 ```
 
-Before committing, review the intended changes with:
+### 2. Create a New Branch
+
+```bash
+git switch -c feat/your-feature
+```
+
+Use descriptive branch prefixes:
+
+```text
+feat/
+fix/
+test/
+docs/
+refactor/
+style/
+chore/
+ci/
+```
+
+### 3. Keep the Change Focused
+
+Do not combine unrelated:
+
+- bug fixes
+- design changes
+- dependency upgrades
+- protocol changes
+- formatting changes
+
+### 4. Review the Diff
 
 ```bash
 git status
 git diff
-```
-
-## Validation
-```bash
-npm run typecheck
-npm run lint
-npm test
-npm run test:coverage
-npm run test:a11y
-npm run build
 git diff --check
 ```
 
-## Frontend Guidelines
-- reuse shared components
-- avoid duplicate logic and unnecessary abstractions
-- avoid introducing `any` where a useful type exists
-- use `bigint` for EVM integer values
-- avoid JS floating-point arithmetic for token values
-- preserve light/dark themes
-- check mobile/tablet/desktop for visible changes
-- use semantic and keyboard-accessible controls where practical
+### 5. Commit Your Changes
 
-## Web3 Guidelines
-- Gluon-EVM is the protocol source of truth
-- never invent deployment addresses
-- centralize deployment configuration
-- handle wallet rejection and contract reverts clearly
-- token approval UX must show what is being approved
-- do not add unlimited approvals without explicit review
+Use concise prefixed commit messages:
 
-## OrbOracle
-OrbOracle is planned. Do not present it as live until the protocol-side implementation is merged, a supported deployment exists, and its address/configuration is documented.
+```text
+feat: improve reactor interaction flow
+fix: correct token decimal handling
+test: cover oracle preflight
+docs: align repository documentation
+```
 
-## Pull Request Workflow
+### 6. Rebase Before Pushing
 
-Before opening a pull request:
+```bash
+git fetch upstream
+git rebase upstream/main
+```
 
-1. Keep the change focused on the relevant issue or agreed improvement.
-2. Rebase or update the branch against the latest `main`.
-3. Run the validation commands above.
-4. Push the branch to your fork or authorized remote.
-5. Open a pull request against `main`.
-6. Link the relevant issue and describe how the change was tested.
-7. Include screenshots or recordings when the change visibly affects the WebUI.
-8. Disclose AI assistance according to the repository policy.
-9. Share the pull request with maintainers through the required project communication channel.
+### 7. Push Your Branch
 
-Respond to review feedback on the same branch and rerun the relevant checks after meaningful changes.
+```bash
+git push -u origin your-branch-name
+```
 
-## PR Checklist
-- [ ] one focused change
-- [ ] only intended files changed
-- [ ] `npx tsc --noEmit` passes
-- [ ] `npm run build` passes
+After rebasing an already-pushed branch:
+
+```bash
+git push --force-with-lease
+```
+
+---
+
+## 🧪 Testing Your Changes
+
+### Type Check
+
+```bash
+npm run typecheck
+```
+
+### Lint
+
+```bash
+npm run lint
+```
+
+### Tests
+
+```bash
+npm test
+```
+
+### Coverage
+
+```bash
+npm run test:coverage
+```
+
+### Accessibility
+
+```bash
+npm run test:a11y
+```
+
+### Dependency Security Triage
+
+```bash
+npm run security:audit
+```
+
+### Production Static Build
+
+```bash
+npm run build
+```
+
+The build must produce:
+
+```text
+out/
+```
+
+### Checklist Validation
+
+```bash
+npm run checklist:check
+```
+
+### Required Final Check
+
+```bash
+git diff --check
+```
+
+Do not hide failing tests or weaken checks simply to make CI pass.
+
+---
+
+## 📤 Pull Request Guidelines
+
+### Before Submitting
+
+Confirm that:
+
+- [ ] The change addresses an agreed task
+- [ ] The pull request targets `main`
+- [ ] Only intended files changed
+- [ ] Type checking passes
+- [ ] ESLint passes with zero warnings
+- [ ] Automated tests pass
+- [ ] Coverage passes
+- [ ] Accessibility checks pass
+- [ ] Static production build passes
 - [ ] `git diff --check` passes
-- [ ] light/dark checked when relevant
-- [ ] responsive states checked when relevant
-- [ ] Web3 success/failure states checked when relevant
-- [ ] screenshots/recordings included for visible changes
-- [ ] documentation updated when behavior/config changes
-- [ ] AI usage disclosed
-- [ ] no secret committed
+- [ ] Light/dark behavior was checked when relevant
+- [ ] Responsive behavior was checked when relevant
+- [ ] Web3 error/rejection states were checked when relevant
+- [ ] Screenshots/recordings are included for visible changes
+- [ ] Documentation was updated where necessary
+- [ ] AI usage was disclosed
+- [ ] No secret was committed
+
+### Responding to Review Feedback
+
+When updating a pull request:
+
+1. understand the requested change
+2. make the smallest appropriate correction
+3. rerun relevant checks
+4. push to the same branch
+5. reply with what changed
+
+Avoid silently broadening the PR.
+
+---
+
+## 📝 Frontend Code Guidelines
+
+- Reuse existing components and utilities.
+- Avoid duplicated logic.
+- Avoid unnecessary abstractions.
+- Prefer useful TypeScript types instead of `any`.
+- Use semantic and keyboard-accessible controls where practical.
+- Preserve light and dark themes.
+- Verify mobile, tablet, and desktop layouts.
+- Use `bigint` for EVM integer values.
+- Use viem parsing/formatting helpers for token values.
+- Do not use JavaScript floating-point arithmetic for on-chain units.
+- Do not assume reserve tokens use 18 decimals.
+- Keep network and contract configuration centralized.
+
+---
+
+## 🔮 Web3 and Oracle Guidelines
+
+Gluon-EVM contracts are the protocol source of truth.
+
+The WebUI should:
+
+- read deployed contract state instead of duplicating protocol accounting
+- never invent production addresses
+- handle disconnected wallet and wrong-network states
+- handle user rejection, pending, confirmed, and reverted transactions
+- show approvals accurately
+- avoid unlimited approvals without explicit review
+- use the oracle configured by the selected reactor
+- avoid presenting development/mock data as production data
+
+OrbOracle should only be shown as live after the corresponding deployment has been verified and
+documented.
+
+---
+
+## 🌐 Static Deployment Guidelines
+
+The intended deployment architecture is fully static and GitHub Pages compatible.
+
+New changes must not require:
+
+- Next.js API routes
+- Server Actions
+- runtime SSR
+- middleware requiring a server runtime
+- server-only secrets
+- a separately deployed Gluon application backend
+
+Wallet and EVM interactions must remain browser-side.
+
+The production build must export static files to:
+
+```text
+out/
+```
+
+---
+
+## 📚 Documentation Guidelines
+
+Documentation should:
+
+- follow the established repository format
+- distinguish WebUI behavior from protocol behavior
+- use verified deployment information
+- avoid invented addresses
+- mark development/test data clearly
+- update deployment records when configuration changes
+- include screenshots when UI behavior materially changes
+
+---
+
+## 🔐 Security
+
+Do not publish exploitable security findings in a public issue.
+
+Follow [SECURITY.md](SECURITY.md).
+
+Never commit:
+
+- wallet private keys
+- seed phrases
+- RPC secrets
+- API secrets
+- signing credentials
+
+---
+
+## 🌍 Community Guidelines
+
+Communicate respectfully and keep technical discussion focused.
+
+Use Discord for coordination and GitHub for durable code/review history.

@@ -16,9 +16,8 @@ import {
 import { StableCoinFactories } from "@/utils/addresses"
 import { GLUON_NETWORKS } from "@/utils/networks"
 import { Toaster, toast } from "sonner"
-import Shuffle from "@/components/Shuffle"
-import TargetCursor from "@/components/TargetCursor"
 import TokenSelector from "@/components/TokenSelector"
+import { PageHeader } from "@/components/PageHeader"
 import OraclePreflightPanel from "@/components/OraclePreflightPanel"
 import {
   runOraclePreflight,
@@ -82,7 +81,7 @@ export default function CreatePage() {
     baseToken: "",
     oracleAddress: "",
     treasury: address || "",
-    criticalReserveRatio: "400",
+    criticalReserveRatio: "120",
   })
 
   const [oracleProvider, setOracleProvider] = useState<OracleProvider>("existing")
@@ -424,14 +423,14 @@ export default function CreatePage() {
     }
 
     const ratioValue = Number(config.criticalReserveRatio)
-    if (Number.isNaN(ratioValue) || ratioValue < 100) {
-      toast.error("Critical reserve ratio must be at least 100%")
+    if (Number.isNaN(ratioValue) || ratioValue < 100 || ratioValue >= 200) {
+      toast.error("Critical reserve ratio must be at least 100% and below 200%")
       return
     }
 
     const criticalReserveRatioWad = parseUnits((ratioValue / 100).toString(), 18)
-    if (criticalReserveRatioWad < parseUnits("1", 18)) {
-      toast.error("Critical reserve ratio must be at least 100%")
+    if (criticalReserveRatioWad < parseUnits("1", 18) || criticalReserveRatioWad >= parseUnits("2", 18)) {
+      toast.error("Critical reserve ratio must be at least 100% and below 200%")
       return
     }
 
@@ -484,63 +483,45 @@ export default function CreatePage() {
   }
 
   const fieldBaseClasses =
-    "bg-[#0B0E15] border border-white/30 text-[13px] font-semibold tracking-[0.2em] text-white/85 placeholder:text-white/35 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70 focus:border-white/60 transition-colors duration-200 px-4 rounded-none font-mono cursor-text"
+    "bg-background border border-input text-sm text-foreground placeholder:text-faint-foreground hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus:border-foreground/40 transition-[border-color,box-shadow] duration-150 px-3.5 rounded-lg cursor-text"
   const inputClasses = `${fieldBaseClasses} h-12`
 
   return (
-    <div
-      className="min-h-screen bg-[#050608] text-white"
-      style={{ fontFamily: "'Space Mono', 'Syne', 'Orbitron', 'Courier New', monospace", fontWeight: "500" }}
-    >
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Toaster position="bottom-right" richColors />
 
-      {/* Target Cursor Effect */}
-      <TargetCursor 
-        spinDuration={2}
-        hideDefaultCursor={false}
-        ignoreSelector=".cursor-normal, input, textarea, select, button, .cursor-text, [role='combobox']"
-      />
 
-      <div className="flex min-h-screen items-center justify-center px-4 py-16">
+      <div className="container-page py-10 sm:py-14">
         <div className="w-full max-w-3xl mx-auto">
-          <div className="relative overflow-hidden border border-white/25 bg-[#090B11]/85 shadow-[0_0_60px_rgba(0,0,0,0.65)] backdrop-blur-sm cursor-normal">
-            <div className="flex items-center justify-between border-b border-white/20 bg-[#050608]/80 px-8 py-6 uppercase tracking-[0.3em] text-xs text-white/60">
-              <div className="flex items-center gap-4 text-white">
-                <span className="text-sm font-bold text-[#8FF7FF]">{"//"}</span>
-                <Shuffle
-                  text="Create Your Reactor"
-                  tag="span"
-                  className="text-sm font-semibold"
-                  shuffleDirection="right"
-                  duration={0.3}
-                  animationMode="random"
-                  shuffleTimes={1}
-                  ease="power3.out"
-                  stagger={0.02}
-                  threshold={0.1}
-                  triggerOnce
-                />
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="h-2 w-10 rounded-full border border-white/15 bg-white/10" />
-                <span className="h-2 w-4 rounded-full border border-white/15 bg-white/5" />
-              </div>
+          <PageHeader
+            title="Create a reactor"
+            description="Configure collateral, oracle wiring, token parameters, treasury, and reserve policy for a new Gluon reactor."
+          />
+
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-5 py-5 sm:px-8">
+              <h2 className="text-base font-semibold tracking-tight">
+                Reactor configuration
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Review each field carefully before submitting the deployment transaction.
+              </p>
             </div>
 
-            <div className="grid gap-10 px-8 py-10">
+            <div className="grid gap-8 px-5 py-7 sm:px-8 sm:py-8">
 
               {!isConnected && (
-                <div className="flex items-center gap-3 border border-dashed border-white/30 bg-black/30 px-5 py-4 text-white/60">
+                <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3.5 text-sm text-muted-foreground">
                   <Wallet className="h-5 w-5" />
-                  <span className="tracking-[0.2em] uppercase text-[11px]">
+                  <span className="text-[13px]">
                     Connect your wallet to authorize deployment
                   </span>
                 </div>
               )}
 
-              <div className="grid gap-8">
+              <div className="grid gap-7">
                 <div className="space-y-2">
-                  <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                  <Label className="text-[13px] font-medium text-foreground/80">
                     Vault Name
                   </Label>
                   <Input
@@ -553,7 +534,7 @@ export default function CreatePage() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                    <Label className="text-[13px] font-medium text-foreground/80">
                       Base Asset Name
                     </Label>
                     <Input
@@ -564,7 +545,7 @@ export default function CreatePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                    <Label className="text-[13px] font-medium text-foreground/80">
                       Base Asset Symbol
                     </Label>
                     <Input
@@ -577,7 +558,7 @@ export default function CreatePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                  <Label className="text-[13px] font-medium text-foreground/80">
                     Base Token (Collateral)
                   </Label>
                   <TokenSelector
@@ -590,7 +571,7 @@ export default function CreatePage() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                  <Label className="text-[13px] font-medium text-foreground/80">
                     Oracle Provider
                   </Label>
 
@@ -605,10 +586,10 @@ export default function CreatePage() {
                         }
                         setOracleProvider("existing")
                       }}
-                      className={`h-12 border text-[11px] uppercase tracking-[0.25em] transition-colors ${
+                      className={`h-12 rounded-lg border text-[13px] transition-colors ${
                         oracleProvider === "existing"
-                          ? "border-[#8FF7FF] bg-[#8FF7FF]/10 text-[#8FF7FF]"
-                          : "border-white/25 bg-[#0B0E15] text-white/60 hover:border-white/50"
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border bg-background text-muted-foreground hover:border-foreground/40"
                       }`}
                     >
                       Existing Adapter
@@ -624,10 +605,10 @@ export default function CreatePage() {
                         }
                         setOracleProvider("chainlink")
                       }}
-                      className={`h-12 border text-[11px] uppercase tracking-[0.25em] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                      className={`h-12 rounded-lg border text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                         oracleProvider === "chainlink"
-                          ? "border-[#8FF7FF] bg-[#8FF7FF]/10 text-[#8FF7FF]"
-                          : "border-white/25 bg-[#0B0E15] text-white/60 hover:border-white/50"
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border bg-background text-muted-foreground hover:border-foreground/40"
                       }`}
                     >
                       Chainlink
@@ -635,14 +616,14 @@ export default function CreatePage() {
                   </div>
 
                   {!isChainlinkSupported && (
-                    <p className="text-[11px] text-white/45">
+                    <p className="text-[13px] text-muted-foreground/75">
                       Chainlink feeds are not configured for this network.
                     </p>
                   )}
 
                   {oracleProvider === "existing" ? (
                     <div className="space-y-2">
-                      <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                      <Label className="text-[13px] font-medium text-foreground/80">
                         Oracle Adapter Address
                       </Label>
                       <Input
@@ -667,7 +648,7 @@ export default function CreatePage() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                      <Label className="text-[13px] font-medium text-foreground/80">
                         Chainlink Feed Address
                       </Label>
                       <Input
@@ -685,7 +666,7 @@ export default function CreatePage() {
                         type="button"
                         onClick={handleDeployChainlinkAdapter}
                         disabled={isAdapterDeploymentBusy}
-                        className="h-12 w-full border border-white/30 bg-white/5 text-[11px] uppercase tracking-[0.25em] text-white/80 transition-colors hover:border-[#8FF7FF] hover:text-[#8FF7FF] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="h-12 w-full rounded-lg border border-border bg-muted/40 text-[13px] text-foreground/80 transition-colors hover:border-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isAdapterDeploymentBusy
                           ? "Deploying Adapter..."
@@ -694,7 +675,7 @@ export default function CreatePage() {
 
                       {config.oracleAddress && (
                         <>
-                          <p className="break-all font-mono text-[11px] text-[#8FF7FF]">
+                          <p className="break-all font-mono text-xs text-foreground/80">
                             Adapter: {config.oracleAddress}
                           </p>
 
@@ -716,14 +697,15 @@ export default function CreatePage() {
 
                 <div className="grid gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                    <Label className="text-[13px] font-medium text-foreground/80">
                       Critical Reserve Ratio (%)
                     </Label>
                     <Input
                       type="number"
                       min={100}
+                      max={199}
                       step={1}
-                      placeholder="400"
+                      placeholder="120"
                       value={config.criticalReserveRatio}
                       onChange={(e) => updateConfig("criticalReserveRatio", e.target.value)}
                       className={inputClasses}
@@ -733,8 +715,9 @@ export default function CreatePage() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-3">
-                    <p className="text-xs uppercase tracking-[0.35em] text-[#FFE66D]">
-                      Stable Token
+                    <p className="flex items-center gap-2 text-[13px] font-medium text-foreground/80">
+                      <span aria-hidden="true" className="size-2.5 rounded-full bg-neutron" />
+                      Stable token (Neutron)
                     </p>
                     <Input
                       placeholder="Token Name"
@@ -750,8 +733,9 @@ export default function CreatePage() {
                     />
                   </div>
                   <div className="space-y-3">
-                    <p className="text-xs uppercase tracking-[0.35em] text-[#FF6B6B]">
-                      Volatile Token
+                    <p className="flex items-center gap-2 text-[13px] font-medium text-foreground/80">
+                      <span aria-hidden="true" className="size-2.5 rounded-full bg-proton" />
+                      Volatile token (Proton)
                     </p>
                     <Input
                       placeholder="Token Name"
@@ -769,7 +753,7 @@ export default function CreatePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[11px] uppercase tracking-[0.4em] text-white/60">
+                  <Label className="text-[13px] font-medium text-foreground/80">
                     Treasury (Fee Recipient)
                   </Label>
                   <Input
@@ -791,7 +775,7 @@ export default function CreatePage() {
                       return (
                         <Button
                           size="lg"
-                          className="w-full h-14 rounded-none border border-white/60 bg-white text-black uppercase tracking-[0.3em] text-xs"
+                          className="w-full h-12 text-[15px]"
                           disabled
                         >
                           <Wallet className="mr-2 h-5 w-5" />
@@ -804,7 +788,7 @@ export default function CreatePage() {
                       return (
                         <Button
                           size="lg"
-                          className="w-full h-14 rounded-none border border-white/60 bg-white text-black hover:bg-[#C6FFDD] hover:text-[#050608] transition-colors duration-200 uppercase tracking-[0.3em] text-xs cursor-pointer"
+                          className="w-full h-12 text-[15px]"
                           onClick={openConnectModal}
                         >
                           <Wallet className="mr-2 h-5 w-5" />
@@ -817,7 +801,7 @@ export default function CreatePage() {
                       return (
                         <Button
                           size="lg"
-                          className="w-full h-14 rounded-none border border-white/60 bg-white text-black hover:bg-[#C6FFDD] hover:text-[#050608] transition-colors duration-200 uppercase tracking-[0.3em] text-xs cursor-pointer"
+                          className="w-full h-12 text-[15px]"
                           onClick={openChainModal}
                         >
                           Switch Network
@@ -828,7 +812,7 @@ export default function CreatePage() {
                     return (
                       <Button
                         size="lg"
-                        className="w-full h-14 rounded-none border border-white/60 bg-white text-black hover:bg-[#C6FFDD] hover:text-[#050608] transition-colors duration-200 uppercase tracking-[0.3em] text-xs cursor-pointer"
+                        className="w-full h-12 text-[15px]"
                         onClick={handleDeploy}
                         disabled={
                           !isFormValid() ||
@@ -840,12 +824,12 @@ export default function CreatePage() {
                       >
                         {isDeploying ? (
                           <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-black" />
+                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
                             Deploying
                           </>
                         ) : isConfirming ? (
                           <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-black" />
+                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
                             Confirming
                           </>
                         ) : (
@@ -860,14 +844,14 @@ export default function CreatePage() {
                 </ConnectButton.Custom>
 
                 {isSuccess && (
-                  <div className="border border-[#34D399]/40 bg-[#10221A] px-5 py-4">
+                  <div className="rounded-xl border border-success/30 bg-success/10 px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-[#34D399]" />
+                      <CheckCircle className="h-5 w-5 text-success" />
                       <div>
-                        <div className="text-xs uppercase tracking-[0.3em] text-[#34D399]">
+                        <div className="text-xs text-success">
                           Reactor Deployed
                         </div>
-                        <div className="mt-1 font-mono text-xs text-[#86EFAC] break-all">
+                        <div className="mt-1 font-mono text-xs text-success break-all">
                           {hash}
                         </div>
                       </div>

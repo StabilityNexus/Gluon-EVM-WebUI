@@ -1,401 +1,222 @@
 "use client"
 
-import { usePathname } from "next/navigation"
-import { useTheme } from "next-themes"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState, type MouseEvent, type FocusEvent } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, ChevronDown } from "lucide-react"
+import { usePathname } from "next/navigation"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
+import { Menu, X } from "lucide-react"
+
 import { cn } from "@/lib/utils"
-import { FlowButton } from "@/components/ui/flow-button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { buttonVariants } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { WalletButton } from "@/components/WalletButton"
 
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/explorer", label: "Explorer" },
   { href: "/create", label: "Create" },
-]
+] as const
+
+// Reactor pages (/c?coin=… and /0x…) belong to the Explorer section.
+function resolveActive(pathname: string): string | null {
+  if (pathname === "/") return "/"
+  if (pathname.startsWith("/create")) return "/create"
+  if (pathname.startsWith("/explorer") || /^\/(c|0x[0-9a-fA-F]+)\/?$/.test(pathname)) return "/explorer"
+  return null
+}
+
+const EASE = [0.22, 1, 0.36, 1] as const
 
 export default function Navigation() {
-  const pathname = usePathname()
-  const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [buttonRef, setButtonRef] = useState<HTMLButtonElement | null>(null)
-  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 16 })
+  const pathname = usePathname() ?? "/"
+  const active = resolveActive(pathname)
+  const reduceMotion = useReducedMotion()
+  const [scrolled, setScrolled] = useState(false)
+  const [open, setOpen] = useState(false)
+  const [hover, setHover] = useState<{ left: number; width: number; instant: boolean } | null>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    setMounted(true)
+    const onScroll = () => setScrolled((prev) => (prev ? window.scrollY > 8 : window.scrollY > 32))
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  // Update menu position when menu opens or on scroll
   useEffect(() => {
-    const updatePosition = () => {
-      if (buttonRef && mobileMenuOpen) {
-        const rect = buttonRef.getBoundingClientRect()
-        setMenuPosition({
-          top: rect.bottom + 8,
-          right: 16
-        })
-      }
-    }
-
-    updatePosition()
-    window.addEventListener('scroll', updatePosition, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', updatePosition)
-    }
-  }, [buttonRef, mobileMenuOpen])
-
-  // Close menu on outside click
-  useEffect(() => {
-    if (!mobileMenuOpen) return
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (buttonRef && !buttonRef.contains(e.target as Node)) {
-        setMobileMenuOpen(false)
-      }
-    }
-
-    document.addEventListener('click', handleClickOutside)
-    return () => {
-      document.removeEventListener('click', handleClickOutside)
-    }
-  }, [mobileMenuOpen, buttonRef])
-
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [lastScrollY, setLastScrollY] = useState(0)
+    setOpen(false)
+  }, [pathname])
 
   useEffect(() => {
-    let rafId: number | null = null
-    
-    const handleScroll = () => {
-      if (rafId === null) {
-        rafId = window.requestAnimationFrame(() => {
-          const currentScrollY = window.scrollY
-          
-          // Smooth transition threshold with hysteresis to prevent jitter
-          if (currentScrollY > 100) {
-            setIsScrolled(true)
-          } else if (currentScrollY < 50) {
-            setIsScrolled(false)
-          }
-          
-          setLastScrollY(currentScrollY)
-          rafId = null
-        })
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false)
+        menuButtonRef.current?.focus()
       }
     }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [open])
 
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => {
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId)
-      }
-      window.removeEventListener('scroll', handleScroll)
-    }
-  }, [])
-
-
-  if (!mounted) {
-    return null
+  // Hover/focus highlight that glides between items instead of re-mounting.
+  const trackHover = (event: MouseEvent<HTMLElement> | FocusEvent<HTMLElement>) => {
+    const list = listRef.current
+    if (!list) return
+    const a = event.currentTarget.getBoundingClientRect()
+    const b = list.getBoundingClientRect()
+    // Appear in place when entering the list; glide only between items.
+    setHover((prev) => ({ left: a.left - b.left, width: a.width, instant: prev === null }))
   }
 
-  const isDark = theme === 'dark'
+  const spring = reduceMotion
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 520, damping: 44, mass: 0.7 }
 
   return (
-    <motion.header
-      data-state={mobileMenuOpen ? 'active' : undefined}
-      className="fixed z-20 w-full pointer-events-auto"
-      initial={{ y: 0, opacity: 1 }}
-      animate={{
-        y: 0,
-        opacity: 1,
-      }}
-      transition={{
-        type: "spring",
-        stiffness: 300,
-        damping: 30
-      }}
-    >
-
-      <motion.div
-        className={cn(
-          'hidden md:block mt-2'
-        )}
-        animate={{
-          marginLeft: isScrolled ? '16px' : '8px',
-          marginRight: isScrolled ? '16px' : '8px',
-          paddingLeft: isScrolled ? '24px' : '16px',
-          paddingRight: isScrolled ? '24px' : '16px',
-          backgroundColor: isScrolled 
-            ? (isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)')
-            : 'rgba(0, 0, 0, 0)',
-          borderRadius: isScrolled ? '16px' : '0px',
-          border: isScrolled 
-            ? (isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.18)')
-            : '1px solid rgba(255, 255, 255, 0)',
-          boxShadow: isScrolled 
-            ? (isDark ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)' : '0 8px 32px 0 rgba(0, 0, 0, 0.1)')
-            : 'none',
-          marginTop: '8px',
-          y: 0,
-        }}
-        style={{
-          backdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
-          WebkitBackdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
-        }}
-        transition={{
-          duration: 0.5,
-          ease: [0.4, 0, 0.2, 1]
-        }}
-      >
-        <motion.div
-          className="relative flex items-center justify-between"
-          style={{
-            paddingTop: '16px',
-            paddingBottom: '16px',
-          }}
-          animate={{
-            paddingTop: '16px',
-            paddingBottom: '16px',
-          }}
-          transition={{
-            duration: 0.5,
-            ease: [0.4, 0, 0.2, 1]
-          }}
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-50">
+      <div className="px-3 pt-3 sm:px-4">
+        <div
+          data-elevated={scrolled || open ? "" : undefined}
+          className="nav-frost pointer-events-auto relative mx-auto w-full rounded-2xl"
         >
-
-          <motion.div
-            animate={{
-              x: isScrolled ? -16 : 0,
-            }}
-            transition={{
-              duration: 0.5,
-              ease: [0.4, 0, 0.2, 1]
-            }}
-          >
-            <Link href="/" className="flex items-center gap-2 group z-[1002] flex-shrink-0">
-              <div className="relative h-8 w-14">
-                <Image
-                  src="/GluonProtocol-Darker.png"
-                  alt="Gluon logo"
-                  fill
-                  sizes="112px"
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <motion.span 
-                className="font-bold text-xl text-foreground group-hover:text-primary transition-colors"
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              >
-                Gluon
-              </motion.span>
-            </Link>
-          </motion.div>
-
-         
-          <div className="absolute left-1/2 transform -translate-x-1/2">
-            <motion.nav
-              className="flex items-center gap-8"
-              initial={{ opacity: 0, scale: 0.97, y: -2 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ 
-                duration: 0.5,
-                ease: [0.4, 0, 0.2, 1]
-              }}
+          <div className="relative flex h-14 items-center justify-between gap-3 pl-3 pr-2 sm:pl-5 sm:pr-3">
+            <Link
+              href="/"
+              aria-label="Gluon home"
+              className="flex items-center gap-2 rounded-lg py-1 pr-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {navItems.map((item) => (
-                <FlowButton key={item.href} text={item.label} href={item.href} />
-              ))}
-            </motion.nav>
-          </div>
+              <span className="relative h-7 w-12">
+                <Image src="/GluonProtocol-Darker.png" alt="" fill sizes="112px" className="object-contain" priority />
+              </span>
+              <span className="hidden text-[17px] font-semibold tracking-[-0.02em] text-foreground min-[380px]:inline">Gluon</span>
+            </Link>
 
-         
-          <motion.div 
-            className="flex items-center gap-2 z-[1001] flex-shrink-0"
-            animate={{
-              x: isScrolled ? 16 : 0,
-            }}
-            transition={{
-              duration: 0.5,
-              ease: [0.4, 0, 0.2, 1]
-            }}
-          >
+            {/* Desktop: raised pill marks the current route, a flat tint follows the pointer */}
+            <nav aria-label="Primary" className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block">
+              <ul ref={listRef} className="relative flex items-center gap-1" onMouseLeave={() => setHover(null)}>
+                <motion.span
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-0 rounded-lg bg-foreground/[0.06]"
+                  initial={false}
+                  animate={hover ? { x: hover.left, width: hover.width, opacity: 1 } : { opacity: 0 }}
+                  transition={
+                    reduceMotion || hover?.instant
+                      ? { x: { duration: 0 }, width: { duration: 0 }, opacity: { duration: 0.15 } }
+                      : { ...spring, opacity: { duration: 0.15 } }
+                  }
+                />
+                {navItems.map((item) => {
+                  const isActive = item.href === active
+                  return (
+                    <li key={item.href} className="relative">
+                      {isActive && (
+                        <motion.span
+                          layoutId="primary-nav-active"
+                          aria-hidden="true"
+                          className="absolute inset-0 rounded-lg border border-border bg-background shadow-[var(--shadow-sm)] dark:border-white/[0.06] dark:bg-white/[0.08] dark:shadow-none"
+                          transition={spring}
+                        />
+                      )}
+                      <Link
+                        href={item.href}
+                        aria-current={isActive ? "page" : undefined}
+                        onMouseEnter={trackHover}
+                        onFocus={trackHover}
+                        onBlur={() => setHover(null)}
+                        className={cn(
+                          "relative z-10 inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-medium outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring",
+                          isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </nav>
+
             <div className="flex items-center gap-1">
               <ThemeToggle />
-              <div className={cn(
-                "[&_button]:!text-foreground",
-                "[&_button]:transition-colors"
-              )}>
-                <ConnectButton />
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      </motion.div>
-      <motion.div
-        className={cn(
-          'md:hidden mx-auto mt-2 max-w-full px-4 relative',
-          isScrolled && 'backdrop-blur-[60px]'
-        )}
-        style={{
-          backdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
-          WebkitBackdropFilter: isScrolled ? 'blur(60px) saturate(180%)' : 'none',
-        }}
-        animate={{
-          backgroundColor: isScrolled 
-            ? (isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)')
-            : 'rgba(0, 0, 0, 0)',
-          borderRadius: isScrolled ? '16px' : '0px',
-          border: isScrolled 
-            ? (isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.18)')
-            : '1px solid rgba(255, 255, 255, 0)',
-          boxShadow: isScrolled 
-            ? (isDark ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)' : '0 8px 32px 0 rgba(0, 0, 0, 0.1)')
-            : 'none',
-        }}
-        transition={{
-          duration: 0.5,
-          ease: [0.4, 0, 0.2, 1]
-        }}
-      >
-        <div className="flex items-center justify-between py-3 relative z-50">
-          <Link href="/" className="flex items-center gap-2 group z-[1002]">
-            <div className="relative h-7 w-12">
-              <Image
-                src="/GluonProtocol-Darker.png"
-                alt="Gluon logo"
-                fill
-                sizes="96px"
-                className="object-contain"
-                priority
-              />
-            </div>
-            <motion.span 
-              className="font-bold text-lg text-foreground group-hover:text-primary transition-colors"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              Gluon
-            </motion.span>
-          </Link>
-
-          <div className="flex items-center gap-2 z-[1001]">
-            <ThemeToggle />
-            <ConnectButton.Custom>
-              {({ account, chain, openConnectModal, openAccountModal, mounted }) => {
-                const connected = mounted && account && chain;
-                return (
-                  <motion.button
-                    onClick={connected ? openAccountModal : openConnectModal}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-foreground text-background hover:opacity-90 transition-opacity"
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  >
-                    {connected ? `${account.displayName}` : 'Connect'}
-                  </motion.button>
-                );
-              }}
-            </ConnectButton.Custom>
-
-            <motion.button
-              ref={setButtonRef}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? 'Close Menu' : 'Open Menu'}
-              className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5"
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              <motion.div
-                animate={{
-                  rotate: mobileMenuOpen ? 180 : 0,
-                  scale: mobileMenuOpen ? 0 : 1,
-                  opacity: mobileMenuOpen ? 0 : 1
-                }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="m-auto size-6 text-foreground"
+              <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border md:block" />
+              <WalletButton mode="full" className="hidden md:flex" />
+              <WalletButton mode="compact" className="md:hidden" />
+              <button
+                ref={menuButtonRef}
+                type="button"
+                onClick={() => setOpen((value) => !value)}
+                aria-expanded={open}
+                aria-controls="mobile-navigation"
+                aria-label={open ? "Close menu" : "Open menu"}
+                className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-9 md:hidden")}
               >
-                <Menu className="size-6" />
-              </motion.div>
-              <motion.div
-                animate={{
-                  rotate: mobileMenuOpen ? 0 : -180,
-                  scale: mobileMenuOpen ? 1 : 0,
-                  opacity: mobileMenuOpen ? 1 : 0
-                }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="absolute inset-0 m-auto size-6 text-foreground"
-              >
-                <X className="size-6" />
-              </motion.div>
-            </motion.button>
+                <Menu aria-hidden="true" className={cn("absolute size-5 transition-[transform,opacity] duration-200", open && "rotate-90 scale-75 opacity-0")} />
+                <X aria-hidden="true" className={cn("absolute size-5 transition-[transform,opacity] duration-200", !open && "-rotate-90 scale-75 opacity-0")} />
+              </button>
+            </div>
           </div>
-        </div>
 
-        <AnimatePresence>
-          {mobileMenuOpen && buttonRef && (
-            <motion.div
-              className="fixed z-50 w-48 bg-background/95 backdrop-blur-xl border border-foreground/10 rounded-lg md:hidden overflow-hidden pointer-events-auto"
-              style={{
-                top: menuPosition.top + 'px',
-                right: menuPosition.right + 'px'
-              }}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-            <ul className="flex flex-col gap-0 px-0 py-2">
-              {navItems.map((item) => (
-                <motion.li
-                  key={item.href}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Link
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={cn(
-                      "block px-4 py-2 text-sm font-medium transition-colors",
-                      pathname === item.href ? "text-primary bg-accent/20" : "text-foreground/70 hover:text-primary hover:bg-accent/10"
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                </motion.li>
-              ))}
-            </ul>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+          {/* Mobile: the same bar expands to hold the menu, so it never detaches from its origin */}
+          <AnimatePresence initial={false}>
+            {open && (
+              <motion.nav
+                key="mobile-navigation"
+                id="mobile-navigation"
+                aria-label="Primary"
+                className="overflow-hidden md:hidden"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: reduceMotion ? 0 : 0.28, ease: EASE }}
+              >
+                <div className="border-t border-border px-2 pb-2 pt-2">
+                  <ul className="flex flex-col gap-0.5">
+                    {navItems.map((item) => {
+                      const isActive = item.href === active
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            aria-current={isActive ? "page" : undefined}
+                            onClick={() => setOpen(false)}
+                            className={cn(
+                              "flex h-11 items-center rounded-lg px-3 text-[15px] font-medium outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring",
+                              isActive ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                            )}
+                          >
+                            {item.label}
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  <div className="mt-2 empty:hidden">
+                    <WalletButton mode="network" />
+                  </div>
+                </div>
+              </motion.nav>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
       <AnimatePresence>
-        {mobileMenuOpen && (
+        {open && (
           <motion.div
-            className="fixed inset-0 z-30 md:hidden"
+            key="mobile-scrim"
+            aria-hidden="true"
+            className="pointer-events-auto fixed inset-0 -z-10 bg-background/40 backdrop-blur-[2px] md:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ pointerEvents: 'none' }}
+            transition={{ duration: reduceMotion ? 0 : 0.2 }}
+            onClick={() => setOpen(false)}
           />
         )}
       </AnimatePresence>
-    </motion.header>
+    </header>
   )
 }
-

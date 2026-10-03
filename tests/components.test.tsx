@@ -19,7 +19,7 @@ describe("OraclePreflightPanel", () => {
       />,
     )
 
-    expect(screen.getByText("REQUIRED")).toBeInTheDocument()
+    expect(screen.getByText("Required")).toBeInTheDocument()
 
     await user.click(
       screen.getByRole("button", { name: "Run Preflight" }),
@@ -49,7 +49,7 @@ describe("OraclePreflightPanel", () => {
       />,
     )
 
-    expect(screen.getByText("COMPATIBLE")).toBeInTheDocument()
+    expect(screen.getByText("Compatible")).toBeInTheDocument()
     expect(screen.getByText("Reference Oracle")).toBeInTheDocument()
     expect(screen.getByText("1h 1m ago")).toBeInTheDocument()
     expect(

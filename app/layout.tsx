@@ -99,7 +99,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-screen bg-background flex flex-col">
         <ThemeProvider
@@ -109,8 +109,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <WalletProvider>
+            <a
+              href="#main"
+              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-background"
+            >
+              Skip to content
+            </a>
             <Navigation />
-            <main className="max-w-8xl mx-4 sm:mx-8 lg:mx-16 xl:mx-32 px-4 sm:px-6 lg:px-8 pt-24 pb-8 flex-grow">
+            <main id="main" className="flex-grow pt-20">
               {children}
             </main>
             <ClientFooter />

@@ -1,55 +1,69 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import Footer from "./Footer";
-import KyaModal from "./KyaModal";
-import ShareModal from "./ShareModal";
+import { useEffect, useState } from "react"
+import Footer from "./Footer"
+import ShareModal from "./ShareModal"
+import TermsOfUseModal from "./TermsOfUseModal"
+import {
+  hasAcceptedTermsToday,
+  markTermsAcceptedToday,
+} from "@/utils/termsOfUse"
+
+type TermsModalMode = "required" | "optional" | null
 
 export default function ClientFooter() {
-  const [isKyaModalOpen, setIsKyaModalOpen] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [termsModalMode, setTermsModalMode] =
+    useState<TermsModalMode>(null)
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
 
   useEffect(() => {
-    // Check if user has seen KYA modal before
-    const kyaSeen = localStorage.getItem("kya_seen_v1");
-    if (!kyaSeen) {
-      setIsKyaModalOpen(true);
+    if (!hasAcceptedTermsToday(localStorage)) {
+      setTermsModalMode("required")
     }
-  }, []);
+  }, [])
 
-  const handleKyaClick = () => {
-    setIsKyaModalOpen(true);
-  };
+  const handleTermsClick = () => {
+    setTermsModalMode("optional")
+  }
 
-  const handleKyaClose = () => {
-    setIsKyaModalOpen(false);
-  };
+  const handleTermsClose = () => {
+    if (termsModalMode === "optional") {
+      setTermsModalMode(null)
+    }
+  }
 
-  const handleKyaUnderstand = () => {
-    setIsKyaModalOpen(false);
-  };
+  const handleTermsAccept = () => {
+    markTermsAcceptedToday(localStorage)
+    setTermsModalMode(null)
+  }
 
   const handleShareClick = () => {
-    setIsShareModalOpen(true);
-  };
+    setIsShareModalOpen(true)
+  }
 
   const handleShareClose = () => {
-    setIsShareModalOpen(false);
-  };
+    setIsShareModalOpen(false)
+  }
 
   return (
     <>
-      <Footer onKyaClick={handleKyaClick} onShareClick={handleShareClick} />
-      <KyaModal
-        isOpen={isKyaModalOpen}
-        onClose={handleKyaClose}
-        onUnderstand={handleKyaUnderstand}
+      <Footer
+        onTermsClick={handleTermsClick}
+        onShareClick={handleShareClick}
       />
+
+      <TermsOfUseModal
+        isOpen={termsModalMode !== null}
+        required={termsModalMode === "required"}
+        onClose={handleTermsClose}
+        onAccept={handleTermsAccept}
+      />
+
       <ShareModal
         isOpen={isShareModalOpen}
         onClose={handleShareClose}
       />
     </>
-  );
+  )
 }
-

@@ -5,8 +5,8 @@ export async function generateStaticParams() {
   return [{ coinId: 'c' }]
 }
 
-// Enable dynamic routing for contract addresses not in generateStaticParams
-export const dynamicParams = true
+// Only the static /c route is generated; reactor addresses are supplied through the coin query parameter
+export const dynamicParams = false
 
 export default function CoinDetailPage({ params }: { params: { coinId: string } }) {
   return (
