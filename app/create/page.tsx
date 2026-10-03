@@ -38,7 +38,7 @@ interface ReactorConfig {
   criticalReserveRatio: string
 }
 
-type OracleProvider = "existing" | "chainlink"
+type OracleProvider = "existing" | "chainlink" | "orb"
 
 const CHAINLINK_SUPPORTED_CHAIN_IDS = new Set<number>([11155111])
 
@@ -120,6 +120,14 @@ export default function CreatePage() {
     updateConfig("oracleAddress", value)
   }
 
+  const selectOracleProvider = (provider: OracleProvider) => {
+    if (provider !== oracleProvider) {
+      setChainlinkFeed("")
+      setOracleAddress("")
+      setOracleProvider(provider)
+    }
+  }
+
   const checkOracleAddress = async (
     oracleAddress: string
   ): Promise<OraclePreflightResult | null> => {
@@ -194,7 +202,9 @@ export default function CreatePage() {
     setConfig((prev) => ({ ...prev, oracleAddress: "" }))
 
     if (!CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)) {
-      setOracleProvider("existing")
+      setOracleProvider((current) =>
+        current === "chainlink" ? "existing" : current
+      )
     }
   }, [chainId])
 
@@ -575,17 +585,12 @@ export default function CreatePage() {
                     Oracle Provider
                   </Label>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <button
                       type="button"
                       aria-pressed={oracleProvider === "existing"}
                       disabled={isAdapterDeploymentBusy}
-                      onClick={() => {
-                        if (oracleProvider !== "existing") {
-                          setOracleAddress("")
-                        }
-                        setOracleProvider("existing")
-                      }}
+                      onClick={() => selectOracleProvider("existing")}
                       className={`h-12 rounded-lg border text-[13px] transition-colors ${
                         oracleProvider === "existing"
                           ? "border-foreground bg-foreground text-background"
@@ -599,12 +604,7 @@ export default function CreatePage() {
                       type="button"
                       aria-pressed={oracleProvider === "chainlink"}
                       disabled={!isChainlinkSupported || isAdapterDeploymentBusy}
-                      onClick={() => {
-                        if (oracleProvider !== "chainlink") {
-                          setOracleAddress("")
-                        }
-                        setOracleProvider("chainlink")
-                      }}
+                      onClick={() => selectOracleProvider("chainlink")}
                       className={`h-12 rounded-lg border text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                         oracleProvider === "chainlink"
                           ? "border-foreground bg-foreground text-background"
@@ -612,6 +612,20 @@ export default function CreatePage() {
                       }`}
                     >
                       Chainlink
+                    </button>
+
+                    <button
+                      type="button"
+                      aria-pressed={oracleProvider === "orb"}
+                      disabled={isAdapterDeploymentBusy}
+                      onClick={() => selectOracleProvider("orb")}
+                      className={`h-12 rounded-lg border text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                        oracleProvider === "orb"
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border bg-background text-muted-foreground hover:border-foreground/40"
+                      }`}
+                    >
+                      Orb
                     </button>
                   </div>
 
@@ -621,10 +635,12 @@ export default function CreatePage() {
                     </p>
                   )}
 
-                  {oracleProvider === "existing" ? (
+                  {oracleProvider !== "chainlink" ? (
                     <div className="space-y-2">
                       <Label className="text-[13px] font-medium text-foreground/80">
-                        Oracle Adapter Address
+                        {oracleProvider === "orb"
+                          ? "Orb Oracle Address"
+                          : "Oracle Adapter Address"}
                       </Label>
                       <Input
                         placeholder="0x..."
@@ -632,6 +648,15 @@ export default function CreatePage() {
                         onChange={(e) => setOracleAddress(e.target.value)}
                         className={`${inputClasses} font-mono`}
                       />
+
+                      {oracleProvider === "orb" && (
+                        <p className="text-[13px] leading-5 text-muted-foreground/75">
+                          Orb connects directly to Gluon through IOracle; no
+                          adapter deployment is required. Preflight checks the
+                          current oracle state and cannot guarantee future Orb
+                          governance or blacklist state.
+                        </p>
+                      )}
 
                       {config.oracleAddress.trim() && (
                         <OraclePreflightPanel
