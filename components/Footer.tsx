@@ -3,7 +3,7 @@
 import Image from "next/image";
 
 interface FooterProps {
-  onKyaClick: () => void;
+  onTermsClick: () => void;
   onShareClick?: () => void;
 }
 
@@ -46,7 +46,7 @@ const iconLink =
 const textButton =
   "h-9 rounded-lg px-3 text-sm text-muted-foreground outline-none transition-colors duration-150 hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring";
 
-export default function Footer({ onKyaClick, onShareClick }: FooterProps) {
+export default function Footer({ onTermsClick, onShareClick }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -99,8 +99,8 @@ export default function Footer({ onKyaClick, onShareClick }: FooterProps) {
             ))}
           </ul>
           <span aria-hidden="true" className="mx-2 h-5 w-px bg-border" />
-          <button type="button" onClick={onKyaClick} className={textButton}>
-            KYA
+          <button type="button" onClick={onTermsClick} className={textButton}>
+            Terms of Use
           </button>
           {onShareClick && (
             <button type="button" onClick={onShareClick} className={textButton}>
