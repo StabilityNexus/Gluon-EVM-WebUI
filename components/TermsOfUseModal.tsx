@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import {
   TERMS_OF_USE_PAGE_URL,
   TERMS_OF_USE_URL,
@@ -158,9 +160,93 @@ export default function TermsOfUseModal({
             )}
 
             {termsText && (
-              <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-6">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({ children }) => (
+                    <h1 className="mb-5 text-2xl font-semibold tracking-tight text-foreground">
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="mb-3 mt-8 text-lg font-semibold text-foreground">
+                      {children}
+                    </h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="mb-2 mt-6 text-base font-semibold text-foreground">
+                      {children}
+                    </h3>
+                  ),
+                  p: ({ children }) => (
+                    <p className="mb-4 text-sm leading-7 text-foreground/85">
+                      {children}
+                    </p>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-semibold text-foreground">
+                      {children}
+                    </strong>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="mb-5 list-disc space-y-1.5 pl-6 text-sm leading-7 text-foreground/85">
+                      {children}
+                    </ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="mb-5 list-decimal space-y-1.5 pl-6 text-sm leading-7 text-foreground/85">
+                      {children}
+                    </ol>
+                  ),
+                  li: ({ children }) => (
+                    <li className="pl-1">
+                      {children}
+                    </li>
+                  ),
+                  hr: () => (
+                    <hr className="my-7 border-border" />
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="my-5 border-l-2 border-foreground/25 pl-4 text-sm italic text-muted-foreground">
+                      {children}
+                    </blockquote>
+                  ),
+                  a: ({ href, children }) => (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-foreground underline underline-offset-4"
+                    >
+                      {children}
+                    </a>
+                  ),
+                  code: ({ children }) => (
+                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.9em] text-foreground">
+                      {children}
+                    </code>
+                  ),
+                  table: ({ children }) => (
+                    <div className="my-5 overflow-x-auto">
+                      <table className="w-full border-collapse text-sm">
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  th: ({ children }) => (
+                    <th className="border border-border bg-muted px-3 py-2 text-left font-semibold">
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => (
+                    <td className="border border-border px-3 py-2 align-top">
+                      {children}
+                    </td>
+                  ),
+                }}
+              >
                 {termsText}
-              </pre>
+              </ReactMarkdown>
             )}
           </div>
 
