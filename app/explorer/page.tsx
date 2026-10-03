@@ -153,15 +153,28 @@ export default function ExplorerPage() {
   // Get current chain's factory address
   const factoryAddress = StableCoinFactories[chainId as keyof typeof StableCoinFactories]
 
-  // Get all deployed reactors
-  const { data: deployedReactors, isLoading: isLoadingReactors, error: reactorsError } = useReadContract({
+
+
+  const currentNetwork = GLUON_NETWORKS.find(
+    ({ chain }) => chain.id === chainId
+  )
+// Get all deployed reactors
+  const {
+    data: deployedReactors,
+    isLoading: isLoadingReactors,
+    error: reactorsError,
+    refetch: refetchReactors,
+  } = useReadContract({
     address: factoryAddress,
     abi: StableCoinFactoryABI,
     functionName: 'getAllDeployedReactors',
   })
 
   // Get reactor count for UI
-  const { error: countError } = useReadContract({
+  const {
+    error: countError,
+    refetch: refetchCount,
+  } = useReadContract({
     address: factoryAddress,
     abi: StableCoinFactoryABI,
     functionName: 'getDeployedReactorsCount',

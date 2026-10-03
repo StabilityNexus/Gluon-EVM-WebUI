@@ -91,7 +91,7 @@ export default function Navigation() {
               <span className="relative h-7 w-12">
                 <Image src="/GluonProtocol-Darker.png" alt="" fill sizes="112px" className="object-contain" priority />
               </span>
-              <span className="text-[17px] font-semibold tracking-[-0.02em] text-foreground">Gluon</span>
+              <span className="hidden text-[17px] font-semibold tracking-[-0.02em] text-foreground min-[380px]:inline">Gluon</span>
             </Link>
 
             {/* Desktop: raised pill marks the current route, a flat tint follows the pointer */}

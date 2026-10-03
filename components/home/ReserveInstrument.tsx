@@ -4,7 +4,6 @@ import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } f
 import { Pause, Play } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import HeroField from "@/components/home/HeroField"
 
 /*
  * An explanatory model of a single reactor, not live data.
@@ -14,10 +13,11 @@ import HeroField from "@/components/home/HeroField"
 
 const C = 200 // centre
 const R = 150 // reserve radius
-const RATIO_AT_START = 4.8 // reserve ratio at the starting price (illustrative)
-const CRITICAL_RATIO = 4 // mirrors the create form's default critical reserve ratio (400%)
-const MIN_CHANGE = -80
-const MAX_CHANGE = 150
+const RATIO_AT_START = 1.5 // reserve ratio at the starting price: the protocol's initial reserve ratio (150%)
+const CRITICAL_RATIO = 1.2 // illustrative 120%; the contract requires 100% <= critical < 200%
+const NORMAL_MAX_RATIO = 2 // reserve ratios at or above 200% are outside the normal operating range
+const MIN_CHANGE = -50
+const MAX_CHANGE = 50
 
 const circleArea = Math.PI * R * R
 
@@ -42,7 +42,7 @@ function heightForFraction(fraction: number) {
 
 const reserveRatio = (change: number) => RATIO_AT_START * (1 + change / 100)
 const neutronShare = (change: number) => Math.min(1, 1 / reserveRatio(change))
-const autoplayChange = (t: number) => 12 + 32 * Math.sin(t * 0.42) + 9 * Math.sin(t * 1.07 + 1)
+const autoplayChange = (t: number) => 18 * Math.sin(t * 0.42) + 6 * Math.sin(t * 1.07 + 1)
 
 const criticalY = C + R - heightForFraction(1 / CRITICAL_RATIO)
 const criticalHalf = Math.sqrt(R * R - (criticalY - C) ** 2)
@@ -80,12 +80,13 @@ export default function ReserveInstrument({ className }: { className?: string })
   const changeRef = useRef<HTMLOutputElement>(null)
   const ratioRef = useRef<HTMLSpanElement>(null)
   const statusRef = useRef<HTMLSpanElement>(null)
+  const rangeRef = useRef<HTMLSpanElement>(null)
   const sliderRef = useRef<HTMLInputElement>(null)
 
   const [playing, setPlaying] = useState(true)
   const sim = useRef({
     playing: true,
-    target: 12,
+    target: 0,
     shown: 0,
     shownShare: 0,
     clock: 0,
@@ -116,9 +117,11 @@ export default function ReserveInstrument({ className }: { className?: string })
 
     const ratio = reserveRatio(s.shown)
     const belowCritical = ratio < CRITICAL_RATIO
+    const aboveNormal = ratio >= NORMAL_MAX_RATIO
     if (changeRef.current) changeRef.current.textContent = formatChange(s.shown)
     if (ratioRef.current) ratioRef.current.textContent = `${Math.round(ratio * 100)}%`
     if (statusRef.current) statusRef.current.hidden = !belowCritical
+    if (rangeRef.current) rangeRef.current.hidden = !aboveNormal
     if (svgRef.current) svgRef.current.dataset.state = belowCritical ? "critical" : "healthy"
     if (s.playing && sliderRef.current) sliderRef.current.value = String(Math.round(s.shown))
   }, [])
@@ -203,16 +206,16 @@ export default function ReserveInstrument({ className }: { className?: string })
   }
 
   return (
-    <figure className={cn("relative isolate w-full", className)}>
-      <div className="relative mx-auto max-w-[26rem]">
-        <HeroField className="absolute left-1/2 top-1/2 -z-10 aspect-square w-[350%] -translate-x-1/2 -translate-y-1/2" />
+    <figure className={cn("w-full [--dial:26rem] lg:[--dial:clamp(20rem,46svh,26rem)]", className)}>
+      <div className="relative mx-auto max-w-[var(--dial)]">
       <svg
         ref={svgRef}
         viewBox="0 0 400 400"
         role="img"
         aria-label="Illustration of a reactor's reserve split between a gold Neutron share and a hatched red Proton share"
-        className="group/instrument mx-auto block w-full max-w-[26rem] overflow-visible"
+        className="group/instrument mx-auto block w-full max-w-[var(--dial)] overflow-visible"
         data-state="healthy"
+        data-reserve-dial=""
       >
         <defs>
           <clipPath id={clipId}>
@@ -275,7 +278,7 @@ export default function ReserveInstrument({ className }: { className?: string })
       </svg>
       </div>
 
-      <figcaption className="mx-auto mt-8 max-w-[26rem]">
+      <figcaption className="mx-auto mt-6 max-w-[var(--dial)] lg:mt-8">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="flex gap-2.5">
             <span aria-hidden="true" className="mt-1 size-3 shrink-0 rounded-[3px] border border-neutron bg-neutron-wash" />
@@ -307,7 +310,7 @@ export default function ReserveInstrument({ className }: { className?: string })
                 htmlFor={`price-${uid}`}
                 className="min-w-[3.5rem] text-right text-sm font-medium tabular-nums text-foreground"
               >
-                +12%
+                0%
               </output>
               <button
                 type="button"
@@ -326,18 +329,21 @@ export default function ReserveInstrument({ className }: { className?: string })
             min={MIN_CHANGE}
             max={MAX_CHANGE}
             step={1}
-            defaultValue={12}
+            defaultValue={0}
             onChange={(event) => onSlide(Number(event.target.value))}
             className="gluon-range mt-2"
           />
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3 text-sm">
             <span className="text-muted-foreground">Reserve ratio</span>
             <span className="flex items-center gap-2">
+              <span ref={rangeRef} hidden className="rounded-md bg-warning/10 px-1.5 py-0.5 text-xs font-medium text-warning">
+                Above normal range
+              </span>
               <span ref={statusRef} hidden className="rounded-md bg-danger/10 px-1.5 py-0.5 text-xs font-medium text-danger">
                 Below critical
               </span>
               <span ref={ratioRef} className="font-medium tabular-nums text-foreground">
-                538%
+                150%
               </span>
             </span>
           </div>
@@ -346,7 +352,7 @@ export default function ReserveInstrument({ className }: { className?: string })
               <span aria-hidden="true" className="w-4 border-t border-dashed border-foreground/50" />
               Critical reserve ratio
             </span>
-            <span className="tabular-nums text-muted-foreground">{CRITICAL_RATIO * 100}%</span>
+            <span className="tabular-nums text-muted-foreground">{Math.round(CRITICAL_RATIO * 100)}%</span>
           </div>
         </div>
         <p className="mt-3 text-xs text-faint-foreground">Illustrative model of one reactor. Not live data.</p>

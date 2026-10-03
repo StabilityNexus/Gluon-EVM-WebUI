@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select"
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowLeftRight,
   Copy,
   Info,
@@ -32,8 +33,6 @@ import {
   Zap,
 } from "lucide-react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
-import LightRays from "@/components/LightRays"
-import Shuffle from "@/components/Shuffle"
 import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin"
 import { toast } from "sonner"
 
@@ -229,18 +228,6 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     const key = `${fromToken}->${toToken}`
     return routeMap[key] || null
   }, [fromToken, toToken])
-
-  if (!reactorAddress) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle aria-hidden="true" className="mx-auto mb-4 size-8 text-danger" />
-          <h2 className="text-2xl font-bold mb-2">No Reactor Address</h2>
-          <p className="text-muted-foreground">Please provide a valid reactor address.</p>
-        </div>
-      </div>
-    )
-  }
 
   const { data: vaultName } = useReadContract({
     address: reactorAddress as `0x${string}`,

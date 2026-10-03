@@ -34,13 +34,13 @@ const REACTIONS: { name: string; description: string; from: Token[]; to: Token[]
   },
   {
     name: "Transmute β⁺",
-    description: "Converts Proton into Neutron, with fees that adjust to the reserve balance.",
+    description: "Converts Proton into Neutron with a dynamic fee based on recent transmutation activity and the reactor reserve.",
     from: ["proton"],
     to: ["neutron"],
   },
   {
     name: "Transmute β⁻",
-    description: "Converts Neutron into Proton, with pricing driven by system health.",
+    description: "Converts Neutron into Proton with a dynamic fee based on recent transmutation activity and the reactor reserve.",
     from: ["neutron"],
     to: ["proton"],
   },

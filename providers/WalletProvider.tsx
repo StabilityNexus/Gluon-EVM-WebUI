@@ -14,7 +14,7 @@ import { useTheme } from 'next-themes'
 const queryClient = new QueryClient()
 
 function RainbowKitThemeProvider({ children }: { children: ReactNode }) {
-  const { theme } = useTheme()
+  const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {

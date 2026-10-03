@@ -107,7 +107,7 @@ function DataRow({
       <span className="shrink-0 text-xs text-muted-foreground/70">
         {label}
       </span>
-      <span className="text-right font-mono text-[13px] text-foreground/80">
+      <span className="min-w-0 break-all text-right font-mono text-[13px] text-foreground/80">
         {value}
       </span>
     </div>

@@ -81,7 +81,7 @@ export default function CreatePage() {
     baseToken: "",
     oracleAddress: "",
     treasury: address || "",
-    criticalReserveRatio: "400",
+    criticalReserveRatio: "120",
   })
 
   const [oracleProvider, setOracleProvider] = useState<OracleProvider>("existing")
@@ -423,14 +423,14 @@ export default function CreatePage() {
     }
 
     const ratioValue = Number(config.criticalReserveRatio)
-    if (Number.isNaN(ratioValue) || ratioValue < 100) {
-      toast.error("Critical reserve ratio must be at least 100%")
+    if (Number.isNaN(ratioValue) || ratioValue < 100 || ratioValue >= 200) {
+      toast.error("Critical reserve ratio must be at least 100% and below 200%")
       return
     }
 
     const criticalReserveRatioWad = parseUnits((ratioValue / 100).toString(), 18)
-    if (criticalReserveRatioWad < parseUnits("1", 18)) {
-      toast.error("Critical reserve ratio must be at least 100%")
+    if (criticalReserveRatioWad < parseUnits("1", 18) || criticalReserveRatioWad >= parseUnits("2", 18)) {
+      toast.error("Critical reserve ratio must be at least 100% and below 200%")
       return
     }
 
@@ -487,18 +487,9 @@ export default function CreatePage() {
   const inputClasses = `${fieldBaseClasses} h-12`
 
   return (
-    <div
-      className="min-h-screen bg-[#050608] text-white"
-      style={{ fontFamily: "'Space Mono', 'Syne', 'Orbitron', 'Courier New', monospace", fontWeight: "500" }}
-    >
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Toaster position="bottom-right" richColors />
 
-      {/* Target Cursor Effect */}
-      <TargetCursor 
-        spinDuration={2}
-        hideDefaultCursor={false}
-        ignoreSelector=".cursor-normal, input, textarea, select, button, .cursor-text, [role='combobox']"
-      />
 
       <div className="container-page py-10 sm:py-14">
         <div className="w-full max-w-3xl mx-auto">
@@ -508,7 +499,7 @@ export default function CreatePage() {
           />
 
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
-            <div className="border-b border-border px-6 py-5 sm:px-8">
+            <div className="border-b border-border px-5 py-5 sm:px-8">
               <h2 className="text-base font-semibold tracking-tight">
                 Reactor configuration
               </h2>
@@ -517,7 +508,7 @@ export default function CreatePage() {
               </p>
             </div>
 
-            <div className="grid gap-10 px-8 py-10">
+            <div className="grid gap-8 px-5 py-7 sm:px-8 sm:py-8">
 
               {!isConnected && (
                 <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3.5 text-sm text-muted-foreground">
@@ -528,7 +519,7 @@ export default function CreatePage() {
                 </div>
               )}
 
-              <div className="grid gap-8">
+              <div className="grid gap-7">
                 <div className="space-y-2">
                   <Label className="text-[13px] font-medium text-foreground/80">
                     Vault Name
@@ -712,8 +703,9 @@ export default function CreatePage() {
                     <Input
                       type="number"
                       min={100}
+                      max={199}
                       step={1}
-                      placeholder="400"
+                      placeholder="120"
                       value={config.criticalReserveRatio}
                       onChange={(e) => updateConfig("criticalReserveRatio", e.target.value)}
                       className={inputClasses}
@@ -832,12 +824,12 @@ export default function CreatePage() {
                       >
                         {isDeploying ? (
                           <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-black" />
+                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
                             Deploying
                           </>
                         ) : isConfirming ? (
                           <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-black" />
+                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
                             Confirming
                           </>
                         ) : (

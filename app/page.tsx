@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import ReserveInstrument from "@/components/home/ReserveInstrument"
+import HeroField from "@/components/home/HeroField"
 import { TokenGlyph } from "@/components/home/TokenGlyph"
 import ReactionFlows from "@/components/home/ReactionFlows"
 import { GLUON_NETWORKS } from "@/utils/networks"
@@ -20,8 +21,9 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section aria-labelledby="hero-title" className="relative isolate overflow-hidden">
-        <div className="container-page grid min-h-[calc(100svh-5rem)] items-center gap-16 py-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12 lg:py-20">
+      <section aria-labelledby="hero-title" className="relative isolate overflow-x-clip">
+        <HeroField />
+        <div className="container-page grid min-h-[calc(100svh-5rem)] items-center gap-12 py-10 sm:gap-16 sm:py-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-10 lg:py-12 xl:gap-12">
           <div className="relative z-10 max-w-[38rem]">
             <h1 id="hero-title" className="type-display gluon-rise text-balance" style={delay(60)}>
               Fully crypto-backed stablecoins, pegged to anything.
@@ -31,10 +33,10 @@ export default function HomePage() {
               Proton, which tokenizes the reserve surplus. Both stay fully backed by the base asset.
             </p>
             <div className="gluon-rise mt-10 flex flex-wrap items-center gap-3" style={delay(260)}>
-              <Button asChild size="lg">
+              <Button asChild size="lg" className="max-sm:w-full">
                 <Link href="/create">Create a stablecoin</Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
+              <Button asChild size="lg" variant="outline" className="max-sm:w-full">
                 <Link href="/explorer">Explore reactors</Link>
               </Button>
             </div>
@@ -73,8 +75,8 @@ export default function HomePage() {
                 <div>
                   <h3 className="font-semibold text-foreground">Proton</h3>
                   <p className="mt-1 max-w-sm text-pretty text-muted-foreground">
-                    The leveraged yield token. It tokenizes the reserve surplus, giving leveraged volatility
-                    and yield.
+                    The volatile residual token. It tokenizes the reserve surplus and captures changes in the
+                    value remaining after the Neutron claim.
                   </p>
                 </div>
               </div>
@@ -126,19 +128,6 @@ export default function HomePage() {
             </div>
           </a>
         </div>
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <Particles
-            particleColors={["#ffffff", "#d9e2ff"]}
-            particleCount={180}
-            particleSpread={12}
-            speed={0.08}
-            particleBaseSize={80}
-            moveParticlesOnHover
-            alphaParticles={false}
-            disableRotation={false}
-            className="pointer-events-none w-full h-full"
-          />
-        </div>
       </section>
 
       {/* Deploy */}
@@ -153,10 +142,10 @@ export default function HomePage() {
               a factory contract on each supported network.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild>
+              <Button asChild className="max-sm:w-full">
                 <Link href="/create">Create a stablecoin</Link>
               </Button>
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="max-sm:w-full">
                 <Link href="/explorer">Explore reactors</Link>
               </Button>
             </div>
@@ -164,7 +153,7 @@ export default function HomePage() {
 
           <div className="lg:col-span-7 lg:pl-6">
             <div className="rounded-2xl border border-border bg-card">
-              <div className="flex items-baseline justify-between gap-4 border-b border-border px-6 py-4">
+              <div className="flex items-baseline justify-between gap-4 border-b border-border px-4 py-4 sm:px-6">
                 <h3 className="text-[15px] font-semibold text-foreground">Factory contracts</h3>
                 <p className="text-sm text-muted-foreground">Testnets</p>
               </div>
@@ -173,7 +162,7 @@ export default function HomePage() {
                   const href = explorerAddressUrl(chain.blockExplorers?.default.url, factoryAddress)
                   const short = `${factoryAddress.slice(0, 6)}…${factoryAddress.slice(-4)}`
                   return (
-                    <li key={chain.id} className="flex items-center justify-between gap-4 px-6 py-4">
+                    <li key={chain.id} className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
                       <span className="text-sm font-medium text-foreground">{displayName}</span>
                       {href ? (
                         <a

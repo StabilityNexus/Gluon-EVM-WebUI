@@ -6,7 +6,7 @@ export async function generateStaticParams() {
 }
 
 // Enable dynamic routing for contract addresses not in generateStaticParams
-export const dynamicParams = true
+export const dynamicParams = false
 
 export default function CoinDetailPage({ params }: { params: { coinId: string } }) {
   return (

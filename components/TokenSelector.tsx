@@ -1,5 +1,7 @@
 "use client";
 
+
+
 /* eslint-disable @next/next/no-img-element */
 // Token icons can come from arbitrary token-list URLs, so a fixed Next Image
 // hostname allowlist is not appropriate here.
@@ -142,12 +144,12 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
   return (
     <div className={`w-full space-y-2 ${className}`}>
       <div className="flex gap-2">
-        <div className="flex-1 relative">
+        <div className="relative min-w-0 flex-1">
           {selectedToken && !isManualInput ? (
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className={`${inputClasses} flex items-center gap-2 hover:border-foreground/40 ${
+              className={`${inputClasses} flex w-full min-w-0 items-center gap-2 overflow-hidden hover:border-foreground/40 ${
                 error ? "border-danger" : ""
               }`}
             >
@@ -160,8 +162,8 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
                 }}
               />
               <span className="font-medium">{selectedToken.symbol}</span>
-              <span className="text-white/50">({selectedToken.name})</span>
-              <span className="text-white/40 ml-auto text-xs">
+              <span className="min-w-0 truncate text-muted-foreground">({selectedToken.name})</span>
+              <span className="ml-auto hidden shrink-0 text-xs text-muted-foreground/75 sm:inline">
                 {truncateAddress(selectedToken.contract_address)}
               </span>
             </button>
@@ -199,28 +201,28 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-border">
+            <div className="flex justify-between items-center px-5 py-4 sm:p-6 border-b border-border">
               <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">Select token</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-white/60 hover:text-white/85 text-2xl leading-none w-8 h-8 flex items-center justify-center transition-colors font-mono"
+                className="text-muted-foreground hover:text-foreground text-2xl leading-none w-8 h-8 flex items-center justify-center transition-colors font-mono"
               >
                 ×
               </button>
             </div>
 
             {/* Search Bar */}
-            <div className="p-4 border-b border-white/20">
+            <div className="p-4 border-b border-border">
               <div className="relative">
                 <Input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search tokens"
-                  className="w-full pl-10 border-white/30 text-white/85 bg-[#0B0E15] font-mono"
+                  className="w-full pl-10 border-border text-foreground bg-background font-mono"
                 />
                 <svg
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground/75"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -254,7 +256,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
                       key={token.id}
                       type="button"
                       onClick={() => handleTokenSelect(token)}
-                      className="w-full flex items-center gap-3 p-3 rounded-none hover:bg-[#0F1419] transition-colors text-left border border-transparent hover:border-white/20"
+                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left border border-transparent hover:border-border"
                     >
                       <img
                         src={token.image || "/stability.svg"}
@@ -266,14 +268,14 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-white/85 font-mono">
+                          <span className="font-semibold text-foreground font-mono">
                             {token.symbol}
                           </span>
-                          <span className="text-white/50 text-sm truncate">
+                          <span className="text-muted-foreground text-sm truncate">
                             {token.name}
                           </span>
                         </div>
-                        <div className="text-white/40 text-xs font-mono mt-1">
+                        <div className="text-muted-foreground/75 text-xs font-mono mt-1">
                           {truncateAddress(token.contract_address)}
                         </div>
                       </div>
@@ -284,7 +286,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
             </div>
 
             {/* Manual Input Option */}
-            <div className="p-4 border-t border-white/20">
+            <div className="p-4 border-t border-border">
               <button
                 type="button"
                 onClick={() => {

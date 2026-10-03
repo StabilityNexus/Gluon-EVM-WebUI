@@ -16,7 +16,7 @@ export function PageHeader({
 }) {
   return (
     <header className={cn("mb-10 text-center sm:mb-12", className)}>
-      <h1 className="type-heading text-balance text-foreground">{title}</h1>
+      <h1 className="type-heading text-balance break-words text-foreground">{title}</h1>
       {description && (
         <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-pretty text-muted-foreground">
           {description}
