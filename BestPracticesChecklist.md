@@ -22,15 +22,15 @@
 <!-- checklist-score:start -->
 ## Score Summary
 
-| Category           | Met | Total | Status |
-|--------------------|-----|-------|--------|
-| Basics             | 8   | 8     | ✅     |
-| Change Control     | 6   | 6     | ✅     |
-| Reporting          | 6   | 8     | 🟡     |
-| Quality            | 11  | 11    | ✅     |
-| Security           | 9   | 9     | ✅     |
-| Analysis           | 6   | 7     | 🟡     |
-| **Total**          | **46** | **49** | **94%** |
+| Category | Met | Total | Status |
+|---|---:|---:|:---:|
+| Basics | 8 | 8 | ✅ |
+| Change Control | 6 | 6 | ✅ |
+| Reporting | 6 | 8 | 🟡 |
+| Quality | 11 | 11 | ✅ |
+| Security | 9 | 9 | ✅ |
+| Analysis | 6 | 7 | 🟡 |
+| **Total** | **46** | **49** | **94%** |
 
 _Generated from the checklist entries below. `[x]` is met, `[~]` is documented N/A, and `[ ]` remains unmet._
 <!-- checklist-score:end -->
