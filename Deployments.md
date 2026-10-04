@@ -62,7 +62,7 @@ Chainlink adapter is used in this flow.
 | Proton | `0xda5406D2721173c3548B3f191178eB9e96396A00` (`pETH`) |
 | Treasury | `0x167F6b56DA92400f5e25d02CA0532Ddf2e25da63` |
 | Gluon-EVM source commit | `b29fe82f6896bc36dce0fe61d4eb8a2a2a7ef0f6` |
-| WebUI config commit | Pending on `chore/orb-sepolia-deployment` |
+| WebUI config commit | `55c87b973c8ce8545a995922e0e830788c772ca3` |
 
 ### Deployment Transactions
 
