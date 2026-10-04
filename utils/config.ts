@@ -1,7 +1,7 @@
 // src/utils/config.ts
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { http, type Transport } from 'viem'
-import { GLUON_CHAINS } from '@/utils/networks'
+import { GLUON_CHAINS, SEPOLIA_CHAIN_ID } from '@/utils/networks'
 
   
 // Sanitize the project ID to avoid stray quotes/semicolons that break the WalletConnect API URL
@@ -18,7 +18,7 @@ const transports = Object.fromEntries(
   GLUON_CHAINS.map((chain) => [
     chain.id,
     http(
-      chain.id === 11155111
+      chain.id === SEPOLIA_CHAIN_ID
         ? sepoliaRpcUrl
         : chain.rpcUrls.default.http[0]
     ),
