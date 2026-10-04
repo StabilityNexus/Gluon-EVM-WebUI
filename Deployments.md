@@ -68,6 +68,8 @@ Chainlink adapter is used in this flow.
 
 - Factory deployment:
   `0xfd3ed93f7e9295b418ad0bf4ec8678b50b5d421fb24cbae5ebe55ff7db182458`
+- Factory reserve approval:
+  `0xcbd29046d6b164df6d0734fa182a5639038262c09ce1c5600be4fea0a69c9493`
 - Reactor deployment:
   `0x5da971ec083f2f3301233f8a1d8ac229ee5360331aae4b591afc7ae07e05907b`
 
