@@ -3,6 +3,8 @@ import { scrollSepolia, sepolia } from "wagmi/chains"
 import { citreaTestnet } from "@/components/CitreaTestnet"
 import { rootstockTestnet } from "@/components/RootstockTestnet"
 
+export const SEPOLIA_CHAIN_ID = sepolia.id
+
 export const GLUON_NETWORKS = [
   {
     chain: sepolia,
