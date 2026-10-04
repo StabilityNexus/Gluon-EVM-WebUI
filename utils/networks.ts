@@ -9,7 +9,7 @@ export const GLUON_NETWORKS = [
   {
     chain: sepolia,
     displayName: "Ethereum Sepolia",
-    factoryAddress: "0x320abd0dcC221049A2b49F8965a76ed5bA20396f",
+    factoryAddress: "0x3Ca248b434DF95F20fc6469393D2e242243C47C6",
   },
   {
     chain: scrollSepolia,
