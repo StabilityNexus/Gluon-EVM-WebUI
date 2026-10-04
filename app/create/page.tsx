@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Wallet, CheckCircle, Zap } from "lucide-react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory"
+import { ERC20ABI } from "@/utils/abi/StableCoin"
 import {
   ChainlinkToOracleAdapterABI,
   ChainlinkToOracleAdapterBytecode,
@@ -36,6 +37,9 @@ interface ReactorConfig {
   oracleAddress: string
   treasury: string
   criticalReserveRatio: string
+  initialReserve: string
+  fissionFee: string
+  fusionFee: string
 }
 
 type OracleProvider = "existing" | "chainlink" | "orb"
@@ -82,6 +86,9 @@ export default function CreatePage() {
     oracleAddress: "",
     treasury: address || "",
     criticalReserveRatio: "120",
+    initialReserve: "0.1",
+    fissionFee: "0",
+    fusionFee: "0",
   })
 
   const [oracleProvider, setOracleProvider] = useState<OracleProvider>("existing")
@@ -226,7 +233,10 @@ export default function CreatePage() {
            config.baseToken && 
            config.oracleAddress &&
            config.treasury &&
-           config.criticalReserveRatio
+           config.criticalReserveRatio &&
+           config.initialReserve &&
+           config.fissionFee !== "" &&
+           config.fusionFee !== ""
   }
 
   const handleDeployChainlinkAdapter = async () => {
@@ -358,6 +368,11 @@ export default function CreatePage() {
       return
     }
 
+    if (!publicClient) {
+      toast.error("Network client is not available")
+      return
+    }
+
     if (!isFormValid()) {
       toast.error("Please fill in all required fields")
       return
@@ -444,6 +459,36 @@ export default function CreatePage() {
       return
     }
 
+    const initialReserveValue = Number(config.initialReserve)
+    if (!Number.isFinite(initialReserveValue) || initialReserveValue <= 0) {
+      toast.error("Initial reserve must be greater than zero")
+      return
+    }
+
+    const fissionFeePercent = Number(config.fissionFee)
+    const fusionFeePercent = Number(config.fusionFee)
+
+    if (
+      !Number.isFinite(fissionFeePercent) ||
+      fissionFeePercent < 0 ||
+      fissionFeePercent >= 100
+    ) {
+      toast.error("Fission fee must be at least 0% and below 100%")
+      return
+    }
+
+    if (
+      !Number.isFinite(fusionFeePercent) ||
+      fusionFeePercent < 0 ||
+      fusionFeePercent >= 100
+    ) {
+      toast.error("Fusion fee must be at least 0% and below 100%")
+      return
+    }
+
+    const fissionFeeWad = parseUnits(config.fissionFee, 16)
+    const fusionFeeWad = parseUnits(config.fusionFee, 16)
+
     const deploymentPreflight = await checkOracleAddress(oracleAddress)
 
     if (!deploymentPreflight) {
@@ -464,6 +509,54 @@ export default function CreatePage() {
     const account = address as `0x${string}`
 
     try {
+      const baseDecimals = await publicClient.readContract({
+        address: baseToken as `0x${string}`,
+        abi: ERC20ABI,
+        functionName: "decimals",
+      })
+
+      const initialReserveAmount = parseUnits(
+        config.initialReserve,
+        Number(baseDecimals)
+      )
+
+      const currentAllowance = await publicClient.readContract({
+        address: baseToken as `0x${string}`,
+        abi: ERC20ABI,
+        functionName: "allowance",
+        args: [account, factoryAddress],
+      })
+
+      if (currentAllowance < initialReserveAmount) {
+        toast.info("Approve the Factory to transfer the initial reserve")
+
+        const approvalHash = await writeContractAsync({
+          account,
+          chainId: deploymentChainId,
+          address: baseToken as `0x${string}`,
+          abi: ERC20ABI,
+          functionName: "approve",
+          args: [factoryAddress, initialReserveAmount],
+        })
+
+        const approvalReceipt =
+          await publicClient.waitForTransactionReceipt({
+            hash: approvalHash,
+          })
+
+        if (approvalReceipt.status !== "success") {
+          toast.error("Initial reserve approval failed")
+          return
+        }
+
+        toast.success("Initial reserve approved")
+      }
+
+      if (latestChainIdRef.current !== deploymentChainId) {
+        toast.error("Network changed during approval. Please try again.")
+        return
+      }
+
       await writeContractAsync({
         account,
         chainId: deploymentChainId,
@@ -481,9 +574,10 @@ export default function CreatePage() {
           protonName,
           protonSymbol,
           treasuryAddress as `0x${string}`,
-          BigInt(5000000000000000), // 0.5% fission fee (0.005e18)
-          BigInt(5000000000000000), // 0.5% fusion fee (0.005e18)
-          criticalReserveRatioWad
+          fissionFeeWad,
+          fusionFeeWad,
+          criticalReserveRatioWad,
+          initialReserveAmount
         ]
       })
     } catch (error) {
@@ -720,7 +814,25 @@ export default function CreatePage() {
                   )}
                 </div>
 
-                <div className="grid gap-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-medium text-foreground/80">
+                      Initial Reserve
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="any"
+                      placeholder="0.1"
+                      value={config.initialReserve}
+                      onChange={(e) => updateConfig("initialReserve", e.target.value)}
+                      className={inputClasses}
+                    />
+                    <p className="text-[12px] text-muted-foreground/75">
+                      Amount of the selected base token deposited when the reactor is created.
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
                     <Label className="text-[13px] font-medium text-foreground/80">
                       Critical Reserve Ratio (%)
@@ -733,6 +845,36 @@ export default function CreatePage() {
                       placeholder="120"
                       value={config.criticalReserveRatio}
                       onChange={(e) => updateConfig("criticalReserveRatio", e.target.value)}
+                      className={inputClasses}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-medium text-foreground/80">
+                      Fission Fee (%)
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="99.9999"
+                      step="0.01"
+                      value={config.fissionFee}
+                      onChange={(e) => updateConfig("fissionFee", e.target.value)}
+                      className={inputClasses}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-medium text-foreground/80">
+                      Fusion Fee (%)
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="99.9999"
+                      step="0.01"
+                      value={config.fusionFee}
+                      onChange={(e) => updateConfig("fusionFee", e.target.value)}
                       className={inputClasses}
                     />
                   </div>
