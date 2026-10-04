@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { WalletButton } from "@/components/WalletButton"
+import gluonLogo from "@/public/GluonProtocol-Darker.png"
 
 const navItems = [
   { href: "/", label: "Home" },
@@ -89,7 +90,7 @@ export default function Navigation() {
               className="flex items-center gap-2 rounded-lg py-1 pr-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span className="relative h-7 w-12">
-                <Image src="/GluonProtocol-Darker.png" alt="" fill sizes="112px" className="object-contain" priority />
+                <Image src={gluonLogo} alt="Gluon logo" fill sizes="112px" className="object-contain" priority />
               </span>
               <span className="hidden text-[17px] font-semibold tracking-[-0.02em] text-foreground min-[380px]:inline">Gluon</span>
             </Link>
