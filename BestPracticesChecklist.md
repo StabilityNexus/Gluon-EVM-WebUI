@@ -26,11 +26,11 @@
 |---|---:|---:|:---:|
 | Basics | 8 | 8 | ✅ |
 | Change Control | 6 | 6 | ✅ |
-| Reporting | 6 | 8 | 🟡 |
+| Reporting | 8 | 8 | ✅ |
 | Quality | 11 | 11 | ✅ |
 | Security | 9 | 9 | ✅ |
 | Analysis | 6 | 7 | 🟡 |
-| **Total** | **46** | **49** | **94%** |
+| **Total** | **48** | **49** | **98%** |
 
 _Generated from the checklist entries below. `[x]` is met, `[~]` is documented N/A, and `[ ]` remains unmet._
 <!-- checklist-score:end -->
@@ -106,11 +106,11 @@ _Generated from the checklist entries below. `[x]` is met, `[~]` is documented N
 - [x] 🟡 **report_tracker** — GitHub Issues are used to track individual bugs.
   - *Evidence URL:* [GitHub Issues](https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues)
 
-- [ ] 🔴 **report_responses** — A majority of qualifying bug reports in the required historical window have documented acknowledgement.
-  - *Note:* Keep this unchecked until qualifying maintainer-response evidence is recorded.
+- [x] 🔴 **report_responses** — A majority of qualifying bug reports in the required historical window have documented acknowledgement.
+  - *Evidence:* Maintainer responses are documented on [#11](https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues/11) and [#13](https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues/13).
 
-- [ ] 🟡 **enhancement_responses** — More than 50% of qualifying enhancement requests in the required historical window have documented responses.
-  - *Note:* Keep this unchecked until qualifying maintainer-response evidence is recorded.
+- [x] 🟡 **enhancement_responses** — More than 50% of qualifying enhancement requests in the required historical window have documented responses.
+  - *Evidence:* Maintainer responses are documented on [#22](https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues/22), [#24](https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues/24), and [#25](https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues/25).
 
 - [x] 🔴 **report_archive** — Reports and responses are publicly archived and searchable.
   - *Evidence URL:* [GitHub Issues](https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues)
