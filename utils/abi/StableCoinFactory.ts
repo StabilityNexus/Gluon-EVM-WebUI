@@ -196,6 +196,12 @@ export const StableCoinFactoryABI = [
         "internalType": "uint256",
         "name": "criticalReserveRatioWad",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "initialReserve",
+        "type": "uint256"
       }
     ],
     "name": "ReactorDeployed",
@@ -285,6 +291,11 @@ export const StableCoinFactoryABI = [
       {
         "internalType": "uint256",
         "name": "criticalReserveRatioWadParam",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "initialReserveParam",
         "type": "uint256"
       }
     ],
