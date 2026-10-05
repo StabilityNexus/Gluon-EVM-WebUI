@@ -9,6 +9,7 @@ import HeroField from "@/components/home/HeroField"
 import { TokenGlyph } from "@/components/home/TokenGlyph"
 import ReactionFlows from "@/components/home/ReactionFlows"
 import { GLUON_NETWORKS } from "@/utils/networks"
+import gluonPaper from "@/public/GluonPaper.png"
 
 const delay = (ms: number) => ({ "--delay": `${ms}ms` }) as CSSProperties
 
@@ -119,7 +120,7 @@ export default function HomePage() {
               <Image
                 unoptimized
                 loading="lazy"
-                src="/GluonPaper.png"
+                src={gluonPaper}
                 alt="First page of the Gluon research note"
                 fill
                 sizes="(min-width: 1024px) 28rem, 90vw"
