@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/providers/theme-provider'
 import { WalletProvider } from '@/providers/WalletProvider'
 import Navigation from '@/components/navigation'
 import ClientFooter from '@/components/ClientFooter'
+import gluonLogo from '@/public/GluonProtocol-Darker.png'
 
 export const metadata: Metadata = {
   title: 'Gluon | Decentralized Stablecoin Creation Platform',
@@ -42,9 +43,9 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   icons: {
-    icon: '/GluonProtocol-Darker.png',
-    shortcut: '/GluonProtocol-Darker.png',
-    apple: '/GluonProtocol-Darker.png',
+    icon: gluonLogo.src,
+    shortcut: gluonLogo.src,
+    apple: gluonLogo.src,
   },
   openGraph: {
     title: 'Gluon | Decentralized Stablecoin Creation Platform',
