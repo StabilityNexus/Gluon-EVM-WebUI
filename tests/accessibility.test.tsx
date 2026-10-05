@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest"
 import { render } from "@testing-library/react"
 import OraclePreflightPanel from "@/components/OraclePreflightPanel"
 import { ManagementActionCard } from "@/components/management-action-card"
+import Footer from "@/components/Footer"
 
 async function expectNoAxeViolations(container: HTMLElement) {
   const result = await axe.run(container, {
@@ -48,6 +49,14 @@ describe("accessibility", () => {
         coinSymbol="GLN"
         onAction={vi.fn()}
       />,
+    )
+
+    await expectNoAxeViolations(container)
+  })
+
+  it("has no automated WCAG violations in the site footer", async () => {
+    const { container } = render(
+      <Footer onTermsClick={vi.fn()} onShareClick={vi.fn()} />,
     )
 
     await expectNoAxeViolations(container)
