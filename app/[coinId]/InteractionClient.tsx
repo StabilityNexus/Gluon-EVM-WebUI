@@ -1043,22 +1043,24 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
             return
           }
 
-          const requestedNetAmount = safeParseUnits(amount, baseDecimalsNumber)
+          const parsedFusionAmount = safeParseUnits(amount, baseDecimalsNumber)
 
-          if (
-            requestedNetAmount === null ||
-            requestedNetAmount <= 0n ||
-            fusionGrossBaseRaw === null
-          ) {
+          if (parsedFusionAmount === null || parsedFusionAmount <= 0n) {
             toast.error("Invalid fusion amount")
             return
           }
 
           if (useNativeBase) {
-            if (!nativeAsset || !fusionBurnQuote) {
+            if (
+              !nativeAsset ||
+              !fusionBurnQuote ||
+              fusionGrossBaseRaw === null
+            ) {
               toast.error("Native fusion quote is not available")
               return
             }
+
+            const requestedNetAmount = parsedFusionAmount
 
             const [neutronRequired, protonRequired] = fusionBurnQuote
 
@@ -1094,7 +1096,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
             abi: StableCoinReactorABI,
             functionName: "fusion",
             args: [
-              fusionGrossBaseRaw,
+              parsedFusionAmount,
               recipient as `0x${string}`,
             ],
           })
