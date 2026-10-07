@@ -802,8 +802,10 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   ])
 
   const vaultHeading =
-    typeof vaultName === "string" && vaultName.length > 0
-      ? `${vaultName} Reactor`
+    typeof vaultName === "string" && vaultName.trim().length > 0
+      ? /reactor$/i.test(vaultName.trim())
+        ? vaultName.trim()
+        : `${vaultName.trim()} Reactor`
       : "StableCoin Reactor"
 
   useEffect(() => {
