@@ -4,6 +4,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import OraclePreflightPanel from "@/components/OraclePreflightPanel"
 import { ManagementActionCard } from "@/components/management-action-card"
+import Footer from "@/components/Footer"
 
 describe("OraclePreflightPanel", () => {
   it("allows the user to start a preflight check", async () => {
@@ -149,5 +150,55 @@ describe("ManagementActionCard", () => {
         recipient: "0xabc123",
       })
     })
+  })
+})
+
+describe("Footer", () => {
+  it("renders product, resources, community, and legal navigation columns", () => {
+    render(<Footer onTermsClick={vi.fn()} onShareClick={vi.fn()} />)
+
+    expect(screen.getByRole("navigation", { name: "Footer" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Product" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Resources" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Community" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Legal" })).toBeInTheDocument()
+
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/")
+    expect(screen.getByRole("link", { name: "Create Stablecoin" })).toHaveAttribute("href", "/create")
+    expect(screen.getByRole("link", { name: "Explore Reactors" })).toHaveAttribute("href", "/explorer")
+  })
+
+  it("handles Terms of Use and Share button interactions", async () => {
+    const user = userEvent.setup()
+    const onTermsClick = vi.fn()
+    const onShareClick = vi.fn()
+
+    render(<Footer onTermsClick={onTermsClick} onShareClick={onShareClick} />)
+
+    await user.click(screen.getByRole("button", { name: "Terms of Use" }))
+    expect(onTermsClick).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole("button", { name: "Share WebUI" }))
+    expect(onShareClick).toHaveBeenCalledOnce()
+  })
+
+  it("renders accessible social links", () => {
+    render(<Footer onTermsClick={vi.fn()} />)
+
+    const xLinks = screen.getAllByRole("link", { name: "X (Twitter)" })
+    expect(xLinks.length).toBeGreaterThanOrEqual(1)
+    expect(xLinks[0]).toHaveAttribute("href", "https://x.com/StabilityNexus")
+
+    const discordLinks = screen.getAllByRole("link", { name: "Discord" })
+    expect(discordLinks.length).toBeGreaterThanOrEqual(1)
+    expect(discordLinks[0]).toHaveAttribute("href", "https://discord.gg/YzDKeEfWtS")
+
+    const telegramLinks = screen.getAllByRole("link", { name: "Telegram" })
+    expect(telegramLinks.length).toBeGreaterThanOrEqual(1)
+    expect(telegramLinks[0]).toHaveAttribute("href", "https://t.me/StabilityNexus")
+
+    const githubLinks = screen.getAllByRole("link", { name: "GitHub" })
+    expect(githubLinks.length).toBeGreaterThanOrEqual(1)
+    expect(githubLinks[0]).toHaveAttribute("href", "https://github.com/StabilityNexus")
   })
 })
