@@ -1,11 +1,26 @@
-import type { Chain } from "viem"
+import type { Address, Chain } from "viem"
 import { scrollSepolia, sepolia } from "wagmi/chains"
 import { citreaTestnet } from "@/components/CitreaTestnet"
 import { rootstockTestnet } from "@/components/RootstockTestnet"
 
 export const SEPOLIA_CHAIN_ID = sepolia.id
 
-export const GLUON_NETWORKS = [
+export type NativeAssetConfig = {
+  nativeSymbol: string
+  nativeDecimals: number
+  wrappedNativeAddress: Address
+  helperAddress: Address
+}
+
+export type GluonNetworkConfig = {
+  chain: Chain
+  displayName: string
+  factoryAddress: Address
+  factorySupportsInitialReserve: boolean
+  nativeAsset?: NativeAssetConfig
+}
+
+export const GLUON_NETWORKS: readonly GluonNetworkConfig[] = [
   {
     chain: sepolia,
     displayName: "Ethereum Sepolia",
@@ -30,7 +45,12 @@ export const GLUON_NETWORKS = [
     factoryAddress: "0xb8e5EcA6a81eA96F7B4B02d645361435238E99d2",
     factorySupportsInitialReserve: false,
   },
-] as const
+]
+
+export const getGluonNetwork = (chainId?: number) => {
+  if (chainId === undefined) return undefined
+  return GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)
+}
 
 export const GLUON_CHAINS: [Chain, ...Chain[]] = [
   GLUON_NETWORKS[0].chain,
