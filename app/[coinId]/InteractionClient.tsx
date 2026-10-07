@@ -6,6 +6,8 @@ import Link from "next/link"
 import { PageHeader } from "@/components/PageHeader"
 import {
   useAccount,
+  useBalance,
+  useChainId,
   useReadContract,
   useWriteContract,
   useWaitForTransactionReceipt,
@@ -33,7 +35,17 @@ import {
   Zap,
 } from "lucide-react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin"
+import {
+  StableCoinReactorABI,
+  NativeAssetHelperABI,
+  ERC20ABI,
+} from "@/utils/abi/StableCoin"
+import { getGluonNetwork } from "@/utils/networks"
+import {
+  addressesEqual,
+  grossFusionAmountForNet,
+  resolveNativeAssetConfig,
+} from "@/utils/nativeAsset"
 import { toast } from "sonner"
 
 type TokenOption = "BASE" | "BUNDLE" | "NEUTRON" | "PROTON"
@@ -202,10 +214,12 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
 
 function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }) {
   const { address } = useAccount()
+  const chainId = useChainId()
 
   const [fromToken, setFromToken] = useState<TokenOption>("BASE")
   const [toToken, setToToken] = useState<TokenOption>("BUNDLE")
   const [amount, setAmount] = useState("")
+  const [useNativeBase, setUseNativeBase] = useState(false)
   const [recipient, setRecipient] = useState("")
   const [hasSetDefaultRecipient, setHasSetDefaultRecipient] = useState(false)
   const [copiedValue, setCopiedValue] = useState<string | null>(null)
@@ -249,6 +263,46 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     abi: StableCoinReactorABI,
     functionName: "BASE_TOKEN",
   })
+
+  const networkConfig = getGluonNetwork(chainId)
+  const nativeAssetConfig = networkConfig?.nativeAsset
+
+  const baseMatchesConfiguredWrappedNative =
+    typeof baseToken === "string" &&
+    !!nativeAssetConfig &&
+    addressesEqual(baseToken, nativeAssetConfig.wrappedNativeAddress)
+
+  const { data: helperWrappedNative } = useReadContract({
+    address: nativeAssetConfig?.helperAddress,
+    abi: NativeAssetHelperABI,
+    functionName: "WRAPPED_NATIVE",
+    query: {
+      enabled: !!nativeAssetConfig && baseMatchesConfiguredWrappedNative,
+    },
+  })
+
+  const nativeAsset = resolveNativeAssetConfig(
+    nativeAssetConfig,
+    typeof baseToken === "string" ? baseToken : undefined,
+    typeof helperWrappedNative === "string" ? helperWrappedNative : undefined,
+  )
+
+  const {
+    data: nativeBalance,
+    refetch: refetchNativeBalance,
+  } = useBalance({
+    address,
+    chainId,
+    query: {
+      enabled: !!address && !!nativeAsset,
+    },
+  })
+
+  useEffect(() => {
+    if (!nativeAsset || (route !== "FISSION" && route !== "FUSION")) {
+      setUseNativeBase(false)
+    }
+  }, [nativeAsset, route])
 
   const { data: baseAssetNameContract } = useReadContract({
     address: reactorAddress as `0x${string}`,
@@ -464,11 +518,79 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     },
   })
 
+  const {
+    data: neutronHelperAllowance,
+    refetch: refetchNeutronHelperAllowance,
+  } = useReadContract({
+    address: neutronToken as `0x${string}`,
+    abi: ERC20ABI,
+    functionName: "allowance",
+    args: [
+      address as `0x${string}`,
+      nativeAsset?.helperAddress as `0x${string}`,
+    ],
+    query: {
+      enabled: !!address && !!neutronToken && !!nativeAsset,
+    },
+  })
+
+  const {
+    data: protonHelperAllowance,
+    refetch: refetchProtonHelperAllowance,
+  } = useReadContract({
+    address: protonToken as `0x${string}`,
+    abi: ERC20ABI,
+    functionName: "allowance",
+    args: [
+      address as `0x${string}`,
+      nativeAsset?.helperAddress as `0x${string}`,
+    ],
+    query: {
+      enabled: !!address && !!protonToken && !!nativeAsset,
+    },
+  })
+
   const baseDecimalsNumber = typeof baseDecimals === "number" ? baseDecimals : undefined
   const neutronDecimalsNumber =
     typeof neutronDecimals === "number" ? (neutronDecimals as number) : undefined
   const protonDecimalsNumber =
     typeof protonDecimals === "number" ? (protonDecimals as number) : undefined
+
+  const baseAmountRaw = useMemo(() => {
+    if (baseDecimalsNumber === undefined) return null
+    if (!amount) return null
+    return safeParseUnits(amount, baseDecimalsNumber)
+  }, [amount, baseDecimalsNumber])
+
+  // `fusion(m)` charges the fusion fee from `m`. The UI amount represents
+  // the net base/native amount the user wants to receive, so calculate the
+  // minimum gross `m` required to produce at least that amount.
+  const fusionGrossBaseRaw = useMemo(() => {
+    if (route !== "FUSION") return null
+    if (!baseAmountRaw || baseAmountRaw <= 0n) return null
+    if (fusionFee === undefined) return null
+
+    return grossFusionAmountForNet(baseAmountRaw, fusionFee)
+  }, [route, baseAmountRaw, fusionFee])
+
+  const {
+    data: fusionBurnQuote,
+    isLoading: isFusionQuoteLoading,
+    isError: isFusionQuoteError,
+  } = useReadContract({
+    address: reactorAddress as `0x${string}`,
+    abi: StableCoinReactorABI,
+    functionName: "fusionBurnAmounts",
+    args: [fusionGrossBaseRaw ?? 0n],
+    query: {
+      enabled:
+        useNativeBase &&
+        !!nativeAsset &&
+        route === "FUSION" &&
+        fusionGrossBaseRaw !== null &&
+        fusionGrossBaseRaw > 0n,
+    },
+  })
 
   const reserveWad = useMemo(
     () => scaleToWad(reserve, baseDecimalsNumber),
@@ -543,6 +665,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       : typeof baseAssetSymbolContract === "string" && baseAssetSymbolContract.length > 0
         ? baseAssetSymbolContract
         : "BASE"
+
+  const activeBaseSymbol =
+    useNativeBase && nativeAsset ? nativeAsset.nativeSymbol : baseSymbolText
   const baseAssetName =
     typeof baseAssetNameContract === "string" && baseAssetNameContract.length > 0
       ? baseAssetNameContract
@@ -632,6 +757,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       void refetchNeutronBalance()
       void refetchProtonBalance()
       void refetchBaseAllowance()
+      void refetchNeutronHelperAllowance()
+      void refetchProtonHelperAllowance()
+      void refetchNativeBalance()
       void refetchReserve()
       void refetchNeutronTotalSupply()
       void refetchProtonTotalSupply()
@@ -640,7 +768,15 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       void refetchBaseToken()
       void refetchNeutronToken()
       void refetchProtonToken()
-      setAmount("")
+
+      if (
+        isFissionSuccess ||
+        isFusionSuccess ||
+        isProtonToNeutronSuccess ||
+        isNeutronToProtonSuccess
+      ) {
+        setAmount("")
+      }
     }
   }, [
     isApproveSuccess,
@@ -652,6 +788,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     refetchNeutronBalance,
     refetchProtonBalance,
     refetchBaseAllowance,
+    refetchNeutronHelperAllowance,
+    refetchProtonHelperAllowance,
+    refetchNativeBalance,
     refetchReserve,
     refetchNeutronTotalSupply,
     refetchProtonTotalSupply,
@@ -683,18 +822,46 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     if (isNeutronToProtonSuccess) toast.success("Neutron successfully transmuted to proton")
   }, [isNeutronToProtonSuccess])
 
-  const routeRequiresApproval = route === "FISSION"
-
   const parsedAmountForApproval = useMemo(() => {
     if (baseDecimalsNumber === undefined) return null
     if (!amount) return null
     return safeParseUnits(amount, baseDecimalsNumber)
   }, [amount, baseDecimalsNumber])
-  const needsApproval =
-    routeRequiresApproval &&
+
+  const nativeNeutronRequired =
+    useNativeBase && fusionBurnQuote ? fusionBurnQuote[0] : undefined
+  const nativeProtonRequired =
+    useNativeBase && fusionBurnQuote ? fusionBurnQuote[1] : undefined
+
+  const needsBaseApproval =
+    route === "FISSION" &&
+    !useNativeBase &&
     baseAllowance !== undefined &&
     parsedAmountForApproval !== null &&
-    parsedAmountForApproval > (baseAllowance || BigInt(0))
+    parsedAmountForApproval > (baseAllowance || 0n)
+
+  const needsNativeNeutronApproval =
+    route === "FUSION" &&
+    useNativeBase &&
+    nativeNeutronRequired !== undefined &&
+    nativeNeutronRequired > (neutronHelperAllowance || 0n)
+
+  const needsNativeProtonApproval =
+    route === "FUSION" &&
+    useNativeBase &&
+    nativeProtonRequired !== undefined &&
+    nativeProtonRequired > (protonHelperAllowance || 0n)
+
+  const needsApproval =
+    needsBaseApproval ||
+    needsNativeNeutronApproval ||
+    needsNativeProtonApproval
+
+  const approvalSymbol = needsNativeNeutronApproval
+    ? neutronSymbolText
+    : needsNativeProtonApproval
+      ? protonSymbolText
+      : baseSymbolText
 
   const isProcessing =
     isApproving ||
@@ -711,7 +878,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   const fromLabel = useMemo(() => {
     switch (fromToken) {
       case "BASE":
-        return baseSymbolText
+        return activeBaseSymbol
       case "NEUTRON":
         return neutronSymbolText
       case "PROTON":
@@ -721,12 +888,12 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       default:
         return "Token"
     }
-  }, [fromToken, baseSymbolText, neutronSymbolText, protonSymbolText])
+  }, [fromToken, activeBaseSymbol, neutronSymbolText, protonSymbolText])
 
   const toLabel = useMemo(() => {
     switch (toToken) {
       case "BASE":
-        return baseSymbolText
+        return activeBaseSymbol
       case "NEUTRON":
         return neutronSymbolText
       case "PROTON":
@@ -736,19 +903,56 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       default:
         return "Token"
     }
-  }, [toToken, baseSymbolText, neutronSymbolText, protonSymbolText])
+  }, [toToken, activeBaseSymbol, neutronSymbolText, protonSymbolText])
 
   const handleApprove = () => {
-    if (!writeApprove || !baseToken) return
+    if (!writeApprove) return
+
+    if (useNativeBase && route === "FUSION") {
+      if (!nativeAsset || !fusionBurnQuote || !neutronToken || !protonToken) {
+        toast.error("Fusion quote is not available yet")
+        return
+      }
+
+      const [neutronRequired, protonRequired] = fusionBurnQuote
+
+      if (neutronRequired > (neutronHelperAllowance || 0n)) {
+        writeApprove({
+          address: neutronToken as `0x${string}`,
+          abi: ERC20ABI,
+          functionName: "approve",
+          args: [nativeAsset.helperAddress, neutronRequired],
+        })
+        return
+      }
+
+      if (protonRequired > (protonHelperAllowance || 0n)) {
+        writeApprove({
+          address: protonToken as `0x${string}`,
+          abi: ERC20ABI,
+          functionName: "approve",
+          args: [nativeAsset.helperAddress, protonRequired],
+        })
+        return
+      }
+
+      return
+    }
+
+    if (!baseToken) return
+
     if (baseDecimalsNumber === undefined) {
       toast.error("Base token decimals not available")
       return
     }
+
     const parsedAmount = parsedAmountForApproval
+
     if (parsedAmount === null) {
       toast.error("Invalid amount for approval")
       return
     }
+
     try {
       writeApprove({
         address: baseToken as `0x${string}`,
@@ -756,7 +960,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
         functionName: "approve",
         args: [
           reactorAddress as `0x${string}`,
-          parsedAmount === BigInt(0)
+          parsedAmount === 0n
             ? parseUnits("1000000", baseDecimalsNumber)
             : parsedAmount,
         ],
@@ -786,7 +990,35 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     try {
       switch (route) {
         case "FISSION": {
-          if (!baseDecimalsNumber) {
+          if (useNativeBase) {
+            if (!nativeAsset) {
+              toast.error("Native asset support is not available for this reactor")
+              return
+            }
+
+            const parsedNative = safeParseUnits(amount, nativeAsset.nativeDecimals)
+            if (parsedNative === null || parsedNative <= 0n) {
+              toast.error("Invalid native amount")
+              return
+            }
+
+            await writeFission({
+              address: nativeAsset.helperAddress,
+              abi: NativeAssetHelperABI,
+              functionName: "fissionNative",
+              args: [
+                reactorAddress as `0x${string}`,
+                recipient as `0x${string}`,
+                0n,
+                0n,
+              ],
+              value: parsedNative,
+            })
+
+            break
+          }
+
+          if (baseDecimalsNumber === undefined) {
             toast.error("Base token decimals not available yet")
             return
           }
@@ -806,21 +1038,67 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
           break
         }
         case "FUSION": {
-          if (!baseDecimalsNumber) {
+          if (baseDecimalsNumber === undefined) {
             toast.error("Base token decimals not available yet")
             return
           }
-          const parsed = safeParseUnits(amount, baseDecimalsNumber)
-          if (parsed === null) {
-            toast.error("Invalid base amount")
+
+          const requestedNetAmount = safeParseUnits(amount, baseDecimalsNumber)
+
+          if (
+            requestedNetAmount === null ||
+            requestedNetAmount <= 0n ||
+            fusionGrossBaseRaw === null
+          ) {
+            toast.error("Invalid fusion amount")
             return
           }
+
+          if (useNativeBase) {
+            if (!nativeAsset || !fusionBurnQuote) {
+              toast.error("Native fusion quote is not available")
+              return
+            }
+
+            const [neutronRequired, protonRequired] = fusionBurnQuote
+
+            if (neutronRequired > (neutronHelperAllowance || 0n)) {
+              toast.error(`Approve ${neutronSymbolText} first`)
+              return
+            }
+
+            if (protonRequired > (protonHelperAllowance || 0n)) {
+              toast.error(`Approve ${protonSymbolText} first`)
+              return
+            }
+
+            await writeFusion({
+              address: nativeAsset.helperAddress,
+              abi: NativeAssetHelperABI,
+              functionName: "fusionNative",
+              args: [
+                reactorAddress as `0x${string}`,
+                fusionGrossBaseRaw,
+                recipient as `0x${string}`,
+                neutronRequired,
+                protonRequired,
+                requestedNetAmount,
+              ],
+            })
+
+            break
+          }
+
           await writeFusion({
             address: reactorAddress as `0x${string}`,
             abi: StableCoinReactorABI,
             functionName: "fusion",
-            args: [parsed, recipient as `0x${string}`],
+            args: [
+              fusionGrossBaseRaw,
+              recipient as `0x${string}`,
+            ],
           })
+
           break
         }
         case "PROTON_TO_NEUTRON": {
@@ -882,6 +1160,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   const fromBalanceDisplay = useMemo(() => {
     switch (fromToken) {
       case "BASE":
+        if (useNativeBase && nativeBalance) {
+          return formatBalance(nativeBalance.value, nativeBalance.decimals)
+        }
         return formatBalance(baseBalance, baseDecimalsNumber)
       case "NEUTRON":
         return formatBalance(neutronBalance, neutronDecimalsNumber)
@@ -901,6 +1182,8 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   }, [
     fromToken,
     baseBalance,
+    nativeBalance,
+    useNativeBase,
     neutronBalance,
     protonBalance,
     baseDecimalsNumber,
@@ -913,9 +1196,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   const swapDescription = useMemo(() => {
     switch (route) {
       case "FISSION":
-        return `Convert ${baseSymbolText} into ${neutronSymbolText} + ${protonSymbolText}.`
+        return `Convert ${activeBaseSymbol} into ${neutronSymbolText} + ${protonSymbolText}.`
       case "FUSION":
-        return `Redeem ${neutronSymbolText} + ${protonSymbolText} back into ${baseSymbolText}.`
+        return `Redeem ${neutronSymbolText} + ${protonSymbolText} back into ${activeBaseSymbol}.`
       case "PROTON_TO_NEUTRON":
         return `Transmute ${protonSymbolText} into ${neutronSymbolText} using the β⁺ pathway.`
       case "NEUTRON_TO_PROTON":
@@ -923,14 +1206,18 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       default:
         return "Select a supported conversion pair to continue."
     }
-  }, [route, baseSymbolText, neutronSymbolText, protonSymbolText])
+  }, [route, activeBaseSymbol, neutronSymbolText, protonSymbolText])
 
   const actionLabel = useMemo(() => {
     switch (route) {
       case "FISSION":
-        return "Split Base"
+        return useNativeBase && nativeAsset
+          ? `Split ${nativeAsset.nativeSymbol}`
+          : "Split Base"
       case "FUSION":
-        return "Merge Tokens"
+        return useNativeBase && nativeAsset
+          ? `Redeem ${nativeAsset.nativeSymbol}`
+          : "Merge Tokens"
       case "PROTON_TO_NEUTRON":
         return "Transmute β⁺"
       case "NEUTRON_TO_PROTON":
@@ -938,10 +1225,15 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       default:
         return "Select Pair"
     }
-  }, [route])
+  }, [route, useNativeBase, nativeAsset])
 
   const handleMaxClick = () => {
-    if (fromToken === "BASE" && baseBalance && baseDecimalsNumber !== undefined) {
+    if (
+      fromToken === "BASE" &&
+      !useNativeBase &&
+      baseBalance &&
+      baseDecimalsNumber !== undefined
+    ) {
       const formatted = formatUnits(baseBalance, baseDecimalsNumber)
       setAmount(trimFormattedAmount(formatted, 6))
     } else if (fromToken === "NEUTRON" && neutronBalance && neutronDecimalsNumber !== undefined) {
@@ -954,13 +1246,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   }
 
   const renderMaxButton =
-    fromToken === "BASE" || fromToken === "NEUTRON" || fromToken === "PROTON"
-
-  const baseAmountRaw = useMemo(() => {
-    if (!baseDecimalsNumber) return null
-    if (!amount) return null
-    return safeParseUnits(amount, baseDecimalsNumber)
-  }, [amount, baseDecimalsNumber])
+    (fromToken === "BASE" && !useNativeBase) ||
+    fromToken === "NEUTRON" ||
+    fromToken === "PROTON"
 
   const parsedProtonAmount = useMemo(() => {
     if (route !== "PROTON_TO_NEUTRON") return null
@@ -1121,11 +1409,35 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     protonSupplyWad,
   ])
 
-  const fusionBreakdown = useMemo(() => {
+  const displayFusionBreakdown = useMemo(() => {
     if (!isFusionRoute) return null
     if (!baseAmountRaw || baseAmountRaw <= 0n) return null
+    if (!fusionGrossBaseRaw || fusionGrossBaseRaw <= 0n) return null
+    if (fusionFee === undefined) return null
+
+    const grossBase = fusionGrossBaseRaw
+    const fee = mulDiv(grossBase, fusionFee, WAD)
+    const netBase = grossBase - fee
+
+    // Native-helper reactors require the authoritative on-chain quote.
+    if (useNativeBase) {
+      if (!fusionBurnQuote) return null
+
+      const [neutronBurn, protonBurn] = fusionBurnQuote
+
+      return {
+        requestedBaseOut: baseAmountRaw,
+        grossBase,
+        fee,
+        netBase,
+        neutronBurn,
+        protonBurn,
+      }
+    }
+
+    // Backward compatibility for reactors deployed before
+    // fusionBurnAmounts() existed.
     if (
-      fusionFee === undefined ||
       reserve === undefined ||
       reserve === 0n ||
       neutronTotalSupply === undefined ||
@@ -1137,37 +1449,51 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       return null
     }
 
-    const denominator = WAD - fusionFee
-    if (denominator <= 0n) return null
-
-    const grossBase = mulDiv(baseAmountRaw, WAD, denominator)
-    const fee = grossBase - baseAmountRaw
-    const baseScale = pow10(baseDecimalsNumber)
-    const reserveWadValue = reserveWad
-    if (!reserveWadValue || reserveWadValue === 0n) return null
+    if (!reserveWad || reserveWad === 0n) return null
     if (!neutronSupplyWad || !protonSupplyWad) return null
 
+    const baseScale = pow10(baseDecimalsNumber)
     const grossBaseWad = mulDiv(grossBase, WAD, baseScale)
 
-    const neutronBurnWad =
-      neutronSupplyWad === 0n ? 0n : mulDiv(grossBaseWad, neutronSupplyWad, reserveWadValue)
-    const protonBurnWad =
-      protonSupplyWad === 0n ? 0n : mulDiv(grossBaseWad, protonSupplyWad, reserveWadValue)
+    const neutronBurnWad = mulDiv(
+      grossBaseWad,
+      neutronSupplyWad,
+      reserveWad,
+    )
 
-    const neutronBurn = mulDiv(neutronBurnWad, pow10(neutronDecimalsNumber), WAD)
-    const protonBurn = mulDiv(protonBurnWad, pow10(protonDecimalsNumber), WAD)
+    const protonBurnWad = mulDiv(
+      grossBaseWad,
+      protonSupplyWad,
+      reserveWad,
+    )
+
+    const neutronBurn = mulDiv(
+      neutronBurnWad,
+      pow10(neutronDecimalsNumber),
+      WAD,
+    )
+
+    const protonBurn = mulDiv(
+      protonBurnWad,
+      pow10(protonDecimalsNumber),
+      WAD,
+    )
 
     return {
       requestedBaseOut: baseAmountRaw,
       grossBase,
       fee,
+      netBase,
       neutronBurn,
       protonBurn,
     }
   }, [
     isFusionRoute,
     baseAmountRaw,
+    fusionGrossBaseRaw,
     fusionFee,
+    useNativeBase,
+    fusionBurnQuote,
     reserve,
     neutronTotalSupply,
     protonTotalSupply,
@@ -1180,22 +1506,22 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   ])
 
   const fromBreakdownRows = useMemo(() => {
-    if (isFusionRoute && fusionBreakdown) {
+    if (isFusionRoute && displayFusionBreakdown) {
       return [
         {
           label: neutronSymbolText,
-          value: formatTokenValue(fusionBreakdown.neutronBurn, neutronDecimalsNumber, neutronSymbolText),
+          value: formatTokenValue(displayFusionBreakdown.neutronBurn, neutronDecimalsNumber, neutronSymbolText),
         },
         {
           label: protonSymbolText,
-          value: formatTokenValue(fusionBreakdown.protonBurn, protonDecimalsNumber, protonSymbolText),
+          value: formatTokenValue(displayFusionBreakdown.protonBurn, protonDecimalsNumber, protonSymbolText),
         },
       ]
     }
     return []
   }, [
     isFusionRoute,
-    fusionBreakdown,
+    displayFusionBreakdown,
     neutronDecimalsNumber,
     protonDecimalsNumber,
     neutronSymbolText,
@@ -1246,33 +1572,33 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       }
     }
 
-    if (isFusionRoute && fusionBreakdown) {
+    if (isFusionRoute && displayFusionBreakdown) {
       return {
         title: "Fusion breakdown",
         rows: [
           {
             label: "Base requested",
             value: formatTokenValue(
-              fusionBreakdown.requestedBaseOut,
+              displayFusionBreakdown.requestedBaseOut,
               baseDecimalsNumber,
-              baseSymbolText,
+              activeBaseSymbol,
             ),
           },
           {
             label: "Gross base",
-            value: formatTokenValue(fusionBreakdown.grossBase, baseDecimalsNumber, baseSymbolText),
+            value: formatTokenValue(displayFusionBreakdown.grossBase, baseDecimalsNumber, activeBaseSymbol),
           },
           {
             label: "Fee withheld",
-            value: formatTokenValue(fusionBreakdown.fee, baseDecimalsNumber, baseSymbolText),
+            value: formatTokenValue(displayFusionBreakdown.fee, baseDecimalsNumber, activeBaseSymbol),
           },
           {
             label: `Burn ${neutronSymbolText}`,
-            value: formatTokenValue(fusionBreakdown.neutronBurn, neutronDecimalsNumber, neutronSymbolText),
+            value: formatTokenValue(displayFusionBreakdown.neutronBurn, neutronDecimalsNumber, neutronSymbolText),
           },
           {
             label: `Burn ${protonSymbolText}`,
-            value: formatTokenValue(fusionBreakdown.protonBurn, protonDecimalsNumber, protonSymbolText),
+            value: formatTokenValue(displayFusionBreakdown.protonBurn, protonDecimalsNumber, protonSymbolText),
           },
         ],
       }
@@ -1284,6 +1610,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     fissionBreakdown,
     baseDecimalsNumber,
     baseSymbolText,
+    activeBaseSymbol,
     neutronSymbolText,
     neutronDecimalsNumber,
     protonSymbolText,
@@ -1291,7 +1618,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     basePricePegged,
     peggedSymbolText,
     isFusionRoute,
-    fusionBreakdown,
+    displayFusionBreakdown,
   ])
 
   const fissionMintSummary = useMemo(() => {
@@ -1383,7 +1710,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
 
   const toInputPlaceholder = useMemo(() => {
     if (isFusionRoute) {
-      return `Enter the amount of ${baseSymbolText} you want back`
+      return `Enter the amount of ${activeBaseSymbol} you want back`
     }
     if (isFissionRoute) {
       return fissionMintSummary || "Minted bundle appears here"
@@ -1397,7 +1724,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     return "Calculated on-chain"
   }, [
     isFusionRoute,
-    baseSymbolText,
+    activeBaseSymbol,
     isFissionRoute,
     fissionMintSummary,
     route,
@@ -1574,6 +1901,38 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
               <p className="text-sm text-muted-foreground">{swapDescription}</p>
             </CardHeader>
             <CardContent className="space-y-6">
+              {nativeAsset && (route === "FISSION" || route === "FUSION") && (
+                <div className="rounded-xl border border-border bg-background p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-xs text-muted-foreground">
+                      Base asset mode
+                    </span>
+                    <span className="text-xs font-mono text-foreground/70">
+                      {useNativeBase
+                        ? nativeAsset.nativeSymbol
+                        : baseSymbolText}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={useNativeBase ? "outline" : "default"}
+                      onClick={() => setUseNativeBase(false)}
+                    >
+                      {baseSymbolText}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant={useNativeBase ? "default" : "outline"}
+                      onClick={() => setUseNativeBase(true)}
+                    >
+                      {nativeAsset.nativeSymbol} (native)
+                    </Button>
+                  </div>
+                </div>
+              )}
               <div className="space-y-3 rounded-xl border border-border bg-background p-4 sm:p-5">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>From</span>
@@ -1586,7 +1945,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="BASE" disabled={disabledTokens.BASE}>
-                        {`${baseAssetName} (${baseSymbolText})`}
+                        {useNativeBase && nativeAsset
+                          ? `${nativeAsset.nativeSymbol} (native)`
+                          : `${baseAssetName} (${baseSymbolText})`}
                       </SelectItem>
                       <SelectItem value="NEUTRON" disabled={disabledTokens.NEUTRON}>
                         {neutronSymbolText}
@@ -1684,7 +2045,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                           {target === "BUNDLE"
                             ? bundleLabel
                             : target === "BASE"
-                              ? baseSymbolText
+                              ? activeBaseSymbol
                               : target === "NEUTRON"
                                 ? neutronSymbolText
                                 : protonSymbolText}
@@ -1762,6 +2123,36 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                           )
                         }
 
+                        if (
+                          useNativeBase &&
+                          route === "FUSION" &&
+                          isFusionQuoteLoading
+                        ) {
+                          return (
+                            <Button
+                              disabled
+                              className="w-full h-12 sm:h-14 text-[15px] bg-secondary text-muted-foreground disabled:opacity-100"
+                            >
+                              Calculating fusion…
+                            </Button>
+                          )
+                        }
+
+                        if (
+                          useNativeBase &&
+                          route === "FUSION" &&
+                          isFusionQuoteError
+                        ) {
+                          return (
+                            <Button
+                              disabled
+                              className="w-full h-12 sm:h-14 text-[15px] bg-secondary text-muted-foreground disabled:opacity-100"
+                            >
+                              Fusion unavailable
+                            </Button>
+                          )
+                        }
+
                         if (needsApproval) {
                           return (
                             <Button
@@ -1777,7 +2168,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                               ) : (
                                 <>
                                   <Shield className="mr-2 h-5 w-5" />
-                                  Approve {baseSymbolText}
+                                  Approve {approvalSymbol}
                                 </>
                               )}
                             </Button>
