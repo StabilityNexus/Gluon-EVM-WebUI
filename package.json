@@ -103,7 +103,8 @@
     "@base-org/account": "1.1.1",
     "anymatch": {
       "picomatch": "2.3.2"
-    }
+    },
+    "source-map-js": "1.2.2"
   },
   "packageManager": "npm@10.8.2"
 }
