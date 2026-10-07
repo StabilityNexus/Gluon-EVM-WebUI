@@ -1920,6 +1920,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                     <Button
                       type="button"
                       variant={useNativeBase ? "outline" : "default"}
+                      aria-pressed={!useNativeBase}
                       onClick={() => setUseNativeBase(false)}
                     >
                       {baseSymbolText}
@@ -1928,6 +1929,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                     <Button
                       type="button"
                       variant={useNativeBase ? "default" : "outline"}
+                      aria-pressed={useNativeBase}
                       onClick={() => setUseNativeBase(true)}
                     >
                       {nativeAsset.nativeSymbol} (native)
