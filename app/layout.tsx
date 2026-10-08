@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   applicationName: 'Gluon',
   category: 'Finance',
   generator: 'Next.js',
-  metadataBase: new URL('https://gluon.stability.nexus'),
+  metadataBase: new URL('https://stabilitynexus.github.io/Gluon-EVM-WebUI/'),
   alternates: {
     canonical: '/',
   },
@@ -50,11 +50,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Gluon | Decentralized Stablecoin Creation Platform',
     description: 'Gluon is a decentralized platform for creating and managing stablecoins. Build custom stablecoin reactors and create algorithmic stablecoins with advanced DeFi mechanisms.',
-    url: 'https://gluon.stability.nexus',
+    url: '/',
     siteName: 'Gluon',
     images: [
       {
-        url: 'https://gluon.stability.nexus/og-image.png',
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Gluon - Decentralized Stablecoin Creation Platform',
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Gluon | Decentralized Stablecoin Creation Platform',
     description: 'Gluon is a decentralized platform for creating and managing stablecoins. Build custom stablecoin reactors and create algorithmic stablecoins.',
-    images: ['https://gluon.stability.nexus/og-image.png'],
+    images: ['/og-image.png'],
     creator: '@StabilityNexus',
     site: '@StabilityNexus',
   },
