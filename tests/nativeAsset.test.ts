@@ -35,7 +35,7 @@ describe("native asset integration", () => {
     ).toBe(true)
   })
 
-  it("requires the Reactor base token to match the configured wrapper", () => {
+  it("requires the Reactor base token and decimals to match the native config", () => {
     const wrapped =
       "0x4200000000000000000000000000000000000006" as Address
 
@@ -46,14 +46,23 @@ describe("native asset integration", () => {
     }
 
     expect(
-      resolveNativeAssetConfig(config, wrapped),
+      resolveNativeAssetConfig(config, wrapped, 18),
     ).toEqual(config)
 
     expect(
       resolveNativeAssetConfig(
         config,
         "0x2222222222222222222222222222222222222222",
+        18,
       ),
+    ).toBeUndefined()
+
+    expect(
+      resolveNativeAssetConfig(config, wrapped, 6),
+    ).toBeUndefined()
+
+    expect(
+      resolveNativeAssetConfig(config, wrapped, undefined),
     ).toBeUndefined()
   })
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { PageHeader } from "@/components/PageHeader"
@@ -14,7 +14,7 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi"
-import { parseUnits, formatUnits } from "viem"
+import { parseUnits, formatUnits, isAddress } from "viem"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -116,6 +116,7 @@ const shortenAddress = (value?: string, guard = 4) => {
 
 const WAD = 10n ** 18n
 const PEGGED_ASSET_WAD = 10n ** 18n
+const NATIVE_FLOW_CONTEXT_CHANGED = "NATIVE_FLOW_CONTEXT_CHANGED"
 
 const mulDiv = (a: bigint, b: bigint, denominator: bigint) => {
   if (denominator === 0n) return 0n
@@ -217,6 +218,11 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
 function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }) {
   const { address } = useAccount()
   const chainId = useChainId()
+  const latestAddressRef = useRef(address)
+  const latestChainIdRef = useRef(chainId)
+
+  latestAddressRef.current = address
+  latestChainIdRef.current = chainId
 
   const [fromToken, setFromToken] = useState<TokenOption>("BASE")
   const [toToken, setToToken] = useState<TokenOption>("BUNDLE")
@@ -266,12 +272,25 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     functionName: "BASE_TOKEN",
   })
 
+  const { data: baseDecimals } = useReadContract({
+    address: baseToken as `0x${string}`,
+    abi: ERC20ABI,
+    functionName: "decimals",
+    query: {
+      enabled: !!baseToken,
+    },
+  })
+
+  const baseDecimalsNumber =
+    typeof baseDecimals === "number" ? baseDecimals : undefined
+
   const networkConfig = getGluonNetwork(chainId)
   const nativeAssetConfig = networkConfig?.nativeAsset
 
   const nativeAsset = resolveNativeAssetConfig(
     nativeAssetConfig,
     typeof baseToken === "string" ? baseToken : undefined,
+    baseDecimalsNumber,
   )
 
   const {
@@ -405,15 +424,6 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     },
   })
 
-  const { data: baseDecimals } = useReadContract({
-    address: baseToken as `0x${string}`,
-    abi: ERC20ABI,
-    functionName: "decimals",
-    query: {
-      enabled: !!baseToken,
-    },
-  })
-
   const { data: neutronDecimals } = useReadContract({
     address: neutronToken as `0x${string}`,
     abi: ERC20ABI,
@@ -505,7 +515,6 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     },
   })
 
-  const baseDecimalsNumber = typeof baseDecimals === "number" ? baseDecimals : undefined
   const neutronDecimalsNumber =
     typeof neutronDecimals === "number" ? (neutronDecimals as number) : undefined
   const protonDecimalsNumber =
@@ -867,6 +876,22 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     }
   }
 
+  const assertNativeFlowContext = (
+    expectedAddress: `0x${string}`,
+    expectedChainId: number,
+  ) => {
+    if (
+      !addressesEqual(latestAddressRef.current, expectedAddress) ||
+      latestChainIdRef.current !== expectedChainId
+    ) {
+      throw new Error(NATIVE_FLOW_CONTEXT_CHANGED)
+    }
+  }
+
+  const isNativeFlowContextError = (error: unknown) =>
+    error instanceof Error &&
+    error.message === NATIVE_FLOW_CONTEXT_CHANGED
+
   const refreshAfterNativeFlow = () => {
     void refetchBaseBalance()
     void refetchNeutronBalance()
@@ -894,7 +919,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       return
     }
 
-    if (!recipient || !recipient.startsWith("0x")) {
+    if (!isAddress(recipient)) {
       toast.error("Enter a valid recipient address")
       return
     }
@@ -908,6 +933,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
               return
             }
 
+            const flowAddress = address
+            const flowChainId = chainId
+
             const parsedNative = safeParseUnits(amount, nativeAsset.nativeDecimals)
             if (parsedNative === null || parsedNative <= 0n) {
               toast.error("Invalid native amount")
@@ -920,6 +948,8 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
             let fissionSubmitted = false
 
             try {
+              assertNativeFlowContext(flowAddress, flowChainId)
+
               // 1. Wrap the native asset in the user's wallet.
               const wrapHash = await writeNativeContract({
                 address: nativeAsset.wrappedNativeAddress,
@@ -930,6 +960,8 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
               wrapSubmitted = true
               await waitForNativeReceipt(wrapHash)
               wrapCompleted = true
+
+              assertNativeFlowContext(flowAddress, flowChainId)
 
               // 2. Approve only when the Reactor allowance is insufficient.
               if (parsedNative > (baseAllowance || 0n)) {
@@ -944,6 +976,8 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                 })
                 await waitForNativeReceipt(approveWrappedHash)
               }
+
+              assertNativeFlowContext(flowAddress, flowChainId)
 
               // 3. Use the existing Reactor fission path.
               const nativeFissionHash = await writeNativeContract({
@@ -967,7 +1001,15 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
               console.error("Native fission error:", error)
               refreshAfterNativeFlow()
 
-              if (fissionSubmitted) {
+              if (isNativeFlowContextError(error)) {
+                if (wrapSubmitted) {
+                  setAmount("")
+                }
+
+                toast.error(
+                  "Wallet account or network changed during native fission. Check the original wallet before retrying.",
+                )
+              } else if (fissionSubmitted) {
                 // The transaction may have been mined even if receipt polling
                 // failed. Do not leave the same amount ready for another
                 // fission attempt.
@@ -1041,6 +1083,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
               return
             }
 
+            const flowAddress = address
+            const flowChainId = chainId
+
             const fee = mulDiv(fusionGrossBaseRaw, fusionFee, WAD)
             const nativeOut = fusionGrossBaseRaw - fee
 
@@ -1057,6 +1102,8 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
             let transferSubmitted = false
 
             try {
+              assertNativeFlowContext(flowAddress, flowChainId)
+
               // 1. Redeem through the existing Reactor. The wrapped-native
               // output must first return to the connected wallet so that the
               // wallet can unwrap it without a helper contract.
@@ -1066,12 +1113,14 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                 functionName: "fusion",
                 args: [
                   fusionGrossBaseRaw,
-                  address,
+                  flowAddress,
                 ],
               })
               fusionSubmitted = true
               await waitForNativeReceipt(nativeFusionHash)
               fusionCompleted = true
+
+              assertNativeFlowContext(flowAddress, flowChainId)
 
               // 2. Unwrap exactly the amount produced by fusion.
               const unwrapHash = await writeNativeContract({
@@ -1084,9 +1133,11 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
               await waitForNativeReceipt(unwrapHash)
               unwrapCompleted = true
 
+              assertNativeFlowContext(flowAddress, flowChainId)
+
               // 3. If a different recipient was requested, forward the native
               // asset from the user's wallet after the unwrap.
-              if (!addressesEqual(recipient, address)) {
+              if (!addressesEqual(recipient, flowAddress)) {
                 const transferHash = await sendNativeTransaction({
                   to: recipient as `0x${string}`,
                   value: nativeOut,
@@ -1104,7 +1155,15 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
               console.error("Native fusion error:", error)
               refreshAfterNativeFlow()
 
-              if (fusionSubmitted) {
+              if (isNativeFlowContextError(error)) {
+                if (fusionSubmitted) {
+                  setAmount("")
+                }
+
+                toast.error(
+                  "Wallet account or network changed during native fusion. Check the original wallet before retrying.",
+                )
+              } else if (fusionSubmitted) {
                 // Once fusion has been submitted, do not leave the same amount
                 // ready for another burn while its status may be uncertain.
                 setAmount("")
@@ -1120,7 +1179,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                       : "Fusion succeeded, but unwrap did not. The wrapped native asset remains in your wallet.",
                   )
                 } else if (
-                  !addressesEqual(recipient, address) &&
+                  !addressesEqual(recipient, flowAddress) &&
                   transferSubmitted
                 ) {
                   toast.error(

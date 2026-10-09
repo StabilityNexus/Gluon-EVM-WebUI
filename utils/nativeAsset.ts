@@ -13,10 +13,15 @@ export const addressesEqual = (
 export const resolveNativeAssetConfig = (
   config: NativeAssetConfig | undefined,
   baseToken: string | undefined,
+  baseDecimals: number | undefined,
 ): NativeAssetConfig | undefined => {
-  if (!config) return undefined
+  if (!config || baseDecimals === undefined) return undefined
 
   if (!addressesEqual(baseToken, config.wrappedNativeAddress)) {
+    return undefined
+  }
+
+  if (config.nativeDecimals !== baseDecimals) {
     return undefined
   }
 
