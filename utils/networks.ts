@@ -9,7 +9,6 @@ export type NativeAssetConfig = {
   nativeSymbol: string
   nativeDecimals: number
   wrappedNativeAddress: Address
-  helperAddress: Address
 }
 
 export type GluonNetworkConfig = {

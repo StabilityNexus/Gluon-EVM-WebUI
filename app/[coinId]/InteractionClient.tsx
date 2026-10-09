@@ -8,7 +8,9 @@ import {
   useAccount,
   useBalance,
   useChainId,
+  usePublicClient,
   useReadContract,
+  useSendTransaction,
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi"
@@ -37,7 +39,7 @@ import {
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import {
   StableCoinReactorABI,
-  NativeAssetHelperABI,
+  WrappedNativeABI,
   ERC20ABI,
 } from "@/utils/abi/StableCoin"
 import { getGluonNetwork } from "@/utils/networks"
@@ -267,24 +269,9 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   const networkConfig = getGluonNetwork(chainId)
   const nativeAssetConfig = networkConfig?.nativeAsset
 
-  const baseMatchesConfiguredWrappedNative =
-    typeof baseToken === "string" &&
-    !!nativeAssetConfig &&
-    addressesEqual(baseToken, nativeAssetConfig.wrappedNativeAddress)
-
-  const { data: helperWrappedNative } = useReadContract({
-    address: nativeAssetConfig?.helperAddress,
-    abi: NativeAssetHelperABI,
-    functionName: "WRAPPED_NATIVE",
-    query: {
-      enabled: !!nativeAssetConfig && baseMatchesConfiguredWrappedNative,
-    },
-  })
-
   const nativeAsset = resolveNativeAssetConfig(
     nativeAssetConfig,
     typeof baseToken === "string" ? baseToken : undefined,
-    typeof helperWrappedNative === "string" ? helperWrappedNative : undefined,
   )
 
   const {
@@ -518,38 +505,6 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     },
   })
 
-  const {
-    data: neutronHelperAllowance,
-    refetch: refetchNeutronHelperAllowance,
-  } = useReadContract({
-    address: neutronToken as `0x${string}`,
-    abi: ERC20ABI,
-    functionName: "allowance",
-    args: [
-      address as `0x${string}`,
-      nativeAsset?.helperAddress as `0x${string}`,
-    ],
-    query: {
-      enabled: !!address && !!neutronToken && !!nativeAsset,
-    },
-  })
-
-  const {
-    data: protonHelperAllowance,
-    refetch: refetchProtonHelperAllowance,
-  } = useReadContract({
-    address: protonToken as `0x${string}`,
-    abi: ERC20ABI,
-    functionName: "allowance",
-    args: [
-      address as `0x${string}`,
-      nativeAsset?.helperAddress as `0x${string}`,
-    ],
-    query: {
-      enabled: !!address && !!protonToken && !!nativeAsset,
-    },
-  })
-
   const baseDecimalsNumber = typeof baseDecimals === "number" ? baseDecimals : undefined
   const neutronDecimalsNumber =
     typeof neutronDecimals === "number" ? (neutronDecimals as number) : undefined
@@ -562,35 +517,18 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     return safeParseUnits(amount, baseDecimalsNumber)
   }, [amount, baseDecimalsNumber])
 
-  // `fusion(m)` charges the fusion fee from `m`. The UI amount represents
-  // the net base/native amount the user wants to receive, so calculate the
-  // minimum gross `m` required to produce at least that amount.
+  // Native mode treats the entered amount as the native amount the user
+  // wants to receive. Calculate the smallest gross Reactor fusion amount
+  // whose post-fee wrapped-native output reaches that amount.
+  //
+  // Existing ERC-20 fusion semantics remain unchanged.
   const fusionGrossBaseRaw = useMemo(() => {
-    if (route !== "FUSION") return null
+    if (route !== "FUSION" || !useNativeBase) return null
     if (!baseAmountRaw || baseAmountRaw <= 0n) return null
     if (fusionFee === undefined) return null
 
     return grossFusionAmountForNet(baseAmountRaw, fusionFee)
-  }, [route, baseAmountRaw, fusionFee])
-
-  const {
-    data: fusionBurnQuote,
-    isLoading: isFusionQuoteLoading,
-    isError: isFusionQuoteError,
-  } = useReadContract({
-    address: reactorAddress as `0x${string}`,
-    abi: StableCoinReactorABI,
-    functionName: "fusionBurnAmounts",
-    args: [fusionGrossBaseRaw ?? 0n],
-    query: {
-      enabled:
-        useNativeBase &&
-        !!nativeAsset &&
-        route === "FUSION" &&
-        fusionGrossBaseRaw !== null &&
-        fusionGrossBaseRaw > 0n,
-    },
-  })
+  }, [route, useNativeBase, baseAmountRaw, fusionFee])
 
   const reserveWad = useMemo(
     () => scaleToWad(reserve, baseDecimalsNumber),
@@ -712,6 +650,10 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   const { data: approveHash, writeContract: writeApprove, isPending: isApproving } = useWriteContract()
   const { data: fissionHash, writeContract: writeFission, isPending: isFissioning } = useWriteContract()
   const { data: fusionHash, writeContract: writeFusion, isPending: isFusing } = useWriteContract()
+  const { writeContractAsync: writeNativeContract } = useWriteContract()
+  const { sendTransactionAsync: sendNativeTransaction } = useSendTransaction()
+  const publicClient = usePublicClient()
+  const [isNativeFlowProcessing, setIsNativeFlowProcessing] = useState(false)
   const {
     data: protonToNeutronHash,
     writeContract: writeProtonToNeutron,
@@ -757,8 +699,6 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       void refetchNeutronBalance()
       void refetchProtonBalance()
       void refetchBaseAllowance()
-      void refetchNeutronHelperAllowance()
-      void refetchProtonHelperAllowance()
       void refetchNativeBalance()
       void refetchReserve()
       void refetchNeutronTotalSupply()
@@ -788,8 +728,6 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     refetchNeutronBalance,
     refetchProtonBalance,
     refetchBaseAllowance,
-    refetchNeutronHelperAllowance,
-    refetchProtonHelperAllowance,
     refetchNativeBalance,
     refetchReserve,
     refetchNeutronTotalSupply,
@@ -830,40 +768,14 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     return safeParseUnits(amount, baseDecimalsNumber)
   }, [amount, baseDecimalsNumber])
 
-  const nativeNeutronRequired =
-    useNativeBase && fusionBurnQuote ? fusionBurnQuote[0] : undefined
-  const nativeProtonRequired =
-    useNativeBase && fusionBurnQuote ? fusionBurnQuote[1] : undefined
-
-  const needsBaseApproval =
+  const needsApproval =
     route === "FISSION" &&
     !useNativeBase &&
     baseAllowance !== undefined &&
     parsedAmountForApproval !== null &&
     parsedAmountForApproval > (baseAllowance || 0n)
 
-  const needsNativeNeutronApproval =
-    route === "FUSION" &&
-    useNativeBase &&
-    nativeNeutronRequired !== undefined &&
-    nativeNeutronRequired > (neutronHelperAllowance || 0n)
-
-  const needsNativeProtonApproval =
-    route === "FUSION" &&
-    useNativeBase &&
-    nativeProtonRequired !== undefined &&
-    nativeProtonRequired > (protonHelperAllowance || 0n)
-
-  const needsApproval =
-    needsBaseApproval ||
-    needsNativeNeutronApproval ||
-    needsNativeProtonApproval
-
-  const approvalSymbol = needsNativeNeutronApproval
-    ? neutronSymbolText
-    : needsNativeProtonApproval
-      ? protonSymbolText
-      : baseSymbolText
+  const approvalSymbol = baseSymbolText
 
   const isProcessing =
     isApproving ||
@@ -872,6 +784,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     isFissionTx ||
     isFusing ||
     isFusionTx ||
+    isNativeFlowProcessing ||
     isProtonToNeutronPending ||
     isProtonToNeutronTx ||
     isNeutronToProtonPending ||
@@ -910,37 +823,6 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   const handleApprove = () => {
     if (!writeApprove) return
 
-    if (useNativeBase && route === "FUSION") {
-      if (!nativeAsset || !fusionBurnQuote || !neutronToken || !protonToken) {
-        toast.error("Fusion quote is not available yet")
-        return
-      }
-
-      const [neutronRequired, protonRequired] = fusionBurnQuote
-
-      if (neutronRequired > (neutronHelperAllowance || 0n)) {
-        writeApprove({
-          address: neutronToken as `0x${string}`,
-          abi: ERC20ABI,
-          functionName: "approve",
-          args: [nativeAsset.helperAddress, neutronRequired],
-        })
-        return
-      }
-
-      if (protonRequired > (protonHelperAllowance || 0n)) {
-        writeApprove({
-          address: protonToken as `0x${string}`,
-          abi: ERC20ABI,
-          functionName: "approve",
-          args: [nativeAsset.helperAddress, protonRequired],
-        })
-        return
-      }
-
-      return
-    }
-
     if (!baseToken) return
 
     if (baseDecimalsNumber === undefined) {
@@ -973,6 +855,34 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     }
   }
 
+  const waitForNativeReceipt = async (hash: `0x${string}`) => {
+    if (!publicClient) {
+      throw new Error("Public client is not available")
+    }
+
+    const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+    if (receipt.status !== "success") {
+      throw new Error("Transaction reverted")
+    }
+  }
+
+  const refreshAfterNativeFlow = () => {
+    void refetchBaseBalance()
+    void refetchNeutronBalance()
+    void refetchProtonBalance()
+    void refetchBaseAllowance()
+    void refetchNativeBalance()
+    void refetchReserve()
+    void refetchNeutronTotalSupply()
+    void refetchProtonTotalSupply()
+    void refetchFissionFee()
+    void refetchFusionFee()
+    void refetchBaseToken()
+    void refetchNeutronToken()
+    void refetchProtonToken()
+  }
+
   const handleSwap = async () => {
     if (!route) {
       toast.error("Unsupported conversion path")
@@ -993,7 +903,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
       switch (route) {
         case "FISSION": {
           if (useNativeBase) {
-            if (!nativeAsset) {
+            if (!nativeAsset || !address || !publicClient) {
               toast.error("Native asset support is not available for this reactor")
               return
             }
@@ -1004,20 +914,87 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
               return
             }
 
-            await writeFission({
-              address: nativeAsset.helperAddress,
-              abi: NativeAssetHelperABI,
-              functionName: "fissionNative",
-              args: [
-                reactorAddress as `0x${string}`,
-                recipient as `0x${string}`,
-                0n,
-                0n,
-              ],
-              value: parsedNative,
-            })
+            setIsNativeFlowProcessing(true)
+            let wrapSubmitted = false
+            let wrapCompleted = false
+            let fissionSubmitted = false
 
-            break
+            try {
+              // 1. Wrap the native asset in the user's wallet.
+              const wrapHash = await writeNativeContract({
+                address: nativeAsset.wrappedNativeAddress,
+                abi: WrappedNativeABI,
+                functionName: "deposit",
+                value: parsedNative,
+              })
+              wrapSubmitted = true
+              await waitForNativeReceipt(wrapHash)
+              wrapCompleted = true
+
+              // 2. Approve only when the Reactor allowance is insufficient.
+              if (parsedNative > (baseAllowance || 0n)) {
+                const approveWrappedHash = await writeNativeContract({
+                  address: nativeAsset.wrappedNativeAddress,
+                  abi: ERC20ABI,
+                  functionName: "approve",
+                  args: [
+                    reactorAddress as `0x${string}`,
+                    parsedNative,
+                  ],
+                })
+                await waitForNativeReceipt(approveWrappedHash)
+              }
+
+              // 3. Use the existing Reactor fission path.
+              const nativeFissionHash = await writeNativeContract({
+                address: reactorAddress as `0x${string}`,
+                abi: StableCoinReactorABI,
+                functionName: "fission",
+                args: [
+                  parsedNative,
+                  recipient as `0x${string}`,
+                ],
+              })
+              fissionSubmitted = true
+              await waitForNativeReceipt(nativeFissionHash)
+
+              refreshAfterNativeFlow()
+              setAmount("")
+              toast.success(
+                `${nativeAsset.nativeSymbol} converted into neutron + proton`,
+              )
+            } catch (error) {
+              console.error("Native fission error:", error)
+              refreshAfterNativeFlow()
+
+              if (fissionSubmitted) {
+                // The transaction may have been mined even if receipt polling
+                // failed. Do not leave the same amount ready for another
+                // fission attempt.
+                setAmount("")
+                toast.error(
+                  "Fission was submitted but its final status could not be confirmed. Check your wallet or explorer before retrying.",
+                )
+              } else if (wrapCompleted) {
+                // Do not wrap the same native amount again on retry.
+                // Continue through the ordinary wrapped-base flow instead.
+                setUseNativeBase(false)
+                toast.error(
+                  `${nativeAsset.nativeSymbol} was wrapped successfully, but fission did not finish. Continue from the wrapped base-asset mode.`,
+                )
+              } else if (wrapSubmitted) {
+                setUseNativeBase(false)
+                toast.error(
+                  "The wrap transaction was submitted but its final status could not be confirmed. Check your wallet before retrying.",
+                )
+              } else {
+                toast.error("Native fission did not complete")
+              }
+            } finally {
+              setIsNativeFlowProcessing(false)
+            }
+
+            return
           }
 
           if (baseDecimalsNumber === undefined) {
@@ -1055,42 +1032,113 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
           if (useNativeBase) {
             if (
               !nativeAsset ||
-              !fusionBurnQuote ||
-              fusionGrossBaseRaw === null
+              !address ||
+              !publicClient ||
+              fusionGrossBaseRaw === null ||
+              fusionFee === undefined
             ) {
-              toast.error("Native fusion quote is not available")
+              toast.error("Native fusion is not available")
               return
             }
 
-            const requestedNetAmount = parsedFusionAmount
+            const fee = mulDiv(fusionGrossBaseRaw, fusionFee, WAD)
+            const nativeOut = fusionGrossBaseRaw - fee
 
-            const [neutronRequired, protonRequired] = fusionBurnQuote
-
-            if (neutronRequired > (neutronHelperAllowance || 0n)) {
-              toast.error(`Approve ${neutronSymbolText} first`)
+            if (nativeOut < parsedFusionAmount) {
+              toast.error("Unable to calculate native fusion output")
               return
             }
 
-            if (protonRequired > (protonHelperAllowance || 0n)) {
-              toast.error(`Approve ${protonSymbolText} first`)
-              return
+            setIsNativeFlowProcessing(true)
+            let fusionSubmitted = false
+            let fusionCompleted = false
+            let unwrapSubmitted = false
+            let unwrapCompleted = false
+            let transferSubmitted = false
+
+            try {
+              // 1. Redeem through the existing Reactor. The wrapped-native
+              // output must first return to the connected wallet so that the
+              // wallet can unwrap it without a helper contract.
+              const nativeFusionHash = await writeNativeContract({
+                address: reactorAddress as `0x${string}`,
+                abi: StableCoinReactorABI,
+                functionName: "fusion",
+                args: [
+                  fusionGrossBaseRaw,
+                  address,
+                ],
+              })
+              fusionSubmitted = true
+              await waitForNativeReceipt(nativeFusionHash)
+              fusionCompleted = true
+
+              // 2. Unwrap exactly the amount produced by fusion.
+              const unwrapHash = await writeNativeContract({
+                address: nativeAsset.wrappedNativeAddress,
+                abi: WrappedNativeABI,
+                functionName: "withdraw",
+                args: [nativeOut],
+              })
+              unwrapSubmitted = true
+              await waitForNativeReceipt(unwrapHash)
+              unwrapCompleted = true
+
+              // 3. If a different recipient was requested, forward the native
+              // asset from the user's wallet after the unwrap.
+              if (!addressesEqual(recipient, address)) {
+                const transferHash = await sendNativeTransaction({
+                  to: recipient as `0x${string}`,
+                  value: nativeOut,
+                })
+                transferSubmitted = true
+                await waitForNativeReceipt(transferHash)
+              }
+
+              refreshAfterNativeFlow()
+              setAmount("")
+              toast.success(
+                `Neutron + proton redeemed for ${nativeAsset.nativeSymbol}`,
+              )
+            } catch (error) {
+              console.error("Native fusion error:", error)
+              refreshAfterNativeFlow()
+
+              if (fusionSubmitted) {
+                // Once fusion has been submitted, do not leave the same amount
+                // ready for another burn while its status may be uncertain.
+                setAmount("")
+
+                if (!fusionCompleted) {
+                  toast.error(
+                    "Fusion was submitted but its final status could not be confirmed. Check your wallet or explorer before retrying.",
+                  )
+                } else if (!unwrapCompleted) {
+                  toast.error(
+                    unwrapSubmitted
+                      ? "Fusion succeeded and unwrap was submitted, but its final status could not be confirmed. Check your wallet before taking another action."
+                      : "Fusion succeeded, but unwrap did not. The wrapped native asset remains in your wallet.",
+                  )
+                } else if (
+                  !addressesEqual(recipient, address) &&
+                  transferSubmitted
+                ) {
+                  toast.error(
+                    `The final ${nativeAsset.nativeSymbol} transfer was submitted but its status could not be confirmed. Check the recipient before retrying.`,
+                  )
+                } else {
+                  toast.error(
+                    `Fusion and unwrap succeeded, but the final ${nativeAsset.nativeSymbol} transfer did not. The native asset remains in your wallet.`,
+                  )
+                }
+              } else {
+                toast.error("Native fusion did not complete")
+              }
+            } finally {
+              setIsNativeFlowProcessing(false)
             }
 
-            await writeFusion({
-              address: nativeAsset.helperAddress,
-              abi: NativeAssetHelperABI,
-              functionName: "fusionNative",
-              args: [
-                reactorAddress as `0x${string}`,
-                fusionGrossBaseRaw,
-                recipient as `0x${string}`,
-                neutronRequired,
-                protonRequired,
-                requestedNetAmount,
-              ],
-            })
-
-            break
+            return
           }
 
           await writeFusion({
@@ -1416,31 +1464,18 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
   const displayFusionBreakdown = useMemo(() => {
     if (!isFusionRoute) return null
     if (!baseAmountRaw || baseAmountRaw <= 0n) return null
-    if (!fusionGrossBaseRaw || fusionGrossBaseRaw <= 0n) return null
     if (fusionFee === undefined) return null
 
-    const grossBase = fusionGrossBaseRaw
+    const grossBase =
+      useNativeBase ? fusionGrossBaseRaw : baseAmountRaw
+
+    if (!grossBase || grossBase <= 0n) return null
+
     const fee = mulDiv(grossBase, fusionFee, WAD)
     const netBase = grossBase - fee
 
-    // Native-helper reactors require the authoritative on-chain quote.
-    if (useNativeBase) {
-      if (!fusionBurnQuote) return null
-
-      const [neutronBurn, protonBurn] = fusionBurnQuote
-
-      return {
-        requestedBaseOut: baseAmountRaw,
-        grossBase,
-        fee,
-        netBase,
-        neutronBurn,
-        protonBurn,
-      }
-    }
-
-    // Backward compatibility for reactors deployed before
-    // fusionBurnAmounts() existed.
+    // Burn amounts are displayed from the current Reactor state. The Reactor
+    // remains authoritative and computes the exact burns at execution time.
     if (
       reserve === undefined ||
       reserve === 0n ||
@@ -1497,7 +1532,6 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
     fusionGrossBaseRaw,
     fusionFee,
     useNativeBase,
-    fusionBurnQuote,
     reserve,
     neutronTotalSupply,
     protonTotalSupply,
@@ -2125,36 +2159,6 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                               className="w-full h-12 sm:h-14 text-[15px] bg-secondary text-muted-foreground shadow-none disabled:opacity-100"
                             >
                               Enter amount and recipient
-                            </Button>
-                          )
-                        }
-
-                        if (
-                          useNativeBase &&
-                          route === "FUSION" &&
-                          isFusionQuoteLoading
-                        ) {
-                          return (
-                            <Button
-                              disabled
-                              className="w-full h-12 sm:h-14 text-[15px] bg-secondary text-muted-foreground disabled:opacity-100"
-                            >
-                              Calculating fusion…
-                            </Button>
-                          )
-                        }
-
-                        if (
-                          useNativeBase &&
-                          route === "FUSION" &&
-                          isFusionQuoteError
-                        ) {
-                          return (
-                            <Button
-                              disabled
-                              className="w-full h-12 sm:h-14 text-[15px] bg-secondary text-muted-foreground disabled:opacity-100"
-                            >
-                              Fusion unavailable
                             </Button>
                           )
                         }

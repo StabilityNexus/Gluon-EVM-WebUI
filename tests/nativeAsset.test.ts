@@ -3,8 +3,8 @@ import type { Address } from "viem"
 
 import {
   ERC20ABI,
-  NativeAssetHelperABI,
   StableCoinReactorABI,
+  WrappedNativeABI,
 } from "@/utils/abi/StableCoin"
 import {
   addressesEqual,
@@ -27,7 +27,7 @@ describe("native asset integration", () => {
     expect(getGluonNetwork(999999)).toBeUndefined()
   })
 
-  it("does not currently enable native mode without a verified deployment", () => {
+  it("does not enable native mode without a configured wrapped-native asset", () => {
     expect(
       GLUON_NETWORKS.every(
         (network) => network.nativeAsset === undefined,
@@ -35,36 +35,24 @@ describe("native asset integration", () => {
     ).toBe(true)
   })
 
-  it("requires both reactor base and helper wrapper to match configuration", () => {
+  it("requires the Reactor base token to match the configured wrapper", () => {
     const wrapped =
       "0x4200000000000000000000000000000000000006" as Address
-    const helper =
-      "0x1111111111111111111111111111111111111111" as Address
 
     const config: NativeAssetConfig = {
       nativeSymbol: "ETH",
       nativeDecimals: 18,
       wrappedNativeAddress: wrapped,
-      helperAddress: helper,
     }
 
     expect(
-      resolveNativeAssetConfig(config, wrapped, wrapped),
+      resolveNativeAssetConfig(config, wrapped),
     ).toEqual(config)
 
     expect(
       resolveNativeAssetConfig(
         config,
         "0x2222222222222222222222222222222222222222",
-        wrapped,
-      ),
-    ).toBeUndefined()
-
-    expect(
-      resolveNativeAssetConfig(
-        config,
-        wrapped,
-        "0x3333333333333333333333333333333333333333",
       ),
     ).toBeUndefined()
   })
@@ -78,7 +66,7 @@ describe("native asset integration", () => {
     ).toBe(true)
   })
 
-  it("calculates the exact minimum gross fusion amount", () => {
+  it("calculates the exact minimum gross native fusion amount", () => {
     const net = 1n * WAD
     const onePercentFee = 10n ** 16n
 
@@ -96,7 +84,7 @@ describe("native asset integration", () => {
     expect(actualNet).toBe(net)
   })
 
-  it("returns the same amount when the fusion fee is zero", () => {
+  it("returns the same native fusion amount when the fee is zero", () => {
     expect(
       grossFusionAmountForNet(123456789n, 0n),
     ).toBe(123456789n)
@@ -107,50 +95,33 @@ describe("native asset integration", () => {
     expect(grossFusionAmountForNet(1n, WAD)).toBeNull()
   })
 
-  it("exposes fusionBurnAmounts on the reactor ABI", () => {
-    const quote = StableCoinReactorABI.find(
-      (entry) =>
-        entry.type === "function" &&
-        "name" in entry &&
-        entry.name === "fusionBurnAmounts",
-    )
+  it("keeps the frontend independent of the helper-only fusion quote", () => {
+    const functionNames = StableCoinReactorABI
+      .filter(
+        (entry) =>
+          entry.type === "function" &&
+          "name" in entry,
+      )
+      .map((entry) => String(entry.name))
 
-    expect(quote).toBeDefined()
-
-    if (!quote || quote.type !== "function") {
-      throw new Error("fusionBurnAmounts ABI missing")
-    }
-
-    expect(quote.stateMutability).toBe("view")
-    expect(quote.inputs).toHaveLength(1)
-    expect(quote.outputs).toHaveLength(2)
+    expect(functionNames).not.toContain("fusionBurnAmounts")
   })
 
-  it("exposes the required NativeAssetHelper ABI", () => {
-    const fissionNative = NativeAssetHelperABI.find(
+  it("exposes WETH-style deposit and withdraw operations", () => {
+    const deposit = WrappedNativeABI.find(
       (entry) =>
         entry.type === "function" &&
-        "name" in entry &&
-        entry.name === "fissionNative",
+        entry.name === "deposit",
     )
 
-    const fusionNative = NativeAssetHelperABI.find(
+    const withdraw = WrappedNativeABI.find(
       (entry) =>
         entry.type === "function" &&
-        "name" in entry &&
-        entry.name === "fusionNative",
+        entry.name === "withdraw",
     )
 
-    const wrappedNative = NativeAssetHelperABI.find(
-      (entry) =>
-        entry.type === "function" &&
-        "name" in entry &&
-        entry.name === "WRAPPED_NATIVE",
-    )
-
-    expect(fissionNative?.stateMutability).toBe("payable")
-    expect(fusionNative?.stateMutability).toBe("nonpayable")
-    expect(wrappedNative?.stateMutability).toBe("view")
+    expect(deposit?.stateMutability).toBe("payable")
+    expect(withdraw?.stateMutability).toBe("nonpayable")
   })
 
   it("keeps the standard ERC20 approve ABI available", () => {
