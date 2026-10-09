@@ -963,8 +963,20 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
 
               assertNativeFlowContext(flowAddress, flowChainId)
 
-              // 2. Approve only when the Reactor allowance is insufficient.
-              if (parsedNative > (baseAllowance || 0n)) {
+              // 2. Read the latest allowance and approve only when needed.
+              const currentAllowance = await publicClient.readContract({
+                address: nativeAsset.wrappedNativeAddress,
+                abi: ERC20ABI,
+                functionName: "allowance",
+                args: [
+                  flowAddress,
+                  reactorAddress as `0x${string}`,
+                ],
+              })
+
+              if (parsedNative > currentAllowance) {
+                assertNativeFlowContext(flowAddress, flowChainId)
+
                 const approveWrappedHash = await writeNativeContract({
                   address: nativeAsset.wrappedNativeAddress,
                   abi: ERC20ABI,
@@ -974,6 +986,7 @@ function ReactorInteractionClient({ reactorAddress }: { reactorAddress: string }
                     parsedNative,
                   ],
                 })
+
                 await waitForNativeReceipt(approveWrappedHash)
               }
 
