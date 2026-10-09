@@ -657,30 +657,6 @@ export const StableCoinReactorABI = [
         "internalType": "uint256",
         "name": "m",
         "type": "uint256"
-      }
-    ],
-    "name": "fusionBurnAmounts",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "nBurn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "pBurn",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "m",
-        "type": "uint256"
       },
       {
         "internalType": "address",
@@ -753,110 +729,24 @@ export const StableCoinReactorABI = [
   }
 ] as const
 
-export const NativeAssetHelperABI = [
+export const WrappedNativeABI = [
   {
     "inputs": [],
-    "name": "WRAPPED_NATIVE",
-    "outputs": [
-      {
-        "internalType": "contract IWrappedNative",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "reactorAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "recipient",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "minNeutronOut",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "minProtonOut",
-        "type": "uint256"
-      }
-    ],
-    "name": "fissionNative",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "neutronOut",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "protonOut",
-        "type": "uint256"
-      }
-    ],
+    "name": "deposit",
+    "outputs": [],
     "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "reactorAddress",
-        "type": "address"
-      },
-      {
         "internalType": "uint256",
-        "name": "baseAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "recipient",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxNeutronIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxProtonIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "minNativeOut",
+        "name": "amount",
         "type": "uint256"
       }
     ],
-    "name": "fusionNative",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "nativeOut",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "neutronIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "protonIn",
-        "type": "uint256"
-      }
-    ],
+    "name": "withdraw",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   }

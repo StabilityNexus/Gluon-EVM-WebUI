@@ -13,15 +13,15 @@ export const addressesEqual = (
 export const resolveNativeAssetConfig = (
   config: NativeAssetConfig | undefined,
   baseToken: string | undefined,
-  helperWrappedNative: string | undefined,
+  baseDecimals: number | undefined,
 ): NativeAssetConfig | undefined => {
-  if (!config) return undefined
+  if (!config || baseDecimals === undefined) return undefined
 
   if (!addressesEqual(baseToken, config.wrappedNativeAddress)) {
     return undefined
   }
 
-  if (!addressesEqual(helperWrappedNative, config.wrappedNativeAddress)) {
+  if (config.nativeDecimals !== baseDecimals) {
     return undefined
   }
 
@@ -45,10 +45,5 @@ export const grossFusionAmountForNet = (
 
   const denominator = WAD - fusionFeeWad
 
-  // Because:
-  // m - floor(m * fee / WAD)
-  //   = ceil(m * (WAD - fee) / WAD)
-  //
-  // This is the minimum integer m whose net output reaches netBaseAmount.
   return ((netBaseAmount - 1n) * WAD) / denominator + 1n
 }
