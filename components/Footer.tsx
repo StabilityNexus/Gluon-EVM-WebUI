@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Share2 } from "lucide-react";
 
 interface FooterProps {
   onTermsClick: () => void;
@@ -103,8 +104,9 @@ export default function Footer({ onTermsClick, onShareClick }: FooterProps) {
             Terms of Use
           </button>
           {onShareClick && (
-            <button type="button" onClick={onShareClick} className={textButton}>
-              Share
+            <button type="button" onClick={onShareClick} aria-haspopup="dialog" className={`${textButton} inline-flex items-center gap-2`}>
+              <Share2 aria-hidden="true" className="size-4" />
+              Share Gluon
             </button>
           )}
         </div>
