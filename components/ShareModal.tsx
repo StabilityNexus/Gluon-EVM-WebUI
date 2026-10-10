@@ -10,9 +10,11 @@ type ShareModalProps = {
   onClose: () => void
 }
 
+/** Hosts the lazy-loaded AOSSIE widget in a native dialog and cleans it up on close. */
 export default function ShareModal({ isOpen, onClose }: ShareModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const retryRef = useRef<HTMLButtonElement>(null)
   const onCloseRef = useRef(onClose)
   const titleId = useId()
   const [ready, setReady] = useState(false)
@@ -22,6 +24,10 @@ export default function ShareModal({ isOpen, onClose }: ShareModalProps) {
   useEffect(() => {
     onCloseRef.current = onClose
   }, [onClose])
+
+  useEffect(() => {
+    if (isOpen && failed) retryRef.current?.focus()
+  }, [isOpen, failed])
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -118,11 +124,12 @@ export default function ShareModal({ isOpen, onClose }: ShareModalProps) {
                 ✕
               </button>
             </div>
-            <div className="p-6 text-sm text-muted-foreground" role="status">
-              {failed ? "Share options could not load." : "Loading share options…"}
+            <div className="p-6 text-sm text-muted-foreground">
+              <p role="status">{failed ? "Share options could not load." : "Loading share options…"}</p>
               {failed && (
                 <button
                   type="button"
+                  ref={retryRef}
                   className="social-share-copy-btn mt-4"
                   onClick={() => setAttempt((value) => value + 1)}
                 >
