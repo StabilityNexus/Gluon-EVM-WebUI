@@ -9,6 +9,7 @@ import { WalletProvider } from '@/providers/WalletProvider'
 import Navigation from '@/components/navigation'
 import ClientFooter from '@/components/ClientFooter'
 import gluonLogo from '@/public/GluonProtocol-Darker.png'
+import { SITE_URL } from '@/utils/seo'
 
 export const metadata: Metadata = {
   title: 'Gluon | Decentralized Stablecoin Creation Platform',
@@ -38,9 +39,9 @@ export const metadata: Metadata = {
   applicationName: 'Gluon',
   category: 'Finance',
   generator: 'Next.js',
-  metadataBase: new URL('https://stabilitynexus.github.io/Gluon-EVM-WebUI/'),
+  metadataBase: new URL(SITE_URL),
   alternates: {
-    canonical: '/',
+    canonical: SITE_URL,
   },
   icons: {
     icon: gluonLogo.src,
@@ -50,7 +51,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Gluon | Decentralized Stablecoin Creation Platform',
     description: 'Gluon is a decentralized platform for creating and managing stablecoins. Build custom stablecoin reactors and create algorithmic stablecoins with advanced DeFi mechanisms.',
-    url: '/',
+    url: SITE_URL,
     siteName: 'Gluon',
     images: [
       {
