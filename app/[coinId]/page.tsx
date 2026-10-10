@@ -6,7 +6,6 @@ export async function generateStaticParams() {
 }
 
 // Only the static /c route is generated; reactor addresses are supplied through the coin query parameter
-export const dynamicParams = false
 
 export default function CoinDetailPage({ params }: { params: { coinId: string } }) {
   return (
