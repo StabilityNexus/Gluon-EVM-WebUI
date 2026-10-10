@@ -1,0 +1,169 @@
+/* Scope AOSSIE's widget to Gluon's design tokens, including live theme changes. */
+.gluon-share-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+}
+
+.gluon-share-dialog::backdrop {
+  background: transparent;
+}
+
+.gluon-share-dialog .gluon-social-share,
+.gluon-share-dialog .gluon-share-loading {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-modal-content {
+  width: 100%;
+  max-width: 28rem;
+  max-height: calc(100dvh - 2rem);
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow-md);
+}
+
+.gluon-share-dialog .gluon-share-loading .social-share-modal-content {
+  opacity: 1;
+  transform: none;
+}
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-modal-header {
+  padding: 1rem 1.5rem;
+  border-color: var(--border);
+}
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-modal-header h3 {
+  color: var(--foreground);
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-modal-close {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 1.25rem;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-modal-close:hover,
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platform-btn:hover {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platforms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 1.5rem;
+  overflow: visible;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platform-btn {
+  min-width: 0;
+  padding: 0.75rem 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--background);
+  transition: background-color 150ms, color 150ms;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platform-icon {
+  width: 2rem;
+  height: 2rem;
+  background: transparent !important;
+  box-shadow: none;
+  color: var(--foreground) !important;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platform-btn:last-child {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  justify-content: center;
+  padding: 0.625rem 0.75rem;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platform-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platform-btn span {
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platform-btn:hover,
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platform-btn:active,
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-platform-btn:hover .social-share-platform-icon,
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-copy-btn:hover,
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-copy-btn:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-link-container {
+  flex-direction: row;
+  gap: 0.75rem;
+  padding: 0 1.5rem 1.5rem;
+}
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-link-input {
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  border-color: var(--border);
+  background: var(--background);
+}
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-link-input input {
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-copy-btn {
+  width: auto;
+  min-width: 5rem;
+  padding: 0.625rem 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-copy-btn:hover,
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-copy-btn.copied {
+  background: color-mix(in srgb, var(--primary) 85%, transparent);
+}
+.gluon-share-dialog button:focus-visible,
+.gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-link-input:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gluon-share-dialog .gluon-social-share,
+  .gluon-share-dialog :is(.gluon-social-share, .gluon-share-loading) .social-share-modal-content {
+    transition: none;
+    transform: none;
+  }
+}

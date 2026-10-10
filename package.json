@@ -17,6 +17,7 @@
     "checklist:check": "node scripts/update-checklist-status.mjs --check"
   },
   "dependencies": {
+    "@aossie-org/social-share-button": "1.0.4",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "1.2.2",
