@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   usePublicClient,
   useSendTransaction,
@@ -95,8 +95,10 @@ export function useReactorTransactions({
   const latestAddressRef = useRef(address)
   const latestChainIdRef = useRef(chainId)
 
-  latestAddressRef.current = address
-  latestChainIdRef.current = chainId
+  useLayoutEffect(() => {
+    latestAddressRef.current = address
+    latestChainIdRef.current = chainId
+  }, [address, chainId])
 
   const {
     data: approveHash,

@@ -27,10 +27,11 @@ export function SwapForm({ model }: SwapFormProps) {
         <ConversionInputs model={model} />
 
         <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">
+          <label htmlFor="recipient-address" className="text-sm text-muted-foreground">
             Recipient Address
           </label>
           <Input
+            id="recipient-address"
             placeholder="0x..."
             value={recipient}
             onChange={(event) => setRecipient(event.target.value)}

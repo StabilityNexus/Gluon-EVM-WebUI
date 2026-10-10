@@ -167,9 +167,10 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
                 <PopoverTrigger asChild>
                   <button
                     type="button"
+                    aria-label={breakdownPopover.title}
                     className="rounded-lg border border-border p-1 text-foreground/70 transition-colors hover:border-foreground/40 hover:text-foreground"
                   >
-                    <Info className="h-4 w-4" />
+                    <Info className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-64 space-y-2 text-sm" align="end">
