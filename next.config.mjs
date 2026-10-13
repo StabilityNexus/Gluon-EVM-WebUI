@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "export",
+  // The custom domain serves this export at its root, without the repository path.
+  basePath: "",
+  assetPrefix: "",
   images: {
     unoptimized: true,
   },

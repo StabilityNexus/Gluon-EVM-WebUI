@@ -1,80 +1,70 @@
 # Search indexing and sitemap deployment
 
-The current public WebUI is hosted at
-https://stabilitynexus.github.io/Gluon-EVM-WebUI/. This is a development WebUI,
-not evidence of a production protocol deployment.
+The public WebUI is hosted at https://evm.gluon.stability.nexus/ through GitHub
+Pages. This is a development WebUI, not evidence of a production protocol deployment.
 
-## Repository changes
+## Deployment paths and metadata
 
-- `utils/seo.ts` defines the public deployment URL used by metadata and the sitemap.
-- `app/sitemap.ts` exports a static `sitemap.xml` containing the homepage,
-  reactor explorer, and reactor creation page.
-- Explorer and Create have their own titles, descriptions, canonical URLs,
-  Open Graph URLs, and social images.
-- The `/c` interaction page requires a reactor query parameter. It is excluded
-  from the sitemap and has `noindex, follow` metadata. Do not add wallet-specific
-  queries or PR previews to the sitemap.
+- The custom domain serves the site at its root. `next.config.mjs` sets empty
+  `basePath` and `assetPrefix` values.
+- The Pages workflow uses `actions/configure-pages` without rewriting the Next.js
+  configuration. Do not reintroduce the old `/Gluon-EVM-WebUI` URL prefix.
+- `utils/seo.ts` defines the public URL used by canonical metadata, Open Graph,
+  social images, the sitemap, and robots.txt.
+- `app/sitemap.ts` exports the homepage, explorer, and creation page.
+- `/c` requires a reactor query parameter. It remains outside the sitemap with
+  `noindex, follow` metadata. Wallet-specific URLs and previews are not sitemap entries.
+- GitHub Pages already has the custom domain configured. Actions-based publishing
+  does not require a repository CNAME file; domain settings remain in GitHub Pages.
 
-The existing GitHub Pages workflow publishes the export on pushes to `main`.
-After merging, check that these URLs return HTTP 200:
+After deployment, check:
 
 ```bash
-curl -f https://stabilitynexus.github.io/Gluon-EVM-WebUI/sitemap.xml
-curl -f https://stabilitynexus.github.io/Gluon-EVM-WebUI/explorer
-curl -f https://stabilitynexus.github.io/Gluon-EVM-WebUI/create
+curl -f https://evm.gluon.stability.nexus/
+curl -f https://evm.gluon.stability.nexus/explorer
+curl -f https://evm.gluon.stability.nexus/create
+curl -f https://evm.gluon.stability.nexus/sitemap.xml
+curl -f https://evm.gluon.stability.nexus/robots.txt
 ```
 
-Confirm that the sitemap contains exactly the intended public URLs and that the
-exported Explorer and Create pages have matching canonical URLs.
+The sitemap must contain exactly the three public page URLs on this domain.
+Check that canonical and Open Graph URLs use the same domain and that scripts,
+styles and images load from root paths rather than the old repository prefix.
 
-## Organization-level robots.txt
+## Root robots.txt
 
-Google reads robots.txt from the host root:
-https://stabilitynexus.github.io/robots.txt. A file deployed at
-`/Gluon-EVM-WebUI/robots.txt` cannot control crawling for this project.
-This repository therefore does not publish an ineffective robots.txt under
-the project path. The organization website's maintainers must merge the
-following rules into the host-root file, preserving other projects' rules
-and sitemap entries:
+`app/robots.ts` statically exports https://evm.gluon.stability.nexus/robots.txt:
 
 ```text
 User-agent: *
 Allow: /
 Disallow: /pr-preview/
-Disallow: /Gluon-EVM-WebUI/pr-preview/
 
-Sitemap: https://stabilitynexus.github.io/Gluon-EVM-WebUI/sitemap.xml
+Sitemap: https://evm.gluon.stability.nexus/sitemap.xml
 ```
 
-The current WebUI workflow does not deploy PR previews. If previews are added,
-keep them out of the sitemap. `Disallow` prevents crawling; it does not guarantee
-that a linked URL will never appear in search results. To prevent indexing,
-add `noindex` metadata to the preview build and allow crawling of those URLs
-so Google can read it, instead of applying the preview `Disallow` rules.
+The current workflow does not deploy PR previews. If previews are added, exclude
+those URLs from the sitemap. Disallow blocks crawling but does not guarantee that
+linked URLs cannot appear in search results. Use crawlable noindex metadata where
+preventing preview indexing is required.
 
 ## Search Console handoff
 
-Once the sitemap is live, post its deployed URL in the project Discord thread:
-https://stabilitynexus.github.io/Gluon-EVM-WebUI/sitemap.xml.
+After the updated export is deployed, send Bruno this sitemap URL:
+https://evm.gluon.stability.nexus/sitemap.xml.
 
-An owner or authorized user should submit it in Google Search Console under
-the matching URL-prefix property:
-https://stabilitynexus.github.io/Gluon-EVM-WebUI/.
-The `stability.nexus` Domain property does not cover `github.io` URLs.
-If verification is needed, the owner can provide a Google HTML verification
-file for the site repository or a verification meta tag. Do not invent a
-verification token.
+It can be submitted under the verified `stability.nexus` Domain property, which
+covers this subdomain, or an authorized URL-prefix property for the exact site URL.
+The old github.io sitemap entries must not remain in this sitemap: they belong to
+another host and caused the reported URL-not-allowed error.
 
-If the site moves to a `stability.nexus` subdomain, update `SITE_URL`, update
-the organization's robots.txt entries, and publish robots.txt at the new
-host root. Then submit the new sitemap under the verified `stability.nexus`
-property and update this document's deployment URLs.
-
-Sitemaps help discovery; submission does not guarantee indexing or improve
-rankings by itself.
+Domain-property DNS verification and Search Console permissions remain the domain
+owner's responsibility. Do not invent verification tokens. Sitemap submission helps
+discovery but does not guarantee indexing or ranking improvements.
 
 ## References
 
+- [GitHub: managing a custom Pages domain](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)
 - [Google: create and submit a sitemap](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap)
 - [Google: robots.txt location and rules](https://developers.google.com/crawling/docs/robots-txt/create-robots-txt)
 - [Google: Search Console property types](https://support.google.com/webmasters/answer/34592)

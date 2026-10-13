@@ -6,13 +6,17 @@ is configured to use.
 ## GitHub Pages Development Preview
 
 - **Deployment type:** Static frontend development preview
-- **URL:** https://stabilitynexus.github.io/Gluon-EVM-WebUI/
+- **URL:** https://evm.gluon.stability.nexus/
 - **Repository:** `StabilityNexus/Gluon-EVM-WebUI`
 - **Source branch:** `main`
 - **Deployment workflow:** `.github/workflows/nextjs.yml`
 - **Production status:** Not declared production
 
 The current GitHub Pages site is a frontend development preview.
+
+GitHub Pages serves this custom domain at its root. The Next.js export must use
+empty `basePath` and `assetPrefix` values; `/Gluon-EVM-WebUI` is not a URL prefix
+on this domain.
 
 It does not imply that any displayed reactor, token, oracle, or contract address is a production
 deployment.

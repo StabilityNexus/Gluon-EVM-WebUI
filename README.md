@@ -387,7 +387,7 @@ The frontend must not require:
 External wallet RPC providers and EVM networks are still required for blockchain interaction, but
 they are not application servers operated by this WebUI.
 
-For sitemap deployment, canonical URLs, the host-root robots.txt handoff, and
+For custom-domain deployment, canonical URLs, root robots.txt, and
 Google Search Console submission, see [Search indexing and sitemap deployment](docs/SEO.md).
 
 ---
