@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
-// Keep this in sync with the public deployment, including its GitHub Pages path.
-export const SITE_URL = "https://stabilitynexus.github.io/Gluon-EVM-WebUI/"
+// Keep this in sync with the root deployment configured in GitHub Pages.
+export const SITE_URL = "https://evm.gluon.stability.nexus/"
 
 /** Metadata for a page at a relative path under the sitemap's deployment URL. */
 export function createPageMetadata(
