@@ -79,45 +79,6 @@ export const scaleToWad = (value?: bigint, decimals?: number) => {
   return scale === 0n ? undefined : mulDiv(value, WAD, scale)
 }
 
-export const computeQWad = (
-  reserveWad?: bigint,
-  neutronSupplyWad?: bigint,
-  basePriceWad?: bigint,
-  criticalReserveRatio?: bigint,
-): bigint | undefined => {
-  if (
-    reserveWad === undefined ||
-    neutronSupplyWad === undefined ||
-    basePriceWad === undefined ||
-    basePriceWad === 0n
-  ) {
-    return undefined
-  }
-  if (neutronSupplyWad === 0n) return 0n
-
-  const pStarBaseWad = mulDiv(WAD, WAD, basePriceWad)
-  if (pStarBaseWad === 0n) return undefined
-
-  const denom = mulDiv(neutronSupplyWad, pStarBaseWad, WAD)
-  if (denom === 0n) return undefined
-
-  const rWad = mulDiv(reserveWad, WAD, denom)
-  const critical =
-    criticalReserveRatio && criticalReserveRatio > 0n
-      ? criticalReserveRatio
-      : WAD
-  let rTilde = rWad
-  if (rWad <= critical) {
-    const diff = critical > WAD ? critical - WAD : 0n
-    const rOverStar = mulDiv(rWad, WAD, critical === 0n ? WAD : critical)
-    const part = mulDiv(rOverStar, diff, WAD)
-    rTilde = WAD + part
-  }
-  if (rTilde === 0n) return undefined
-  const q = mulDiv(WAD, WAD, rTilde)
-  return q > WAD ? WAD : q
-}
-
 export type InfoRow = {
   label: string
   value: string
