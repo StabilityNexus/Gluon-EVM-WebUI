@@ -16,6 +16,8 @@ export type GluonNetworkConfig = {
   displayName: string
   factoryAddress: Address
   factorySupportsInitialReserve: boolean
+  // Enable only with a verified factory deployment supporting constructor-set beta parameters.
+  factorySupportsImmutableBeta?: boolean
   nativeAsset?: NativeAssetConfig
 }
 

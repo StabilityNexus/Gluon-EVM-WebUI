@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Wallet, CheckCircle, Zap } from "lucide-react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory"
+import { ImmutableBetaFactoryABI } from "@/utils/abi/ImmutableBetaFactory"
+import { parseBetaParameters } from "@/utils/betaParameters"
 import { ERC20ABI } from "@/utils/abi/StableCoin"
 import {
   ChainlinkToOracleAdapterABI,
@@ -40,6 +42,9 @@ interface ReactorConfig {
   initialReserve: string
   fissionFee: string
   fusionFee: string
+  betaFeePercent: string
+  betaVolumeCoefficient: string
+  volumeRetentionPerSecond: string
 }
 
 type OracleProvider = "existing" | "chainlink" | "orb"
@@ -114,6 +119,9 @@ export default function CreatePage() {
     initialReserve: "0.1",
     fissionFee: "0",
     fusionFee: "0",
+    betaFeePercent: "0",
+    betaVolumeCoefficient: "0",
+    volumeRetentionPerSecond: "1",
   })
 
   const [oracleProvider, setOracleProvider] = useState<OracleProvider>("existing")
@@ -128,8 +136,9 @@ export default function CreatePage() {
   const preflightRequestRef = useRef(0)
   const isChainlinkSupported = CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)
   const currentNetwork = GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)
+  const supportsImmutableBeta = currentNetwork?.factorySupportsImmutableBeta ?? false
   const supportsFactoryInitialReserve =
-    currentNetwork?.factorySupportsInitialReserve ?? false
+    supportsImmutableBeta || (currentNetwork?.factorySupportsInitialReserve ?? false)
   const isAdapterDeploymentBusy = isAdapterDeploying || isAdapterConfirming
 
   // Contract interaction
@@ -264,7 +273,12 @@ export default function CreatePage() {
            config.criticalReserveRatio &&
            (!supportsFactoryInitialReserve || config.initialReserve) &&
            config.fissionFee !== "" &&
-           config.fusionFee !== ""
+           config.fusionFee !== "" &&
+           (!supportsImmutableBeta || (
+             config.betaFeePercent !== "" &&
+             config.betaVolumeCoefficient !== "" &&
+             config.volumeRetentionPerSecond !== ""
+           ))
   }
 
   const handleDeployChainlinkAdapter = async () => {
@@ -529,6 +543,16 @@ export default function CreatePage() {
     const fissionFeeWad = parseUnits(config.fissionFee, 16)
     const fusionFeeWad = parseUnits(config.fusionFee, 16)
 
+    let betaParameters: ReturnType<typeof parseBetaParameters> | undefined
+    if (supportsImmutableBeta) {
+      try {
+        betaParameters = parseBetaParameters(config)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Invalid transmutation settings")
+        return
+      }
+    }
+
     const deploymentPreflight = await checkOracleAddress(oracleAddress)
 
     if (!deploymentPreflight) {
@@ -598,29 +622,46 @@ export default function CreatePage() {
           return
         }
 
-        await writeContractAsync({
-          account,
-          chainId: deploymentChainId,
-          address: factoryAddress,
-          abi: StableCoinFactoryABI,
-          functionName: "deployReactor",
-          args: [
-            vaultName,
-            baseAssetName,
-            baseAssetSymbol,
-            peggedAssetName,
-            peggedAssetSymbol,
-            baseToken as `0x${string}`,
-            oracleAddress as `0x${string}`,
-            protonName,
-            protonSymbol,
-            treasuryAddress as `0x${string}`,
-            fissionFeeWad,
-            fusionFeeWad,
-            criticalReserveRatioWad,
-            initialReserveAmount,
-          ],
-        })
+        const deploymentArgs = [
+          vaultName,
+          baseAssetName,
+          baseAssetSymbol,
+          peggedAssetName,
+          peggedAssetSymbol,
+          baseToken as `0x${string}`,
+          oracleAddress as `0x${string}`,
+          protonName,
+          protonSymbol,
+          treasuryAddress as `0x${string}`,
+          fissionFeeWad,
+          fusionFeeWad,
+          criticalReserveRatioWad,
+          initialReserveAmount,
+        ] as const
+        if (betaParameters) {
+          await writeContractAsync({
+            account,
+            chainId: deploymentChainId,
+            address: factoryAddress,
+            abi: ImmutableBetaFactoryABI,
+            functionName: "deployReactor",
+            args: [
+              ...deploymentArgs,
+              betaParameters.betaPhi0,
+              betaParameters.betaPhi1,
+              betaParameters.decayPerSecondWad,
+            ],
+          })
+        } else {
+          await writeContractAsync({
+            account,
+            chainId: deploymentChainId,
+            address: factoryAddress,
+            abi: StableCoinFactoryABI,
+            functionName: "deployReactor",
+            args: deploymentArgs,
+          })
+        }
       } else {
         await writeContractAsync({
           account,
@@ -948,6 +989,68 @@ export default function CreatePage() {
                     />
                   </div>
                 </div>
+
+                {supportsImmutableBeta && (
+                  <fieldset className="space-y-5 rounded-xl border border-border p-5">
+                    <legend className="px-1 text-[13px] font-medium text-foreground/80">
+                      Transmutation settings
+                    </legend>
+                    <p className="text-[12px] text-muted-foreground">
+                      These settings are fixed when the reactor is created and cannot be changed afterwards.
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="beta-fee-percent" className="text-[13px] font-medium text-foreground/80">
+                        Base transmutation fee (%)
+                      </Label>
+                      <Input
+                        id="beta-fee-percent"
+                        type="text"
+                        inputMode="decimal"
+                        value={config.betaFeePercent}
+                        onChange={(e) => updateConfig("betaFeePercent", e.target.value)}
+                        aria-describedby="beta-fee-help"
+                        className={inputClasses}
+                      />
+                      <p id="beta-fee-help" className="text-[12px] text-muted-foreground">
+                        Between 0 and 100. A 100% fee prevents transmutations from producing tokens.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="beta-volume-coefficient" className="text-[13px] font-medium text-foreground/80">
+                        Volume fee coefficient
+                      </Label>
+                      <Input
+                        id="beta-volume-coefficient"
+                        type="text"
+                        inputMode="decimal"
+                        value={config.betaVolumeCoefficient}
+                        onChange={(e) => updateConfig("betaVolumeCoefficient", e.target.value)}
+                        aria-describedby="beta-volume-help"
+                        className={inputClasses}
+                      />
+                      <p id="beta-volume-help" className="text-[12px] text-muted-foreground">
+                        Between 0 and 1. Controls how strongly recorded trading volume increases the fee.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="volume-retention" className="text-[13px] font-medium text-foreground/80">
+                        Volume retained each second
+                      </Label>
+                      <Input
+                        id="volume-retention"
+                        type="text"
+                        inputMode="decimal"
+                        value={config.volumeRetentionPerSecond}
+                        onChange={(e) => updateConfig("volumeRetentionPerSecond", e.target.value)}
+                        aria-describedby="volume-retention-help"
+                        className={inputClasses}
+                      />
+                      <p id="volume-retention-help" className="text-[12px] text-muted-foreground">
+                        Between 0 and 1. Use 1 for no decay; 0 clears past volume after a second has elapsed.
+                      </p>
+                    </div>
+                  </fieldset>
+                )}
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-3">
