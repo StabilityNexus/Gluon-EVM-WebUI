@@ -93,6 +93,7 @@ vi.mock("wagmi", () => ({
       refetch: pricingRead ? mocks.refetchPricing : mocks.refetch,
     }
   },
+  useSimulateContract: () => ({ data: undefined, isFetching: false, isError: false }),
   useWriteContract: () => ({
     writeContract: mocks.write,
     writeContractAsync: mocks.writeNative,
