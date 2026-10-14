@@ -1,5 +1,7 @@
 import { useMemo } from "react"
-import { formatUnits } from "viem"
+import { formatUnits, isAddress } from "viem"
+import { useSimulateContract } from "wagmi"
+import { StableCoinReactorABI } from "@/utils/abi/StableCoin"
 import {
   type TokenOption,
   trimFormattedAmount,
@@ -11,12 +13,17 @@ import {
   formatTokenValue,
   formatWad,
 } from "../interactionUtils"
+import type { InteractionContext } from "./interactionTypes"
 import type { InteractionForm } from "./useInteractionForm"
 import type { ReactorContracts } from "./useReactorContracts"
 import type { ReactorPricing } from "./useReactorPricing"
 
 type InteractionQuoteInput = Pick<
-  InteractionForm & ReactorContracts & ReactorPricing,
+  InteractionContext & InteractionForm & ReactorContracts & ReactorPricing,
+  | "reactorAddress"
+  | "address"
+  | "chainId"
+  | "recipient"
   | "fromToken"
   | "toToken"
   | "amount"
@@ -50,12 +57,14 @@ type InteractionQuoteInput = Pick<
   | "peggedSymbolText"
   | "neutronSymbolText"
   | "protonSymbolText"
-  | "neutronPriceInBase"
-  | "protonPriceInBase"
   | "basePricePegged"
 >
 
 export function useInteractionQuote({
+  reactorAddress,
+  address,
+  chainId,
+  recipient,
   fromToken,
   toToken,
   amount,
@@ -89,8 +98,6 @@ export function useInteractionQuote({
   peggedSymbolText,
   neutronSymbolText,
   protonSymbolText,
-  neutronPriceInBase,
-  protonPriceInBase,
   basePricePegged,
 }: InteractionQuoteInput) {
   const toLabel = useMemo(() => {
@@ -216,19 +223,52 @@ export function useInteractionQuote({
     fromToken === "NEUTRON" ||
     fromToken === "PROTON"
 
-  const parsedProtonAmount = useMemo(() => {
-    if (route !== "PROTON_TO_NEUTRON") return null
-    if (!protonDecimalsNumber) return null
-    if (!amount) return null
-    return safeParseUnits(amount, protonDecimalsNumber)
-  }, [route, amount, protonDecimalsNumber])
-
-  const parsedNeutronAmount = useMemo(() => {
-    if (route !== "NEUTRON_TO_PROTON") return null
-    if (!neutronDecimalsNumber) return null
-    if (!amount) return null
-    return safeParseUnits(amount, neutronDecimalsNumber)
-  }, [route, amount, neutronDecimalsNumber])
+  const isTransmutationRoute =
+    route === "PROTON_TO_NEUTRON" || route === "NEUTRON_TO_PROTON"
+  const transmutationFunction =
+    route === "PROTON_TO_NEUTRON"
+      ? "transmuteProtonToNeutron"
+      : "transmuteNeutronToProton"
+  const inputDecimals =
+    route === "PROTON_TO_NEUTRON"
+      ? protonDecimalsNumber
+      : neutronDecimalsNumber
+  const transmutationAmount =
+    isTransmutationRoute && inputDecimals !== undefined
+      ? safeParseUnits(amount, inputDecimals)
+      : null
+  const canSimulateTransmutation = Boolean(
+    isTransmutationRoute &&
+    address &&
+    isAddress(reactorAddress) &&
+    isAddress(recipient) &&
+    transmutationAmount !== null &&
+    transmutationAmount > 0n,
+  )
+  // Execute the actual accounting in eth_call, including beta fees, decay,
+  // rounding and operating-range checks. Never substitute a gross estimate.
+  const transmutationSimulation = useSimulateContract({
+    address: isAddress(reactorAddress) ? reactorAddress : undefined,
+    abi: StableCoinReactorABI,
+    functionName: transmutationFunction,
+    args:
+      transmutationAmount !== null && isAddress(recipient)
+        ? [transmutationAmount, recipient]
+        : undefined,
+    account: address,
+    chainId,
+    query: {
+      enabled: canSimulateTransmutation,
+      refetchInterval: 15_000,
+      retry: false,
+    },
+  })
+  const transmutationOutput =
+    canSimulateTransmutation &&
+    !transmutationSimulation.isFetching &&
+    !transmutationSimulation.isError
+      ? transmutationSimulation.data?.result[0]
+      : undefined
 
   const isFissionRoute = route === "FISSION"
   const isFusionRoute = route === "FUSION"
@@ -640,51 +680,24 @@ export function useInteractionQuote({
     protonSymbolText,
   ])
 
-  const protonToNeutronSummary = useMemo(() => {
-    if (route !== "PROTON_TO_NEUTRON") return ""
-    if (!parsedProtonAmount || parsedProtonAmount <= 0n) return ""
-    if (!protonPriceInBase || !neutronPriceInBase) return ""
-    if (!neutronDecimalsNumber) return ""
-    const grossBase = mulDiv(parsedProtonAmount, protonPriceInBase, WAD)
-    if (grossBase === 0n) return ""
-    const neutronOut = mulDiv(grossBase, WAD, neutronPriceInBase)
-    if (neutronOut === 0n) return ""
-    return formatTokenValue(
-      neutronOut,
-      neutronDecimalsNumber,
-      neutronSymbolText,
-      4,
-    )
+  const transmutationSummary = useMemo(() => {
+    if (transmutationOutput === undefined || transmutationOutput <= 0n) return ""
+    const outputDecimals =
+      route === "PROTON_TO_NEUTRON"
+        ? neutronDecimalsNumber
+        : protonDecimalsNumber
+    if (outputDecimals === undefined) return ""
+    const outputSymbol =
+      route === "PROTON_TO_NEUTRON"
+        ? neutronSymbolText
+        : protonSymbolText
+    return formatTokenValue(transmutationOutput, outputDecimals, outputSymbol, 4)
   }, [
+    transmutationOutput,
     route,
-    parsedProtonAmount,
-    protonPriceInBase,
-    neutronPriceInBase,
     neutronDecimalsNumber,
-    neutronSymbolText,
-  ])
-
-  const neutronToProtonSummary = useMemo(() => {
-    if (route !== "NEUTRON_TO_PROTON") return ""
-    if (!parsedNeutronAmount || parsedNeutronAmount <= 0n) return ""
-    if (!neutronPriceInBase || !protonPriceInBase) return ""
-    if (!protonDecimalsNumber) return ""
-    const grossBase = mulDiv(parsedNeutronAmount, neutronPriceInBase, WAD)
-    if (grossBase === 0n) return ""
-    const protonOut = mulDiv(grossBase, WAD, protonPriceInBase)
-    if (protonOut === 0n) return ""
-    return formatTokenValue(
-      protonOut,
-      protonDecimalsNumber,
-      protonSymbolText,
-      4,
-    )
-  }, [
-    route,
-    parsedNeutronAmount,
-    neutronPriceInBase,
-    protonPriceInBase,
     protonDecimalsNumber,
+    neutronSymbolText,
     protonSymbolText,
   ])
 
@@ -701,17 +714,15 @@ export function useInteractionQuote({
   const toInputValue = useMemo(() => {
     if (isFusionRoute) return amount
     if (isFissionRoute && fissionMintSummary) return fissionMintSummary
-    if (route === "PROTON_TO_NEUTRON") return protonToNeutronSummary
-    if (route === "NEUTRON_TO_PROTON") return neutronToProtonSummary
+    if (isTransmutationRoute) return transmutationSummary
     return ""
   }, [
     isFusionRoute,
     amount,
     isFissionRoute,
     fissionMintSummary,
-    route,
-    protonToNeutronSummary,
-    neutronToProtonSummary,
+    isTransmutationRoute,
+    transmutationSummary,
   ])
 
   const toInputPlaceholder = useMemo(() => {
@@ -721,13 +732,14 @@ export function useInteractionQuote({
     if (isFissionRoute) {
       return fissionMintSummary || "Minted bundle appears here"
     }
-    if (route === "PROTON_TO_NEUTRON") {
-      return (
-        protonToNeutronSummary || `Minted ${neutronSymbolText} appears here`
-      )
-    }
-    if (route === "NEUTRON_TO_PROTON") {
-      return neutronToProtonSummary || `Minted ${protonSymbolText} appears here`
+    if (isTransmutationRoute) {
+      if (transmutationSummary) return transmutationSummary
+      if (!address) return "Connect wallet to estimate output"
+      if (transmutationSimulation.isFetching) return "Calculating output…"
+      if (transmutationAmount !== null && transmutationAmount > 0n) {
+        return "Estimate unavailable"
+      }
+      return `Minted ${toLabel} appears here`
     }
     return "Calculated on-chain"
   }, [
@@ -735,11 +747,12 @@ export function useInteractionQuote({
     activeBaseSymbol,
     isFissionRoute,
     fissionMintSummary,
-    route,
-    protonToNeutronSummary,
-    neutronToProtonSummary,
-    neutronSymbolText,
-    protonSymbolText,
+    isTransmutationRoute,
+    transmutationSummary,
+    address,
+    transmutationSimulation.isFetching,
+    transmutationAmount,
+    toLabel,
   ])
 
   return {

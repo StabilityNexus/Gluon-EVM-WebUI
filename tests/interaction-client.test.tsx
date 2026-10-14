@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   approving: false,
   receiptSuccess: false,
   refetch: vi.fn(),
+  refetchPricing: vi.fn(),
   write: vi.fn(),
   writeNative: vi.fn(),
   send: vi.fn(),
@@ -77,9 +78,22 @@ vi.mock("wagmi", () => ({
       FUSION_FEE: mocks.fee,
       CRITICAL_RESERVE_RATIO: 2n * wad,
       getBasePriceInPeggedAsset: wad,
+      reserveRatioPeggedAsset: 3n * wad,
+      neutronPriceInBase: wad,
+      protonPriceInBase: 2n * wad,
     }
-    return { data: data[functionName], refetch: mocks.refetch }
+    const pricingRead = [
+      "getBasePriceInPeggedAsset",
+      "reserveRatioPeggedAsset",
+      "neutronPriceInBase",
+      "protonPriceInBase",
+    ].includes(functionName)
+    return {
+      data: data[functionName],
+      refetch: pricingRead ? mocks.refetchPricing : mocks.refetch,
+    }
   },
+  useSimulateContract: () => ({ data: undefined, isFetching: false, isError: false }),
   useWriteContract: () => ({
     writeContract: mocks.write,
     writeContractAsync: mocks.writeNative,
@@ -319,6 +333,7 @@ describe("reactor interaction", () => {
     view.rerender(<InteractionClient coinId={mocks.reactor} />)
     expect(screen.getByRole("spinbutton")).toHaveValue(null)
     expect(mocks.refetch).toHaveBeenCalled()
+    expect(mocks.refetchPricing).toHaveBeenCalledTimes(4)
   })
 
   it("wraps, conditionally approves, and fissions native input in order", async () => {
@@ -343,6 +358,7 @@ describe("reactor interaction", () => {
       expect.objectContaining({ value: 10n ** 18n }),
     )
     expect(mocks.waitReceipt).toHaveBeenCalledTimes(3)
+    expect(mocks.refetchPricing).toHaveBeenCalledTimes(4)
     expect(screen.getByRole("spinbutton")).toHaveValue(null)
   })
 

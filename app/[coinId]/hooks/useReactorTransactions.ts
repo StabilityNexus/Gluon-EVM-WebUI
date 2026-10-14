@@ -45,6 +45,10 @@ type ReactorTransactionsInput = Pick<
   | "fusionFee"
   | "refetchFusionFee"
   | "refetchReserve"
+  | "refetchBasePrice"
+  | "refetchReserveRatio"
+  | "refetchNeutronPrice"
+  | "refetchProtonPrice"
   | "refetchNeutronTotalSupply"
   | "refetchProtonTotalSupply"
   | "refetchBaseBalance"
@@ -79,6 +83,10 @@ export function useReactorTransactions({
   fusionFee,
   refetchFusionFee,
   refetchReserve,
+  refetchBasePrice,
+  refetchReserveRatio,
+  refetchNeutronPrice,
+  refetchProtonPrice,
   refetchNeutronTotalSupply,
   refetchProtonTotalSupply,
   refetchBaseBalance,
@@ -169,6 +177,10 @@ export function useReactorTransactions({
       void refetchBaseAllowance()
       void refetchNativeBalance()
       void refetchReserve()
+      void refetchBasePrice()
+      void refetchReserveRatio()
+      void refetchNeutronPrice()
+      void refetchProtonPrice()
       void refetchNeutronTotalSupply()
       void refetchProtonTotalSupply()
       void refetchFissionFee()
@@ -198,6 +210,10 @@ export function useReactorTransactions({
     refetchBaseAllowance,
     refetchNativeBalance,
     refetchReserve,
+    refetchBasePrice,
+    refetchReserveRatio,
+    refetchNeutronPrice,
+    refetchProtonPrice,
     refetchNeutronTotalSupply,
     refetchProtonTotalSupply,
     refetchFissionFee,
@@ -323,6 +339,10 @@ export function useReactorTransactions({
     void refetchBaseAllowance()
     void refetchNativeBalance()
     void refetchReserve()
+    void refetchBasePrice()
+    void refetchReserveRatio()
+    void refetchNeutronPrice()
+    void refetchProtonPrice()
     void refetchNeutronTotalSupply()
     void refetchProtonTotalSupply()
     void refetchFissionFee()
