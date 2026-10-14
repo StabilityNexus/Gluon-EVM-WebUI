@@ -402,20 +402,6 @@ Do not invent production deployment values.
 
 See [Deployments.md](Deployments.md).
 
-### Immutable transmutation settings
-
-The creation page supports choosing a base transmutation fee, volume fee coefficient,
-and per-second volume retention for factories with constructor-set beta parameters.
-These values are validated and converted to WAD using `bigint`; they cannot change
-after the reactor is deployed. Defaults remain zero beta fees and no decay.
-
-Existing configured factory addresses retain their existing deployment signatures.
-After a new factory is deployed and verified, update its address in `utils/networks.ts`
-and set `factorySupportsImmutableBeta: true` for that deployment. This also enables
-the required initial-reserve flow. Do not enable the flag for an older factory.
-The new deployment ABI is separate from the ABIs used by existing factories and
-reactors; no new deployment address is assumed by this change.
-
 ---
 
 ## Main WebUI Flows

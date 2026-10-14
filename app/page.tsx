@@ -160,8 +160,12 @@ export default function HomePage() {
               </div>
               <ul className="divide-y divide-border">
                 {GLUON_NETWORKS.map(({ chain, displayName, factoryAddress }) => {
-                  const href = explorerAddressUrl(chain.blockExplorers?.default.url, factoryAddress)
-                  const short = `${factoryAddress.slice(0, 6)}…${factoryAddress.slice(-4)}`
+                  const href = factoryAddress
+                    ? explorerAddressUrl(chain.blockExplorers?.default.url, factoryAddress)
+                    : undefined
+                  const short = factoryAddress
+                    ? `${factoryAddress.slice(0, 6)}…${factoryAddress.slice(-4)}`
+                    : "Not configured"
                   return (
                     <li key={chain.id} className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
                       <span className="text-sm font-medium text-foreground">{displayName}</span>

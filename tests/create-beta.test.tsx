@@ -10,9 +10,7 @@ const mocks = vi.hoisted(() => ({
   network: {
     chain: { id: 11155111 },
     displayName: "Test network",
-    factoryAddress: "0x0000000000000000000000000000000000000002",
-    factorySupportsInitialReserve: true,
-    factorySupportsImmutableBeta: true,
+    factoryAddress: "0x0000000000000000000000000000000000000002" as `0x${string}` | undefined,
   },
   writeContractAsync: vi.fn(),
   runOraclePreflight: vi.fn(),
@@ -34,7 +32,11 @@ vi.mock("wagmi", () => ({
 }))
 
 vi.mock("@/utils/networks", () => ({ GLUON_NETWORKS: [mocks.network], SEPOLIA_CHAIN_ID: 11155111 }))
-vi.mock("@/utils/addresses", () => ({ StableCoinFactories: { 11155111: mocks.factoryAddress } }))
+vi.mock("@/utils/addresses", () => ({
+  get StableCoinFactories() {
+    return mocks.network.factoryAddress ? { 11155111: mocks.network.factoryAddress } : {}
+  },
+}))
 vi.mock("@/utils/oraclePreflight", () => ({ runOraclePreflight: mocks.runOraclePreflight }))
 vi.mock("sonner", () => ({
   Toaster: () => null,
@@ -58,7 +60,7 @@ vi.mock("@/components/TokenSelector", () => ({
 }))
 
 import CreatePage from "@/app/create/page"
-import { ImmutableBetaFactoryABI } from "@/utils/abi/ImmutableBetaFactory"
+import { FactoryABI } from "@/utils/abi/Factory"
 
 async function fillRequiredFields() {
   const user = userEvent.setup()
@@ -81,8 +83,7 @@ async function fillRequiredFields() {
 describe("reactor creation with immutable beta settings", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.network.factorySupportsInitialReserve = true
-    mocks.network.factorySupportsImmutableBeta = true
+    mocks.network.factoryAddress = mocks.factoryAddress as `0x${string}`
     mocks.writeContractAsync.mockResolvedValue(`0x${"a".repeat(64)}`)
     mocks.waitForTransactionReceipt.mockResolvedValue({ status: "success" })
     mocks.readContract.mockImplementation(({ functionName }: { functionName: string }) => {
@@ -114,7 +115,7 @@ describe("reactor creation with immutable beta settings", () => {
       functionName: "approve", args: [mocks.factoryAddress, 100000n],
     })
     const deployment = mocks.writeContractAsync.mock.calls[1][0]
-    expect(deployment.abi).toBe(ImmutableBetaFactoryABI)
+    expect(deployment.abi).toBe(FactoryABI)
     expect(deployment.functionName).toBe("deployReactor")
     expect(deployment.args).toHaveLength(17)
     expect(deployment.args.slice(13)).toEqual([
@@ -130,18 +131,12 @@ describe("reactor creation with immutable beta settings", () => {
     expect(mocks.writeContractAsync.mock.calls[1][0].args.slice(14)).toEqual([0n, 0n, 10n ** 18n])
   })
 
-  it.each([true, false])("preserves the older factory signature with initial reserve support %s", async (initialReserve) => {
-    mocks.network.factorySupportsImmutableBeta = false
-    mocks.network.factorySupportsInitialReserve = initialReserve
+  it("disables deployment when no current factory is configured", () => {
+    mocks.network.factoryAddress = undefined
     render(<CreatePage />)
-    expect(screen.queryByRole("group", { name: "Transmutation settings" })).not.toBeInTheDocument()
-    const user = await fillRequiredFields()
-    await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
-    await waitFor(() => expect(mocks.writeContractAsync).toHaveBeenCalledTimes(initialReserve ? 2 : 1))
-    const deployment = mocks.writeContractAsync.mock.calls.at(-1)![0]
-    expect(deployment.functionName).toBe("deployReactor")
-    expect(deployment.args).toHaveLength(initialReserve ? 14 : 13)
-    expect(deployment.abi).not.toBe(ImmutableBetaFactoryABI)
+    expect(screen.getByRole("status")).toHaveTextContent("Reactor deployment is not yet available")
+    expect(screen.getByRole("button", { name: "Deploy Reactor" })).toBeDisabled()
+    expect(mocks.writeContractAsync).not.toHaveBeenCalled()
   })
 
   it("rejects invalid settings before requesting reserve approval", async () => {

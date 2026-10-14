@@ -1,10 +1,8 @@
+import type { Address } from "viem"
 import { GLUON_NETWORKS } from "@/utils/networks"
 
-export const StableCoinFactories = Object.fromEntries(
-  GLUON_NETWORKS.map(({ chain, factoryAddress }) => [
-    chain.id,
-    factoryAddress,
-  ])
-) as {
-  [key: number]: `0x${string}`
-}
+export const StableCoinFactories: Partial<Record<number, Address>> = Object.fromEntries(
+  GLUON_NETWORKS.flatMap(({ chain, factoryAddress }) =>
+    factoryAddress ? [[chain.id, factoryAddress]] : []
+  )
+)

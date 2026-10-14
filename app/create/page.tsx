@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Wallet, CheckCircle, Zap } from "lucide-react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory"
-import { ImmutableBetaFactoryABI } from "@/utils/abi/ImmutableBetaFactory"
+import { FactoryABI } from "@/utils/abi/Factory"
 import { parseBetaParameters } from "@/utils/betaParameters"
 import { ERC20ABI } from "@/utils/abi/StableCoin"
 import {
@@ -74,31 +73,6 @@ const ChainlinkFeedABI = [
   },
 ] as const
 
-// Existing testnet factories still use the pre-initialReserve deployReactor signature.
-const LegacyDeployReactorABI = [
-  {
-    type: "function",
-    name: "deployReactor",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "vaultNameParam", type: "string" },
-      { name: "baseAssetNameParam", type: "string" },
-      { name: "baseAssetSymbolParam", type: "string" },
-      { name: "peggedAssetNameParam", type: "string" },
-      { name: "peggedAssetSymbolParam", type: "string" },
-      { name: "baseTokenParam", type: "address" },
-      { name: "oracleParam", type: "address" },
-      { name: "protonNameParam", type: "string" },
-      { name: "protonSymbolParam", type: "string" },
-      { name: "treasuryParam", type: "address" },
-      { name: "fissionFeeParam", type: "uint256" },
-      { name: "fusionFeeParam", type: "uint256" },
-      { name: "criticalReserveRatioWadParam", type: "uint256" },
-    ],
-    outputs: [{ name: "", type: "address" }],
-  },
-] as const
-
 export default function CreatePage() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
@@ -136,9 +110,6 @@ export default function CreatePage() {
   const preflightRequestRef = useRef(0)
   const isChainlinkSupported = CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)
   const currentNetwork = GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)
-  const supportsImmutableBeta = currentNetwork?.factorySupportsImmutableBeta ?? false
-  const supportsFactoryInitialReserve =
-    supportsImmutableBeta || (currentNetwork?.factorySupportsInitialReserve ?? false)
   const isAdapterDeploymentBusy = isAdapterDeploying || isAdapterConfirming
 
   // Contract interaction
@@ -271,14 +242,12 @@ export default function CreatePage() {
            config.oracleAddress &&
            config.treasury &&
            config.criticalReserveRatio &&
-           (!supportsFactoryInitialReserve || config.initialReserve) &&
+           config.initialReserve &&
            config.fissionFee !== "" &&
            config.fusionFee !== "" &&
-           (!supportsImmutableBeta || (
-             config.betaFeePercent !== "" &&
-             config.betaVolumeCoefficient !== "" &&
-             config.volumeRetentionPerSecond !== ""
-           ))
+           config.betaFeePercent !== "" &&
+           config.betaVolumeCoefficient !== "" &&
+           config.volumeRetentionPerSecond !== ""
   }
 
   const handleDeployChainlinkAdapter = async () => {
@@ -495,7 +464,7 @@ export default function CreatePage() {
       return
     }
 
-    if (supportsFactoryInitialReserve && ratioValue > 150) {
+    if (ratioValue > 150) {
       toast.error(
         "Critical reserve ratio cannot exceed the 150% initial reserve ratio"
       )
@@ -511,12 +480,10 @@ export default function CreatePage() {
       return
     }
 
-    if (supportsFactoryInitialReserve) {
-      const initialReserveValue = Number(config.initialReserve)
-      if (!Number.isFinite(initialReserveValue) || initialReserveValue <= 0) {
-        toast.error("Initial reserve must be greater than zero")
-        return
-      }
+    const initialReserveValue = Number(config.initialReserve)
+    if (!Number.isFinite(initialReserveValue) || initialReserveValue <= 0) {
+      toast.error("Initial reserve must be greater than zero")
+      return
     }
 
     const fissionFeePercent = Number(config.fissionFee)
@@ -543,14 +510,12 @@ export default function CreatePage() {
     const fissionFeeWad = parseUnits(config.fissionFee, 16)
     const fusionFeeWad = parseUnits(config.fusionFee, 16)
 
-    let betaParameters: ReturnType<typeof parseBetaParameters> | undefined
-    if (supportsImmutableBeta) {
-      try {
-        betaParameters = parseBetaParameters(config)
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Invalid transmutation settings")
-        return
-      }
+    let betaParameters: ReturnType<typeof parseBetaParameters>
+    try {
+      betaParameters = parseBetaParameters(config)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Invalid transmutation settings")
+      return
     }
 
     const deploymentPreflight = await checkOracleAddress(oracleAddress)
@@ -573,119 +538,83 @@ export default function CreatePage() {
     const account = address as `0x${string}`
 
     try {
-      if (supportsFactoryInitialReserve) {
-        const baseDecimals = await publicClient.readContract({
+      const baseDecimals = await publicClient.readContract({
+        address: baseToken as `0x${string}`,
+        abi: ERC20ABI,
+        functionName: "decimals",
+      })
+
+      const initialReserveAmount = parseUnits(
+        config.initialReserve,
+        Number(baseDecimals)
+      )
+
+      const currentAllowance = await publicClient.readContract({
+        address: baseToken as `0x${string}`,
+        abi: ERC20ABI,
+        functionName: "allowance",
+        args: [account, factoryAddress],
+      })
+
+      if (currentAllowance < initialReserveAmount) {
+        toast.info("Approve the Factory to transfer the initial reserve")
+
+        const approvalHash = await writeContractAsync({
+          account,
+          chainId: deploymentChainId,
           address: baseToken as `0x${string}`,
           abi: ERC20ABI,
-          functionName: "decimals",
+          functionName: "approve",
+          args: [factoryAddress, initialReserveAmount],
         })
 
-        const initialReserveAmount = parseUnits(
-          config.initialReserve,
-          Number(baseDecimals)
-        )
-
-        const currentAllowance = await publicClient.readContract({
-          address: baseToken as `0x${string}`,
-          abi: ERC20ABI,
-          functionName: "allowance",
-          args: [account, factoryAddress],
-        })
-
-        if (currentAllowance < initialReserveAmount) {
-          toast.info("Approve the Factory to transfer the initial reserve")
-
-          const approvalHash = await writeContractAsync({
-            account,
-            chainId: deploymentChainId,
-            address: baseToken as `0x${string}`,
-            abi: ERC20ABI,
-            functionName: "approve",
-            args: [factoryAddress, initialReserveAmount],
+        const approvalReceipt =
+          await publicClient.waitForTransactionReceipt({
+            hash: approvalHash,
           })
 
-          const approvalReceipt =
-            await publicClient.waitForTransactionReceipt({
-              hash: approvalHash,
-            })
-
-          if (approvalReceipt.status !== "success") {
-            toast.error("Initial reserve approval failed")
-            return
-          }
-
-          toast.success("Initial reserve approved")
-        }
-
-        if (latestChainIdRef.current !== deploymentChainId) {
-          toast.error("Network changed during approval. Please try again.")
+        if (approvalReceipt.status !== "success") {
+          toast.error("Initial reserve approval failed")
           return
         }
 
-        const deploymentArgs = [
-          vaultName,
-          baseAssetName,
-          baseAssetSymbol,
-          peggedAssetName,
-          peggedAssetSymbol,
-          baseToken as `0x${string}`,
-          oracleAddress as `0x${string}`,
-          protonName,
-          protonSymbol,
-          treasuryAddress as `0x${string}`,
-          fissionFeeWad,
-          fusionFeeWad,
-          criticalReserveRatioWad,
-          initialReserveAmount,
-        ] as const
-        if (betaParameters) {
-          await writeContractAsync({
-            account,
-            chainId: deploymentChainId,
-            address: factoryAddress,
-            abi: ImmutableBetaFactoryABI,
-            functionName: "deployReactor",
-            args: [
-              ...deploymentArgs,
-              betaParameters.betaPhi0,
-              betaParameters.betaPhi1,
-              betaParameters.decayPerSecondWad,
-            ],
-          })
-        } else {
-          await writeContractAsync({
-            account,
-            chainId: deploymentChainId,
-            address: factoryAddress,
-            abi: StableCoinFactoryABI,
-            functionName: "deployReactor",
-            args: deploymentArgs,
-          })
-        }
-      } else {
-        await writeContractAsync({
-          account,
-          chainId: deploymentChainId,
-          address: factoryAddress,
-          abi: LegacyDeployReactorABI,
-          functionName: "deployReactor",
-          args: [
-            vaultName,
-            baseAssetName,
-            baseAssetSymbol,
-            peggedAssetName,
-            peggedAssetSymbol,
-            baseToken as `0x${string}`,
-            oracleAddress as `0x${string}`,
-            protonName,
-            protonSymbol,
-            treasuryAddress as `0x${string}`,
-            fissionFeeWad,
-            fusionFeeWad,
-            criticalReserveRatioWad,
-          ],
-        })
+        toast.success("Initial reserve approved")
       }
+
+      if (latestChainIdRef.current !== deploymentChainId) {
+        toast.error("Network changed during approval. Please try again.")
+        return
+      }
+
+      const deploymentArgs = [
+        vaultName,
+        baseAssetName,
+        baseAssetSymbol,
+        peggedAssetName,
+        peggedAssetSymbol,
+        baseToken as `0x${string}`,
+        oracleAddress as `0x${string}`,
+        protonName,
+        protonSymbol,
+        treasuryAddress as `0x${string}`,
+        fissionFeeWad,
+        fusionFeeWad,
+        criticalReserveRatioWad,
+        initialReserveAmount,
+      ] as const
+      await writeContractAsync({
+        account,
+        chainId: deploymentChainId,
+        address: factoryAddress,
+        abi: FactoryABI,
+        functionName: "deployReactor",
+        args: [
+          ...deploymentArgs,
+          betaParameters.betaPhi0,
+          betaParameters.betaPhi1,
+          betaParameters.decayPerSecondWad,
+        ],
+      })
     } catch (error) {
       console.error("Deployment error:", error)
       toast.error("Failed to deploy reactor")
@@ -707,6 +636,12 @@ export default function CreatePage() {
             title="Create a reactor"
             description="Configure collateral, oracle wiring, token parameters, treasury, and reserve policy for a new Gluon reactor."
           />
+
+          {!currentNetwork?.factoryAddress && (
+            <p role="status" className="mb-5 text-sm text-muted-foreground">
+              Reactor deployment is not yet available on this network.
+            </p>
+          )}
 
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
             <div className="border-b border-border px-5 py-5 sm:px-8">
@@ -921,27 +856,25 @@ export default function CreatePage() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
-                  {supportsFactoryInitialReserve && (
-                    <div className="space-y-2">
-                      <Label className="text-[13px] font-medium text-foreground/80">
-                        Initial Reserve
-                      </Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="any"
-                        placeholder="0.1"
-                        value={config.initialReserve}
-                        onChange={(e) =>
-                          updateConfig("initialReserve", e.target.value)
-                        }
-                        className={inputClasses}
-                      />
-                      <p className="text-[12px] text-muted-foreground/75">
-                        Amount of the selected base token deposited when the reactor is created.
-                      </p>
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-medium text-foreground/80">
+                      Initial Reserve
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="any"
+                      placeholder="0.1"
+                      value={config.initialReserve}
+                      onChange={(e) =>
+                        updateConfig("initialReserve", e.target.value)
+                      }
+                      className={inputClasses}
+                    />
+                    <p className="text-[12px] text-muted-foreground/75">
+                      Amount of the selected base token deposited when the reactor is created.
+                    </p>
+                  </div>
 
                   <div className="space-y-2">
                     <Label className="text-[13px] font-medium text-foreground/80">
@@ -950,7 +883,7 @@ export default function CreatePage() {
                     <Input
                       type="number"
                       min={100}
-                      max={supportsFactoryInitialReserve ? 150 : 199}
+                      max={150}
                       step={1}
                       placeholder="120"
                       value={config.criticalReserveRatio}
@@ -990,67 +923,65 @@ export default function CreatePage() {
                   </div>
                 </div>
 
-                {supportsImmutableBeta && (
-                  <fieldset className="space-y-5 rounded-xl border border-border p-5">
-                    <legend className="px-1 text-[13px] font-medium text-foreground/80">
-                      Transmutation settings
-                    </legend>
-                    <p className="text-[12px] text-muted-foreground">
-                      These settings are fixed when the reactor is created and cannot be changed afterwards.
+                <fieldset className="space-y-5 rounded-xl border border-border p-5">
+                  <legend className="px-1 text-[13px] font-medium text-foreground/80">
+                    Transmutation settings
+                  </legend>
+                  <p className="text-[12px] text-muted-foreground">
+                    These settings are fixed when the reactor is created and cannot be changed afterwards.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="beta-fee-percent" className="text-[13px] font-medium text-foreground/80">
+                      Base transmutation fee (%)
+                    </Label>
+                    <Input
+                      id="beta-fee-percent"
+                      type="text"
+                      inputMode="decimal"
+                      value={config.betaFeePercent}
+                      onChange={(e) => updateConfig("betaFeePercent", e.target.value)}
+                      aria-describedby="beta-fee-help"
+                      className={inputClasses}
+                    />
+                    <p id="beta-fee-help" className="text-[12px] text-muted-foreground">
+                      Between 0 and 100. A 100% fee prevents transmutations from producing tokens.
                     </p>
-                    <div className="space-y-2">
-                      <Label htmlFor="beta-fee-percent" className="text-[13px] font-medium text-foreground/80">
-                        Base transmutation fee (%)
-                      </Label>
-                      <Input
-                        id="beta-fee-percent"
-                        type="text"
-                        inputMode="decimal"
-                        value={config.betaFeePercent}
-                        onChange={(e) => updateConfig("betaFeePercent", e.target.value)}
-                        aria-describedby="beta-fee-help"
-                        className={inputClasses}
-                      />
-                      <p id="beta-fee-help" className="text-[12px] text-muted-foreground">
-                        Between 0 and 100. A 100% fee prevents transmutations from producing tokens.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="beta-volume-coefficient" className="text-[13px] font-medium text-foreground/80">
-                        Volume fee coefficient
-                      </Label>
-                      <Input
-                        id="beta-volume-coefficient"
-                        type="text"
-                        inputMode="decimal"
-                        value={config.betaVolumeCoefficient}
-                        onChange={(e) => updateConfig("betaVolumeCoefficient", e.target.value)}
-                        aria-describedby="beta-volume-help"
-                        className={inputClasses}
-                      />
-                      <p id="beta-volume-help" className="text-[12px] text-muted-foreground">
-                        Between 0 and 1. Controls how strongly recorded trading volume increases the fee.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="volume-retention" className="text-[13px] font-medium text-foreground/80">
-                        Volume retained each second
-                      </Label>
-                      <Input
-                        id="volume-retention"
-                        type="text"
-                        inputMode="decimal"
-                        value={config.volumeRetentionPerSecond}
-                        onChange={(e) => updateConfig("volumeRetentionPerSecond", e.target.value)}
-                        aria-describedby="volume-retention-help"
-                        className={inputClasses}
-                      />
-                      <p id="volume-retention-help" className="text-[12px] text-muted-foreground">
-                        Between 0 and 1. Use 1 for no decay; 0 clears past volume after a second has elapsed.
-                      </p>
-                    </div>
-                  </fieldset>
-                )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="beta-volume-coefficient" className="text-[13px] font-medium text-foreground/80">
+                      Volume fee coefficient
+                    </Label>
+                    <Input
+                      id="beta-volume-coefficient"
+                      type="text"
+                      inputMode="decimal"
+                      value={config.betaVolumeCoefficient}
+                      onChange={(e) => updateConfig("betaVolumeCoefficient", e.target.value)}
+                      aria-describedby="beta-volume-help"
+                      className={inputClasses}
+                    />
+                    <p id="beta-volume-help" className="text-[12px] text-muted-foreground">
+                      Between 0 and 1. Controls how strongly recorded trading volume increases the fee.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="volume-retention" className="text-[13px] font-medium text-foreground/80">
+                      Volume retained each second
+                    </Label>
+                    <Input
+                      id="volume-retention"
+                      type="text"
+                      inputMode="decimal"
+                      value={config.volumeRetentionPerSecond}
+                      onChange={(e) => updateConfig("volumeRetentionPerSecond", e.target.value)}
+                      aria-describedby="volume-retention-help"
+                      className={inputClasses}
+                    />
+                    <p id="volume-retention-help" className="text-[12px] text-muted-foreground">
+                      Between 0 and 1. Use 1 for no decay; 0 clears past volume after a second has elapsed.
+                    </p>
+                  </div>
+                </fieldset>
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-3">
@@ -1154,6 +1085,7 @@ export default function CreatePage() {
                         className="w-full h-12 text-[15px]"
                         onClick={handleDeploy}
                         disabled={
+                          !StableCoinFactories[chainId] ||
                           !isFormValid() ||
                           !isOracleReady ||
                           isOracleChecking ||
