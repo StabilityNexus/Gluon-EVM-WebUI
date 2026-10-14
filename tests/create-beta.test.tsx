@@ -1,6 +1,6 @@
 import React from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import axe from "axe-core"
 
@@ -147,6 +147,40 @@ describe("reactor creation with immutable beta settings", () => {
     await user.type(retention, "1.000000000000000001")
     await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
     expect(mocks.toastError).toHaveBeenCalledWith("Volume retention exceeds its allowed maximum")
+    expect(mocks.writeContractAsync).not.toHaveBeenCalled()
+  })
+
+  it.each(["0.0000001", "0.0000009", "0.1234567", "1e-7"])(
+    "rejects initial reserve %s before approval or deployment",
+    async (value) => {
+      render(<CreatePage />)
+      const user = await fillRequiredFields()
+      fireEvent.change(screen.getByPlaceholderText("0.1"), { target: { value } })
+      await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
+      await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith(
+        "Initial reserve must be a decimal with at most 6 decimal places"
+      ))
+      expect(mocks.writeContractAsync).not.toHaveBeenCalled()
+      expect(mocks.readContract.mock.calls.some(([call]) => call.functionName === "allowance")).toBe(false)
+    }
+  )
+
+  it("accepts the smallest reserve unit without rounding", async () => {
+    render(<CreatePage />)
+    const user = await fillRequiredFields()
+    fireEvent.change(screen.getByPlaceholderText("0.1"), { target: { value: "0.000001" } })
+    await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
+    await waitFor(() => expect(mocks.writeContractAsync).toHaveBeenCalledTimes(2))
+    expect(mocks.writeContractAsync.mock.calls[0][0].args).toEqual([mocks.factoryAddress, 1n])
+    expect(mocks.writeContractAsync.mock.calls[1][0].args[13]).toBe(1n)
+  })
+
+  it("rejects a zero initial reserve before approval or deployment", async () => {
+    render(<CreatePage />)
+    const user = await fillRequiredFields()
+    fireEvent.change(screen.getByPlaceholderText("0.1"), { target: { value: "0" } })
+    await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
+    expect(mocks.toastError).toHaveBeenCalledWith("Initial reserve must be greater than zero")
     expect(mocks.writeContractAsync).not.toHaveBeenCalled()
   })
 

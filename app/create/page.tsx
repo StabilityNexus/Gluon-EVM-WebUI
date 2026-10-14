@@ -544,10 +544,18 @@ export default function CreatePage() {
         functionName: "decimals",
       })
 
-      const initialReserveAmount = parseUnits(
-        config.initialReserve,
-        Number(baseDecimals)
-      )
+      const reserveInput = config.initialReserve.trim()
+      const decimals = Number(baseDecimals)
+      const [, fraction = ""] = reserveInput.split(".")
+      if (!/^\d+(\.\d+)?$/.test(reserveInput) || fraction.length > decimals) {
+        toast.error(`Initial reserve must be a decimal with at most ${decimals} decimal places`)
+        return
+      }
+      const initialReserveAmount = parseUnits(reserveInput, decimals)
+      if (initialReserveAmount <= 0n) {
+        toast.error("Initial reserve must be greater than zero")
+        return
+      }
 
       const currentAllowance = await publicClient.readContract({
         address: baseToken as `0x${string}`,
