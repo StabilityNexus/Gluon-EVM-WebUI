@@ -19,7 +19,7 @@ export function useReactorInteraction(reactorAddress: string) {
     ...contracts,
     ...pricing,
   })
-  const quote = useInteractionQuote({ ...form, ...contracts, ...pricing })
+  const quote = useInteractionQuote({ ...context, ...form, ...contracts, ...pricing })
   const parameters = useReactorParameters({
     ...context,
     ...contracts,

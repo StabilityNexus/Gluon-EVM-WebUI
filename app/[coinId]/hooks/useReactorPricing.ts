@@ -1,13 +1,12 @@
 import { useMemo } from "react"
+import { maxUint256 } from "viem"
 import { grossFusionAmountForNet } from "@/utils/nativeAsset"
 import {
   formatPercentFromWad,
   safeParseUnits,
   WAD,
-  PEGGED_ASSET_WAD,
   mulDiv,
   scaleToWad,
-  computeQWad,
   formatWad,
 } from "../interactionUtils"
 import type { InteractionForm } from "./useInteractionForm"
@@ -29,6 +28,9 @@ type ReactorPricingInput = Pick<
   | "reserve"
   | "criticalReserveRatio"
   | "onChainBasePriceWad"
+  | "onChainReserveRatioWad"
+  | "onChainNeutronPriceInBaseWad"
+  | "onChainProtonPriceInBaseWad"
   | "neutronTotalSupply"
   | "protonTotalSupply"
   | "baseSymbol"
@@ -53,6 +55,9 @@ export function useReactorPricing({
   reserve,
   criticalReserveRatio,
   onChainBasePriceWad,
+  onChainReserveRatioWad,
+  onChainNeutronPriceInBaseWad,
+  onChainProtonPriceInBaseWad,
   neutronTotalSupply,
   protonTotalSupply,
   baseSymbol,
@@ -92,82 +97,32 @@ export function useReactorPricing({
     () => scaleToWad(protonTotalSupply, protonDecimalsNumber),
     [protonTotalSupply, protonDecimalsNumber],
   )
-  const basePriceWad = useMemo(() => {
-    if (typeof onChainBasePriceWad === "bigint" && onChainBasePriceWad > 0n) {
-      return onChainBasePriceWad
-    }
-    return undefined
-  }, [onChainBasePriceWad])
-  const qWad = useMemo(
-    () =>
-      computeQWad(
-        reserveWad,
-        neutronSupplyWad,
-        basePriceWad,
-        criticalReserveRatio,
-      ),
-    [reserveWad, neutronSupplyWad, basePriceWad, criticalReserveRatio],
-  )
-  const neutronPriceInBaseDerived = useMemo(() => {
-    if (!reserveWad || reserveWad === 0n) return 0n
-    if (!basePriceWad || basePriceWad === 0n) return undefined
-    if (neutronTotalSupply === undefined || neutronDecimalsNumber === undefined)
+  // Use the reactor's accounting, including alpha and its integer rounding.
+  // An unavailable read stays unavailable rather than using a separate local model.
+  const basePriceWad =
+    typeof onChainBasePriceWad === "bigint" ? onChainBasePriceWad : undefined
+  const neutronPriceInBase =
+    typeof onChainNeutronPriceInBaseWad === "bigint"
+      ? onChainNeutronPriceInBaseWad
+      : undefined
+  const protonPriceInBase =
+    typeof onChainProtonPriceInBaseWad === "bigint"
+      ? onChainProtonPriceInBaseWad
+      : undefined
+  const reserveRatio =
+    typeof onChainReserveRatioWad === "bigint"
+      ? onChainReserveRatioWad
+      : undefined
+  const neutronPricePegged = useMemo(() => {
+    if (basePriceWad === undefined || neutronPriceInBase === undefined)
       return undefined
-    if (neutronTotalSupply === 0n) {
-      return mulDiv(PEGGED_ASSET_WAD, WAD, basePriceWad)
-    }
-    if (!neutronSupplyWad || neutronSupplyWad === 0n) return undefined
-    const q = qWad
-    if (q === undefined) return undefined
-    return mulDiv(q, reserveWad, neutronSupplyWad)
-  }, [
-    reserveWad,
-    neutronSupplyWad,
-    basePriceWad,
-    neutronTotalSupply,
-    neutronDecimalsNumber,
-    qWad,
-  ])
-
-  const protonPriceInBaseDerived = useMemo(() => {
-    if (!reserveWad || !basePriceWad) return undefined
-    if (protonTotalSupply === undefined || protonDecimalsNumber === undefined)
+    return mulDiv(neutronPriceInBase, basePriceWad, WAD)
+  }, [basePriceWad, neutronPriceInBase])
+  const protonPricePegged = useMemo(() => {
+    if (basePriceWad === undefined || protonPriceInBase === undefined)
       return undefined
-    if (protonTotalSupply === 0n) return WAD
-    if (!protonSupplyWad || protonSupplyWad === 0n) return undefined
-    const q = qWad
-    if (q === undefined) return undefined
-    const oneMinusQ = q >= WAD ? 0n : WAD - q
-    return mulDiv(oneMinusQ, reserveWad, protonSupplyWad)
-  }, [
-    reserveWad,
-    protonSupplyWad,
-    protonTotalSupply,
-    protonDecimalsNumber,
-    qWad,
-    basePriceWad,
-  ])
-
-  const neutronPricePeggedDerived = useMemo(() => {
-    if (!basePriceWad || !neutronPriceInBaseDerived) return undefined
-    return mulDiv(neutronPriceInBaseDerived, basePriceWad, WAD)
-  }, [basePriceWad, neutronPriceInBaseDerived])
-
-  const protonPricePeggedDerived = useMemo(() => {
-    if (!basePriceWad || !protonPriceInBaseDerived) return undefined
-    return mulDiv(protonPriceInBaseDerived, basePriceWad, WAD)
-  }, [basePriceWad, protonPriceInBaseDerived])
-
-  const reserveRatioDerived = useMemo(() => {
-    if (!reserveWad) return undefined
-    if (!basePriceWad || basePriceWad === 0n) return undefined
-    if (!neutronSupplyWad) return undefined
-    if (reserveWad === 0n) return 0n
-    if (neutronSupplyWad === 0n) return undefined
-    const reserveValuePegged = mulDiv(reserveWad, basePriceWad, WAD)
-    if (reserveValuePegged === 0n) return 0n
-    return mulDiv(reserveValuePegged, WAD, neutronSupplyWad)
-  }, [reserveWad, basePriceWad, neutronSupplyWad])
+    return mulDiv(protonPriceInBase, basePriceWad, WAD)
+  }, [basePriceWad, protonPriceInBase])
 
   const baseSymbolText =
     typeof baseSymbol === "string" && baseSymbol.length > 0
@@ -198,11 +153,6 @@ export function useReactorPricing({
     typeof neutronSymbol === "string" ? neutronSymbol : "NEUTRON"
   const protonSymbolText =
     typeof protonSymbol === "string" ? protonSymbol : "PROTON"
-  const neutronPriceInBase = neutronPriceInBaseDerived
-  const protonPriceInBase = protonPriceInBaseDerived
-  const neutronPricePegged = neutronPricePeggedDerived
-  const protonPricePegged = protonPricePeggedDerived
-  const reserveRatio = reserveRatioDerived
   const basePricePegged = basePriceWad
   const baseAssetDisplay = `${baseAssetName} (${baseSymbolText})`
   const peggedAssetDisplay = `${peggedAssetName} (${peggedSymbolText})`
@@ -215,13 +165,9 @@ export function useReactorPricing({
       ? `${formatWad(basePricePegged)} ${peggedSymbolText}/${baseSymbolText}`
       : "—"
   const reserveRatioText = (() => {
-    if (reserve === undefined) return "—"
-    if (reserve === 0n) return "0%"
-    if (neutronTotalSupply !== undefined && neutronTotalSupply === 0n) {
-      return "∞ (bootstrap)"
-    }
-    if (reserveRatio === undefined) {
-      return "—"
+    if (reserveRatio === undefined) return "—"
+    if (reserveRatio === maxUint256) {
+      return neutronTotalSupply === 0n ? "∞ (bootstrap)" : "∞"
     }
     return formatPercentFromWad(reserveRatio)
   })()

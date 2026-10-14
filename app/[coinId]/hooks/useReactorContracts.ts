@@ -137,13 +137,34 @@ export function useReactorContracts({
     functionName: "CRITICAL_RESERVE_RATIO",
   })
 
-  const { data: onChainBasePriceWad } = useReadContract({
+  const { data: onChainBasePriceWad, refetch: refetchBasePrice } = useReadContract({
     address: reactorAddress as `0x${string}`,
     abi: StableCoinReactorABI,
     functionName: "getBasePriceInPeggedAsset",
     query: {
       enabled: !!reactorAddress,
     },
+  })
+
+  const { data: onChainReserveRatioWad, refetch: refetchReserveRatio } = useReadContract({
+    address: reactorAddress as `0x${string}`,
+    abi: StableCoinReactorABI,
+    functionName: "reserveRatioPeggedAsset",
+    query: { enabled: !!reactorAddress },
+  })
+
+  const { data: onChainNeutronPriceInBaseWad, refetch: refetchNeutronPrice } = useReadContract({
+    address: reactorAddress as `0x${string}`,
+    abi: StableCoinReactorABI,
+    functionName: "neutronPriceInBase",
+    query: { enabled: !!reactorAddress },
+  })
+
+  const { data: onChainProtonPriceInBaseWad, refetch: refetchProtonPrice } = useReadContract({
+    address: reactorAddress as `0x${string}`,
+    abi: StableCoinReactorABI,
+    functionName: "protonPriceInBase",
+    query: { enabled: !!reactorAddress },
   })
 
   const { data: neutronTotalSupply, refetch: refetchNeutronTotalSupply } =
@@ -287,6 +308,13 @@ export function useReactorContracts({
     refetchReserve,
     criticalReserveRatio,
     onChainBasePriceWad,
+    refetchBasePrice,
+    onChainReserveRatioWad,
+    refetchReserveRatio,
+    onChainNeutronPriceInBaseWad,
+    refetchNeutronPrice,
+    onChainProtonPriceInBaseWad,
+    refetchProtonPrice,
     neutronTotalSupply,
     refetchNeutronTotalSupply,
     protonTotalSupply,
