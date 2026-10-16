@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageHeader } from "@/components/PageHeader"
 import { TokenGlyph } from "@/components/home/TokenGlyph"
-import { StableCoinFactoryABI } from "@/utils/abi/StableCoinFactory"
+import { FactoryABI } from "@/utils/abi/Factory"
 import { StableCoinReactorABI, ERC20ABI } from "@/utils/abi/StableCoin"
 import { StableCoinFactories } from "@/utils/addresses"
 import { GLUON_NETWORKS } from "@/utils/networks"
@@ -166,8 +166,9 @@ export default function ExplorerPage() {
     refetch: refetchReactors,
   } = useReadContract({
     address: factoryAddress,
-    abi: StableCoinFactoryABI,
+    abi: FactoryABI,
     functionName: 'getAllDeployedReactors',
+    query: { enabled: !!factoryAddress },
   })
 
   // Get reactor count for UI
@@ -176,8 +177,9 @@ export default function ExplorerPage() {
     refetch: refetchCount,
   } = useReadContract({
     address: factoryAddress,
-    abi: StableCoinFactoryABI,
+    abi: FactoryABI,
     functionName: 'getDeployedReactorsCount',
+    query: { enabled: !!factoryAddress },
   })
 
   // Filter reactors by search term (basic filtering for addresses)
@@ -191,9 +193,11 @@ export default function ExplorerPage() {
       <div className="container-page flex min-h-[calc(100vh-12rem)] items-center justify-center py-16">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center">
           <AlertTriangle aria-hidden="true" className="mx-auto size-8 text-warning" />
-          <h1 className="mt-4 text-lg font-semibold text-foreground">Unsupported network</h1>
+          <h1 className="mt-4 text-lg font-semibold text-foreground">{currentNetwork ? "No deployment configured" : "Unsupported network"}</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Chain ID {chainId} is not supported. Switch your wallet to one of these networks:
+            {currentNetwork
+              ? `A Gluon factory has not yet been configured for ${currentNetwork.displayName}.`
+              : `Chain ID ${chainId} is not supported. Switch your wallet to one of these networks:`}
           </p>
           <ul className="mt-5 divide-y divide-border rounded-xl border border-border bg-background text-left text-sm">
             {GLUON_NETWORKS.map(({ chain, displayName }) => (
