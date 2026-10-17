@@ -91,15 +91,17 @@ describe("contract-simulated transmutation quotes", () => {
   it.each([
     ["PROTON_TO_NEUTRON", "transmuteProtonToNeutron", "0.9 N"],
     ["NEUTRON_TO_PROTON", "transmuteNeutronToProton", "0.9 P"],
-  ] as const)("%s shows net output and simulates the exact wallet transaction", async (route, functionName, expected) => {
+  ] as const)("%s shows net output and simulates the input with no minimum", async (route, functionName, expected) => {
     const view = setup(input(route))
     await waitFor(() => expect(view.result.current.toInputValue).toBe(expected))
+    expect(view.result.current.transmutationOutput).toBe(9n * WAD / 10n)
+    expect(view.result.current.minimumOutputText).toContain("Minimum received: 0.9")
     const call = view.request.mock.calls.find(([request]) => request.method === "eth_call")![0]
     const tx = call.params![0] as Call
     expect(tx.from.toLowerCase()).toBe(wallet)
     expect(tx.to.toLowerCase()).toBe(reactor)
     expect(decodeFunctionData({ abi: StableCoinReactorABI, data: tx.data })).toEqual({
-      functionName, args: [WAD, recipient],
+      functionName, args: [WAD, 0n, recipient],
     })
   })
 
@@ -113,7 +115,7 @@ describe("contract-simulated transmutation quotes", () => {
     const view = setup(props, (call) => encodedResult(call, 9n))
     await waitFor(() => expect(view.result.current.toInputValue).toBe("9 N"))
     const call = view.request.mock.calls.find(([request]) => request.method === "eth_call")![0]
-    expect(decodeFunctionData({ abi: StableCoinReactorABI, data: (call.params![0] as Call).data }).args).toEqual([1250000n, recipient])
+    expect(decodeFunctionData({ abi: StableCoinReactorABI, data: (call.params![0] as Call).data }).args).toEqual([1250000n, 0n, recipient])
   })
 
   it.each([
@@ -184,6 +186,8 @@ describe("contract-simulated transmutation quotes", () => {
     await waitFor(() => expect(view.result.current.toInputValue).toBe("0.9 P"))
     view.rerender({ ...input(), ...change })
     expect(view.result.current.toInputValue).toBe("")
+    expect(view.result.current.transmutationOutput).toBeUndefined()
+    expect(view.result.current.minimumOutputText).toBe("")
     await waitFor(() => expect(complete).toBeDefined())
     await act(async () => { complete!() })
     await waitFor(() => expect(view.result.current.toInputValue).toBe(change.route ? "0.8 N" : "0.8 P"))

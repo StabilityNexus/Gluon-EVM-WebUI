@@ -481,3 +481,15 @@ Configure factory addresses only after deploying and verifying this interface;
 the older Sepolia factory recorded in Deployments.md is incompatible with it.
 Dev transfers and receiver changes can be made through contract calls; this change
 does not add an administration UI.
+
+### Transmutation minimum outputs
+
+Beta transmutations submit the current simulated net output as the on-chain minimum,
+using raw token units without rounding the displayed estimate. The minimum is shown
+beside the conversion form. Lower output reverts; equal or higher output can proceed.
+An unavailable, pending, failed or zero quote cannot be submitted. Simulations use a
+zero minimum to obtain the quote. Fission and fusion are unchanged.
+
+This requires reactors with the three-argument transmutation functions; it does not
+update existing deployments. Configure a factory only after deploying and verifying
+the matching contracts.
