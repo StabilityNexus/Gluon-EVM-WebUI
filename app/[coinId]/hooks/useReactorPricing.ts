@@ -25,6 +25,7 @@ type ReactorPricingInput = Pick<
   | "peggedAssetSymbolContract"
   | "fissionFee"
   | "fusionFee"
+  | "devFee"
   | "reserve"
   | "criticalReserveRatio"
   | "onChainBasePriceWad"
@@ -52,6 +53,7 @@ export function useReactorPricing({
   peggedAssetSymbolContract,
   fissionFee,
   fusionFee,
+  devFee,
   reserve,
   criticalReserveRatio,
   onChainBasePriceWad,
@@ -73,17 +75,17 @@ export function useReactorPricing({
   }, [amount, baseDecimalsNumber])
 
   // Native mode treats the entered amount as the native amount the user
-  // wants to receive. Calculate the smallest gross Reactor fusion amount
+  // wants to receive. Calculate a gross Reactor fusion amount
   // whose post-fee wrapped-native output reaches that amount.
   //
   // Existing ERC-20 fusion semantics remain unchanged.
   const fusionGrossBaseRaw = useMemo(() => {
     if (route !== "FUSION" || !useNativeBase) return null
     if (!baseAmountRaw || baseAmountRaw <= 0n) return null
-    if (fusionFee === undefined) return null
+    if (fusionFee === undefined || devFee === undefined) return null
 
-    return grossFusionAmountForNet(baseAmountRaw, fusionFee)
-  }, [route, useNativeBase, baseAmountRaw, fusionFee])
+    return grossFusionAmountForNet(baseAmountRaw, fusionFee, devFee)
+  }, [route, useNativeBase, baseAmountRaw, fusionFee, devFee])
 
   const reserveWad = useMemo(
     () => scaleToWad(reserve, baseDecimalsNumber),

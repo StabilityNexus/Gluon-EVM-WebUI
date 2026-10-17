@@ -70,7 +70,7 @@ The deployed Gluon-EVM contracts remain the source of truth.
 - **Fusion** — burn Proton and Neutron and withdraw reserve assets
 - **Transmutation** — convert Proton to Neutron or Neutron to Proton
 - **Oracle preflight** — validate oracle configuration before reactor creation
-- **Reactor information** — display reserve, price, fee, oracle, treasury, and token information
+- **Reactor information** — display reserve, price, fee, oracle, dev authority, dev fee receiver, and token information
 - **Light and dark themes**
 - **Responsive interface**
 - **Automated quality checks** — TypeScript, ESLint, Vitest, accessibility, coverage, build, security, and performance checks
@@ -465,3 +465,19 @@ See [MAINTAINERS.md](MAINTAINERS.md).
 ## License
 
 See [License.md](License.md).
+
+### Separate Dev Fees
+
+New reactors use separate constructor-set `dev`, `devFeeReceiver` and `devFee`
+settings. Creation initializes both addresses from the Initial Dev and Fee Receiver
+field, defaulting to `0x86B8f920835015c0F1b697dBe0B8b150a986eCE5`.
+The WebUI passes a fixed 0.1% dev fee (`1e15` WAD); zero beta coefficients remain allowed.
+Protocol fission, fusion and beta fees stay in the reserve. The separate dev fee is
+paid in the reserve asset to the current dev fee receiver. Fission and fusion
+breakdowns show both fees; beta previews continue to use contract simulation.
+
+The factory and reactor ABIs are generated from the matching contract build.
+Configure factory addresses only after deploying and verifying this interface;
+the older Sepolia factory recorded in Deployments.md is incompatible with it.
+Dev transfers and receiver changes can be made through contract calls; this change
+does not add an administration UI.

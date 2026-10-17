@@ -285,3 +285,10 @@ GitHub Pages
 ```
 
 No separately deployed WebUI backend is required.
+
+## Separate dev fee interface
+
+The deployment above predates separate dev fees and is not compatible with the new
+18-argument factory interface. It remains a historical test deployment. Its address
+is not configured for reactor creation in this version. A matching factory must be
+deployed and its receipt and runtime bytecode verified before configuring it.

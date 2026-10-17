@@ -117,8 +117,12 @@ describe("reactor creation with immutable beta settings", () => {
     const deployment = mocks.writeContractAsync.mock.calls[1][0]
     expect(deployment.abi).toBe(FactoryABI)
     expect(deployment.functionName).toBe("deployReactor")
-    expect(deployment.args).toHaveLength(17)
-    expect(deployment.args.slice(13)).toEqual([
+    expect(deployment.args.slice(9, 11)).toEqual([
+      "0x86B8f920835015c0F1b697dBe0B8b150a986eCE5",
+      1_000_000_000_000_000n,
+    ])
+    expect(deployment.args).toHaveLength(18)
+    expect(deployment.args.slice(14)).toEqual([
       100000n, 12345678901234567n, 500000000000000000n, 999999999999999999n,
     ])
   })
@@ -128,7 +132,7 @@ describe("reactor creation with immutable beta settings", () => {
     const user = await fillRequiredFields()
     await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
     await waitFor(() => expect(mocks.writeContractAsync).toHaveBeenCalledTimes(2))
-    expect(mocks.writeContractAsync.mock.calls[1][0].args.slice(14)).toEqual([0n, 0n, 10n ** 18n])
+    expect(mocks.writeContractAsync.mock.calls[1][0].args.slice(15)).toEqual([0n, 0n, 10n ** 18n])
   })
 
   it("disables deployment when no current factory is configured", () => {
@@ -136,6 +140,40 @@ describe("reactor creation with immutable beta settings", () => {
     render(<CreatePage />)
     expect(screen.getByRole("status")).toHaveTextContent("Reactor deployment is not yet available")
     expect(screen.getByRole("button", { name: "Deploy Reactor" })).toBeDisabled()
+    expect(mocks.writeContractAsync).not.toHaveBeenCalled()
+  })
+
+  it("passes the chosen initial dev and the fixed dev fee", async () => {
+    render(<CreatePage />)
+    const user = await fillRequiredFields()
+    const dev = screen.getByLabelText("Initial Dev and Fee Receiver")
+    await user.clear(dev)
+    await user.type(dev, "0x0000000000000000000000000000000000000005")
+    await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
+    await waitFor(() => expect(mocks.writeContractAsync).toHaveBeenCalledTimes(2))
+    expect(mocks.writeContractAsync.mock.calls[1][0].args.slice(9, 11)).toEqual([
+      "0x0000000000000000000000000000000000000005",
+      1_000_000_000_000_000n,
+    ])
+  })
+
+  it("rejects a zero dev before asking for approval", async () => {
+    render(<CreatePage />)
+    const user = await fillRequiredFields()
+    fireEvent.change(screen.getByLabelText("Initial Dev and Fee Receiver"), {
+      target: { value: "0x0000000000000000000000000000000000000000" },
+    })
+    await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
+    expect(mocks.toastError).toHaveBeenCalledWith("Dev must be a valid nonzero address")
+    expect(mocks.writeContractAsync).not.toHaveBeenCalled()
+  })
+
+  it("rejects a protocol fee that reaches 100% with the dev fee", async () => {
+    render(<CreatePage />)
+    const user = await fillRequiredFields()
+    fireEvent.change(screen.getByLabelText("Fission Fee (%)"), { target: { value: "99.9" } })
+    await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
+    expect(mocks.toastError).toHaveBeenCalledWith("Each fission or fusion fee plus the 0.1% dev fee must be below 100%")
     expect(mocks.writeContractAsync).not.toHaveBeenCalled()
   })
 
@@ -172,7 +210,7 @@ describe("reactor creation with immutable beta settings", () => {
     await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
     await waitFor(() => expect(mocks.writeContractAsync).toHaveBeenCalledTimes(2))
     expect(mocks.writeContractAsync.mock.calls[0][0].args).toEqual([mocks.factoryAddress, 1n])
-    expect(mocks.writeContractAsync.mock.calls[1][0].args[13]).toBe(1n)
+    expect(mocks.writeContractAsync.mock.calls[1][0].args[14]).toBe(1n)
   })
 
   it("rejects a zero initial reserve before approval or deployment", async () => {

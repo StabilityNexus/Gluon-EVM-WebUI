@@ -10,7 +10,9 @@ type ReactorParametersInput = Pick<
   | "oracleAddress"
   | "baseToken"
   | "baseDecimalsNumber"
-  | "treasury"
+  | "devFeeReceiver"
+  | "dev"
+  | "devFee"
   | "reserve"
   | "neutronTotalSupply"
   | "protonTotalSupply"
@@ -39,7 +41,9 @@ export function useReactorParameters({
   oracleAddress,
   baseToken,
   baseDecimalsNumber,
-  treasury,
+  devFeeReceiver,
+  dev,
+  devFee,
   reserve,
   neutronTotalSupply,
   protonTotalSupply,
@@ -69,7 +73,7 @@ export function useReactorParameters({
         : `${vaultName.trim()} Reactor`
       : "StableCoin Reactor"
 
-  const treasuryAddress = typeof treasury === "string" ? treasury : undefined
+  const devFeeReceiverAddress = typeof devFeeReceiver === "string" ? devFeeReceiver : undefined
   const oracleAddressText =
     typeof oracleAddress === "string" ? oracleAddress : undefined
   const baseTokenAddress = typeof baseToken === "string" ? baseToken : undefined
@@ -135,7 +139,9 @@ export function useReactorParameters({
           value: reactorAddress ?? "—",
           monospace: true,
         },
-        { label: "Treasury", value: treasuryAddress ?? "—", monospace: true },
+        { label: "Dev", value: typeof dev === "string" ? dev : "—", monospace: true },
+        { label: "Dev Fee Receiver", value: devFeeReceiverAddress ?? "—", monospace: true },
+        { label: "Dev Fee", value: devFee === undefined ? "—" : `${formatWad(devFee * 100n)}%` },
         { label: "Oracle", value: oracleAddressText ?? "—", monospace: true },
         {
           label: "Base Token",
@@ -180,7 +186,9 @@ export function useReactorParameters({
     return sections
   }, [
     reactorAddress,
-    treasuryAddress,
+    devFeeReceiverAddress,
+    dev,
+    devFee,
     oracleAddressText,
     baseTokenAddress,
     reserveBalanceText,

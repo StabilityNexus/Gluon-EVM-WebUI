@@ -43,6 +43,7 @@ type ReactorTransactionsInput = Pick<
   | "refetchProtonToken"
   | "refetchFissionFee"
   | "fusionFee"
+  | "devFee"
   | "refetchFusionFee"
   | "refetchReserve"
   | "refetchBasePrice"
@@ -81,6 +82,7 @@ export function useReactorTransactions({
   refetchProtonToken,
   refetchFissionFee,
   fusionFee,
+  devFee,
   refetchFusionFee,
   refetchReserve,
   refetchBasePrice,
@@ -530,7 +532,8 @@ export function useReactorTransactions({
               !address ||
               !publicClient ||
               fusionGrossBaseRaw === null ||
-              fusionFee === undefined
+              fusionFee === undefined ||
+              devFee === undefined
             ) {
               toast.error("Native fusion is not available")
               return
@@ -540,7 +543,8 @@ export function useReactorTransactions({
             const flowChainId = chainId
 
             const fee = mulDiv(fusionGrossBaseRaw, fusionFee, WAD)
-            const nativeOut = fusionGrossBaseRaw - fee
+            const devFeeAmount = mulDiv(fusionGrossBaseRaw, devFee, WAD)
+            const nativeOut = fusionGrossBaseRaw - fee - devFeeAmount
 
             if (nativeOut < parsedFusionAmount) {
               toast.error("Unable to calculate native fusion output")

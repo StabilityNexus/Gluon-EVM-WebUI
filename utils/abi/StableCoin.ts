@@ -48,9 +48,14 @@ export const StableCoinReactorABI = [
         "internalType": "string"
       },
       {
-        "name": "treasuryParam",
+        "name": "devParam",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "devFeeParam",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
         "name": "fissionFeeParam",
@@ -243,19 +248,6 @@ export const StableCoinReactorABI = [
   },
   {
     "type": "function",
-    "name": "TREASURY",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "UPPER_RESERVE_RATIO",
     "inputs": [],
     "outputs": [
@@ -279,6 +271,13 @@ export const StableCoinReactorABI = [
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "acceptDev",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -348,6 +347,45 @@ export const StableCoinReactorABI = [
         "name": "",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "dev",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "devFee",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "devFeeReceiver",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -494,6 +532,32 @@ export const StableCoinReactorABI = [
   },
   {
     "type": "function",
+    "name": "pendingDev",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "proposeDev",
+    "inputs": [
+      {
+        "name": "newDev",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "protonPriceInBase",
     "inputs": [],
     "outputs": [
@@ -556,6 +620,19 @@ export const StableCoinReactorABI = [
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setDevFeeReceiver",
+    "inputs": [
+      {
+        "name": "newReceiver",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -630,6 +707,82 @@ export const StableCoinReactorABI = [
   },
   {
     "type": "event",
+    "name": "DevFeePaid",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DevFeeReceiverChanged",
+    "inputs": [
+      {
+        "name": "previousReceiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newReceiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DevTransferProposed",
+    "inputs": [
+      {
+        "name": "previousDev",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "proposedDev",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DevTransferred",
+    "inputs": [
+      {
+        "name": "previousDev",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newDev",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Fission",
     "inputs": [
       {
@@ -663,7 +816,7 @@ export const StableCoinReactorABI = [
         "internalType": "uint256"
       },
       {
-        "name": "feeToTreasury",
+        "name": "protocolFee",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -706,7 +859,7 @@ export const StableCoinReactorABI = [
         "internalType": "uint256"
       },
       {
-        "name": "feeToTreasury",
+        "name": "protocolFee",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -925,6 +1078,21 @@ export const StableCoinReactorABI = [
   },
   {
     "type": "error",
+    "name": "InvalidDev",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidDevFee",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidDevFeeReceiver",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidFissionFee",
     "inputs": []
   },
@@ -950,12 +1118,17 @@ export const StableCoinReactorABI = [
   },
   {
     "type": "error",
-    "name": "InvalidTreasury",
+    "name": "OnlyDev",
     "inputs": []
   },
   {
     "type": "error",
     "name": "OnlyFactory",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyPendingDev",
     "inputs": []
   },
   {

@@ -1,4 +1,3 @@
-// ABI generated from the current StableCoinFactory contract.
 export const FactoryABI = [
   {
     "type": "function",
@@ -50,9 +49,14 @@ export const FactoryABI = [
         "internalType": "string"
       },
       {
-        "name": "treasuryParam",
+        "name": "devParam",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "devFeeParam",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
         "name": "fissionFeeParam",
@@ -185,7 +189,7 @@ export const FactoryABI = [
         "internalType": "address"
       },
       {
-        "name": "treasury",
+        "name": "devFeeReceiver",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -261,6 +265,18 @@ export const FactoryABI = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "dev",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "devFee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -312,6 +328,16 @@ export const FactoryABI = [
   },
   {
     "type": "error",
+    "name": "InvalidDev",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidDevFee",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidFissionFee",
     "inputs": []
   },
@@ -328,11 +354,6 @@ export const FactoryABI = [
   {
     "type": "error",
     "name": "InvalidOracle",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidTreasury",
     "inputs": []
   },
   {

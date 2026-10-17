@@ -107,10 +107,22 @@ export function useReactorContracts({
     functionName: "PROTON_TOKEN",
   })
 
-  const { data: treasury } = useReadContract({
+  const { data: devFeeReceiver } = useReadContract({
     address: reactorAddress as `0x${string}`,
     abi: StableCoinReactorABI,
-    functionName: "TREASURY",
+    functionName: "devFeeReceiver",
+  })
+
+  const { data: dev } = useReadContract({
+    address: reactorAddress as `0x${string}`,
+    abi: StableCoinReactorABI,
+    functionName: "dev",
+  })
+
+  const { data: devFee } = useReadContract({
+    address: reactorAddress as `0x${string}`,
+    abi: StableCoinReactorABI,
+    functionName: "devFee",
   })
 
   const { data: fissionFee, refetch: refetchFissionFee } = useReadContract({
@@ -299,7 +311,9 @@ export function useReactorContracts({
     refetchNeutronToken,
     protonToken,
     refetchProtonToken,
-    treasury,
+    devFeeReceiver,
+    dev,
+    devFee,
     fissionFee,
     refetchFissionFee,
     fusionFee,
