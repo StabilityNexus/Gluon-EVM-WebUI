@@ -707,25 +707,6 @@ export const StableCoinReactorABI = [
   },
   {
     "type": "event",
-    "name": "DevFeePaid",
-    "inputs": [
-      {
-        "name": "receiver",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "DevFeeReceiverChanged",
     "inputs": [
       {
@@ -820,6 +801,12 @@ export const StableCoinReactorABI = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "devFeeAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -860,6 +847,12 @@ export const StableCoinReactorABI = [
       },
       {
         "name": "protocolFee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "devFeeAmount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -937,6 +930,12 @@ export const StableCoinReactorABI = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "devFeeAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -983,6 +982,12 @@ export const StableCoinReactorABI = [
       },
       {
         "name": "newDecayedVolumeMinusBase",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "devFeeAmount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
