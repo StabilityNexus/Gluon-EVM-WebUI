@@ -7,7 +7,7 @@ export interface ReactorData {
   base: string
   neutron: string
   proton: string
-  treasury: string
+  devFeeReceiver: string
   reserve: bigint
   neutronSupply: bigint
   protonSupply: bigint
@@ -60,10 +60,10 @@ export function useReactorInfo(reactorAddress: string) {
     },
   })
 
-  const { data: treasury } = useReadContract({
+  const { data: devFeeReceiver } = useReadContract({
     address: reactorAddress as `0x${string}`,
     abi: StableCoinReactorABI,
-    functionName: "TREASURY",
+    functionName: "devFeeReceiver",
     query: {
       enabled: enabledQuery,
     },
@@ -181,7 +181,7 @@ export function useReactorInfo(reactorAddress: string) {
       base: base,
       neutron: neutron,
       proton: proton,
-      treasury: treasury || "",
+      devFeeReceiver: devFeeReceiver || "",
       reserve: reserve,
       neutronSupply: neutronSupply,
       protonSupply: protonSupply,

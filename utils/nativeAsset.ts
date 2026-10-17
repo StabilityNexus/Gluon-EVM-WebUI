@@ -29,21 +29,18 @@ export const resolveNativeAssetConfig = (
 }
 
 /**
- * Returns the smallest gross fusion amount `m` whose Solidity fee calculation
- * leaves at least `netBaseAmount` for the recipient.
- *
- * Reactor:
- *   fee = floor(m * fusionFeeWad / WAD)
- *   net = m - fee
+ * Returns a gross fusion amount that covers the requested net output after
+ * both independently rounded fees. With one fee this is the smallest amount.
  */
 export const grossFusionAmountForNet = (
   netBaseAmount: bigint,
   fusionFeeWad: bigint,
+  devFeeWad: bigint = 0n,
 ): bigint | null => {
   if (netBaseAmount <= 0n) return null
-  if (fusionFeeWad < 0n || fusionFeeWad >= WAD) return null
+  if (fusionFeeWad < 0n || devFeeWad < 0n || fusionFeeWad + devFeeWad >= WAD) return null
 
-  const denominator = WAD - fusionFeeWad
+  const denominator = WAD - fusionFeeWad - devFeeWad
 
   return ((netBaseAmount - 1n) * WAD) / denominator + 1n
 }

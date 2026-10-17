@@ -24,7 +24,7 @@ function input(route: "PROTON_TO_NEUTRON" | "NEUTRON_TO_PROTON" = "NEUTRON_TO_PR
     amount: "1", setAmount: vi.fn(), useNativeBase: false,
     baseToken: reactor, neutronToken: wallet, protonToken: recipient,
     baseDecimalsNumber: 18, neutronDecimalsNumber: 18, protonDecimalsNumber: 18,
-    nativeAsset: undefined, nativeBalance: undefined, fissionFee: 0n, fusionFee: 0n,
+    nativeAsset: undefined, nativeBalance: undefined, fissionFee: 0n, fusionFee: 0n, devFee: 0n,
     reserve: 200n * WAD, neutronTotalSupply: 100n * WAD, protonTotalSupply: 100n * WAD,
     baseBalance: 0n, neutronBalance: 60n * WAD, protonBalance: 30n * WAD,
     baseAmountRaw: WAD, fusionGrossBaseRaw: null, reserveWad: 200n * WAD,
@@ -70,6 +70,24 @@ afterEach(() => {
 })
 
 describe("contract-simulated transmutation quotes", () => {
+  it("deducts both fees in the fission breakdown", () => {
+    const props = input()
+    Object.assign(props, { route: "FISSION", fromToken: "BASE", toToken: "BUNDLE", fissionFee: WAD / 50n, devFee: WAD / 1000n })
+    const view = setup(props)
+    const rows = view.result.current.breakdownPopover!.rows
+    expect(rows.find((row) => row.label === "Fee retained")?.value).toBe("0.02 B")
+    expect(rows.find((row) => row.label === "Dev fee")?.value).toBe("0.001 B")
+    expect(rows.find((row) => row.label === "Net base")?.value).toBe("0.979 B")
+  })
+
+  it("deducts both fees in the fusion output", () => {
+    const props = input()
+    Object.assign(props, { route: "FUSION", fromToken: "BUNDLE", toToken: "BASE", fusionFee: WAD / 50n, devFee: WAD / 1000n })
+    const view = setup(props)
+    expect(view.result.current.toInputValue).toBe("1")
+    expect(view.result.current.breakdownPopover!.rows.find((row) => row.label === "Net received")?.value).toBe("0.979 B")
+    expect(view.result.current.breakdownPopover!.rows.find((row) => row.label === "Dev fee")?.value).toBe("0.001 B")
+  })
   it.each([
     ["PROTON_TO_NEUTRON", "transmuteProtonToNeutron", "0.9 N"],
     ["NEUTRON_TO_PROTON", "transmuteNeutronToProton", "0.9 P"],

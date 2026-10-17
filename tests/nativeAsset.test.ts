@@ -20,6 +20,19 @@ import {
 const WAD = 10n ** 18n
 
 describe("native asset integration", () => {
+  it("covers native redemption after independently rounded fusion and dev fees", () => {
+    for (const fee of [0n, WAD / 100n, WAD / 2n, WAD - 2n]) {
+      for (const devFee of [0n, 1n, WAD / 1000n]) {
+        if (fee + devFee >= WAD) continue
+        for (let wanted = 1n; wanted <= 100n; wanted += 1n) {
+          const gross = grossFusionAmountForNet(wanted, fee, devFee)!
+          const actual = gross - gross * fee / WAD - gross * devFee / WAD
+          expect(actual).toBeGreaterThanOrEqual(wanted)
+        }
+      }
+    }
+    expect(grossFusionAmountForNet(1n, WAD / 2n, WAD / 2n)).toBeNull()
+  })
   it("finds Gluon networks by chain id", () => {
     expect(getGluonNetwork(11155111)?.displayName).toBe(
       "Ethereum Sepolia",

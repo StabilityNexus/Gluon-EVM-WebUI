@@ -38,6 +38,7 @@ type InteractionQuoteInput = Pick<
   | "protonToken"
   | "fissionFee"
   | "fusionFee"
+  | "devFee"
   | "reserve"
   | "neutronTotalSupply"
   | "protonTotalSupply"
@@ -79,6 +80,7 @@ export function useInteractionQuote({
   protonToken,
   fissionFee,
   fusionFee,
+  devFee,
   reserve,
   neutronTotalSupply,
   protonTotalSupply,
@@ -275,16 +277,18 @@ export function useInteractionQuote({
   const fissionBreakdown = useMemo(() => {
     if (!isFissionRoute) return null
     if (!baseAmountRaw || baseAmountRaw <= 0n) return null
-    if (fissionFee === undefined || reserve === undefined) {
+    if (fissionFee === undefined || devFee === undefined || reserve === undefined) {
       return null
     }
 
     const fee = mulDiv(baseAmountRaw, fissionFee, WAD)
-    const netBase = baseAmountRaw - fee
+    const devFeeAmount = mulDiv(baseAmountRaw, devFee, WAD)
+    const netBase = baseAmountRaw - fee - devFeeAmount
     if (netBase <= 0n) {
       return {
         baseIn: baseAmountRaw,
         fee,
+        devFeeAmount,
         netBase,
         neutronOut: 0n,
         protonOut: 0n,
@@ -299,6 +303,7 @@ export function useInteractionQuote({
       return {
         baseIn: baseAmountRaw,
         fee,
+        devFeeAmount,
         netBase,
         neutronOut: 0n,
         protonOut: 0n,
@@ -317,6 +322,7 @@ export function useInteractionQuote({
         return {
           baseIn: baseAmountRaw,
           fee,
+          devFeeAmount,
           netBase,
           neutronOut: 0n,
           protonOut: 0n,
@@ -328,6 +334,7 @@ export function useInteractionQuote({
         return {
           baseIn: baseAmountRaw,
           fee,
+          devFeeAmount,
           netBase,
           neutronOut: 0n,
           protonOut: 0n,
@@ -339,6 +346,7 @@ export function useInteractionQuote({
         return {
           baseIn: baseAmountRaw,
           fee,
+          devFeeAmount,
           netBase,
           neutronOut: 0n,
           protonOut: 0n,
@@ -350,6 +358,7 @@ export function useInteractionQuote({
         return {
           baseIn: baseAmountRaw,
           fee,
+          devFeeAmount,
           netBase,
           neutronOut: 0n,
           protonOut: 0n,
@@ -361,6 +370,7 @@ export function useInteractionQuote({
         return {
           baseIn: baseAmountRaw,
           fee,
+          devFeeAmount,
           netBase,
           neutronOut: 0n,
           protonOut: 0n,
@@ -377,6 +387,7 @@ export function useInteractionQuote({
       return {
         baseIn: baseAmountRaw,
         fee,
+        devFeeAmount,
         netBase,
         neutronOut,
         protonOut,
@@ -406,6 +417,7 @@ export function useInteractionQuote({
     return {
       baseIn: baseAmountRaw,
       fee,
+      devFeeAmount,
       netBase,
       neutronOut,
       protonOut,
@@ -414,6 +426,7 @@ export function useInteractionQuote({
     isFissionRoute,
     baseAmountRaw,
     fissionFee,
+    devFee,
     reserve,
     baseDecimalsNumber,
     neutronDecimalsNumber,
@@ -429,14 +442,15 @@ export function useInteractionQuote({
   const displayFusionBreakdown = useMemo(() => {
     if (!isFusionRoute) return null
     if (!baseAmountRaw || baseAmountRaw <= 0n) return null
-    if (fusionFee === undefined) return null
+    if (fusionFee === undefined || devFee === undefined) return null
 
     const grossBase = useNativeBase ? fusionGrossBaseRaw : baseAmountRaw
 
     if (!grossBase || grossBase <= 0n) return null
 
     const fee = mulDiv(grossBase, fusionFee, WAD)
-    const netBase = grossBase - fee
+    const devFeeAmount = mulDiv(grossBase, devFee, WAD)
+    const netBase = grossBase - fee - devFeeAmount
 
     // Burn amounts are displayed from the current Reactor state. The Reactor
     // remains authoritative and computes the exact burns at execution time.
@@ -474,6 +488,7 @@ export function useInteractionQuote({
       requestedBaseOut: baseAmountRaw,
       grossBase,
       fee,
+      devFeeAmount,
       netBase,
       neutronBurn,
       protonBurn,
@@ -483,6 +498,7 @@ export function useInteractionQuote({
     baseAmountRaw,
     fusionGrossBaseRaw,
     fusionFee,
+    devFee,
     useNativeBase,
     reserve,
     neutronTotalSupply,
@@ -554,6 +570,10 @@ export function useInteractionQuote({
             ),
           },
           {
+            label: "Dev fee",
+            value: formatTokenValue(fissionBreakdown.devFeeAmount, baseDecimalsNumber, baseSymbolText),
+          },
+          {
             label: "Net base",
             value: formatTokenValue(
               fissionBreakdown.netBase,
@@ -612,12 +632,20 @@ export function useInteractionQuote({
             ),
           },
           {
-            label: "Fee withheld",
+            label: "Fee retained",
             value: formatTokenValue(
               displayFusionBreakdown.fee,
               baseDecimalsNumber,
               activeBaseSymbol,
             ),
+          },
+          {
+            label: "Dev fee",
+            value: formatTokenValue(displayFusionBreakdown.devFeeAmount, baseDecimalsNumber, activeBaseSymbol),
+          },
+          {
+            label: "Net received",
+            value: formatTokenValue(displayFusionBreakdown.netBase, baseDecimalsNumber, activeBaseSymbol),
           },
           {
             label: `Burn ${neutronSymbolText}`,

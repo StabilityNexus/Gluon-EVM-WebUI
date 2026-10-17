@@ -27,7 +27,7 @@ export function ReactorParameters({
                 Reactor Parameters
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Live configuration, oracle wiring, and treasury context for this
+                Live configuration, oracle wiring, and dev fee context for this
                 vault.
               </p>
             </CardHeader>

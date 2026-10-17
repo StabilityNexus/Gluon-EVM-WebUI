@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   decimals: 18,
   allowance: 0n,
   fee: 10n ** 16n,
+  devFee: 0n as bigint | undefined,
   approving: false,
   receiptSuccess: false,
   refetch: vi.fn(),
@@ -58,7 +59,9 @@ vi.mock("wagmi", () => ({
       BASE_TOKEN: mocks.base,
       NEUTRON_TOKEN: mocks.neutron,
       PROTON_TOKEN: mocks.proton,
-      TREASURY: mocks.recipient,
+      dev: mocks.recipient,
+      devFeeReceiver: mocks.recipient,
+      devFee: mocks.devFee,
       baseAssetName: "Wrapped Ether",
       baseAssetSymbol: "WETH",
       peggedAssetName: "Dollar",
@@ -201,6 +204,7 @@ beforeEach(() => {
   mocks.decimals = 18
   mocks.allowance = 0n
   mocks.fee = 10n ** 16n
+  mocks.devFee = 0n
   mocks.approving = false
   mocks.receiptSuccess = false
   mocks.write.mockReset()
@@ -211,6 +215,20 @@ beforeEach(() => {
 })
 
 describe("reactor interaction", () => {
+  it("unwraps only the native amount left after both fees", async () => {
+    mocks.native = true
+    mocks.devFee = 10n ** 15n
+    renderPage()
+    chooseFrom("BUNDLE")
+    fireEvent.click(screen.getByRole("button", { name: "ETH (native)" }))
+    inputAmount()
+    fireEvent.click(screen.getByRole("button", { name: "Redeem ETH" }))
+    await waitFor(() => expect(mocks.success).toHaveBeenCalledWith("Neutron + proton redeemed for ETH"))
+    const gross = mocks.writeNative.mock.calls[0][0].args[0] as bigint
+    const actual = gross - gross * mocks.fee / 10n ** 18n - gross * mocks.devFee / 10n ** 18n
+    expect(actual).toBeGreaterThanOrEqual(10n ** 18n)
+    expect(mocks.writeNative.mock.calls[1][0]).toMatchObject({ functionName: "withdraw", args: [actual] })
+  })
   it("preserves the missing-address screen and query-address entry point", () => {
     const view = render(<InteractionClient coinId="c" />)
     expect(

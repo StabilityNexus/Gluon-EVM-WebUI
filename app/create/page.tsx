@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, useDeployContract, usePublicClient } from "wagmi"
-import { parseUnits } from "viem"
+import { isAddress, parseUnits, zeroAddress } from "viem"
+import { DEV_FEE_WAD, GLUON_DEV_ADDRESS } from "@/utils/devFee"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,7 +37,7 @@ interface ReactorConfig {
   protonSymbol: string
   baseToken: string
   oracleAddress: string
-  treasury: string
+  dev: string
   criticalReserveRatio: string
   initialReserve: string
   fissionFee: string
@@ -88,7 +89,7 @@ export default function CreatePage() {
     protonSymbol: "",
     baseToken: "",
     oracleAddress: "",
-    treasury: address || "",
+    dev: GLUON_DEV_ADDRESS,
     criticalReserveRatio: "120",
     initialReserve: "0.1",
     fissionFee: "0",
@@ -205,8 +206,6 @@ export default function CreatePage() {
   const isOracleReady =
     isOraclePreflightCurrent && oraclePreflight.status !== "blocked"
 
-  const [hasSetDefaultTreasury, setHasSetDefaultTreasury] = useState(false)
-
   useEffect(() => {
     latestChainIdRef.current = chainId
     preflightRequestRef.current += 1
@@ -223,13 +222,6 @@ export default function CreatePage() {
     }
   }, [chainId])
 
-  useEffect(() => {
-    if (isConnected && address && config.treasury === "" && !hasSetDefaultTreasury) {
-      setConfig((prev) => ({ ...prev, treasury: address }))
-      setHasSetDefaultTreasury(true)
-    }
-  }, [isConnected, address, config.treasury, hasSetDefaultTreasury])
-
   const isFormValid = () => {
     return config.vaultName &&
            config.baseAssetName &&
@@ -240,7 +232,7 @@ export default function CreatePage() {
            config.protonSymbol && 
            config.baseToken && 
            config.oracleAddress &&
-           config.treasury &&
+           config.dev &&
            config.criticalReserveRatio &&
            config.initialReserve &&
            config.fissionFee !== "" &&
@@ -452,9 +444,9 @@ export default function CreatePage() {
       return
     }
 
-    const treasuryAddress = config.treasury.trim()
-    if (!/^0x[0-9a-fA-F]{40}$/.test(treasuryAddress)) {
-      toast.error("Treasury address must be a 20-byte checksum address")
+    const devAddress = config.dev.trim()
+    if (!isAddress(devAddress) || devAddress === zeroAddress) {
+      toast.error("Dev must be a valid nonzero address")
       return
     }
 
@@ -509,6 +501,11 @@ export default function CreatePage() {
 
     const fissionFeeWad = parseUnits(config.fissionFee, 16)
     const fusionFeeWad = parseUnits(config.fusionFee, 16)
+
+    if (fissionFeeWad + DEV_FEE_WAD >= 10n ** 18n || fusionFeeWad + DEV_FEE_WAD >= 10n ** 18n) {
+      toast.error("Each fission or fusion fee plus the 0.1% dev fee must be below 100%")
+      return
+    }
 
     let betaParameters: ReturnType<typeof parseBetaParameters>
     try {
@@ -604,7 +601,8 @@ export default function CreatePage() {
         oracleAddress as `0x${string}`,
         protonName,
         protonSymbol,
-        treasuryAddress as `0x${string}`,
+        devAddress as `0x${string}`,
+        DEV_FEE_WAD,
         fissionFeeWad,
         fusionFeeWad,
         criticalReserveRatioWad,
@@ -642,7 +640,7 @@ export default function CreatePage() {
         <div className="w-full max-w-3xl mx-auto">
           <PageHeader
             title="Create a reactor"
-            description="Configure collateral, oracle wiring, token parameters, treasury, and reserve policy for a new Gluon reactor."
+            description="Configure collateral, oracle wiring, token parameters, dev, and reserve policy for a new Gluon reactor."
           />
 
           {!currentNetwork?.factoryAddress && (
@@ -901,7 +899,7 @@ export default function CreatePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-[13px] font-medium text-foreground/80">
+                    <Label htmlFor="fission-fee" className="text-[13px] font-medium text-foreground/80">
                       Fission Fee (%)
                     </Label>
                     <Input
@@ -909,6 +907,7 @@ export default function CreatePage() {
                       min="0"
                       max="99.9999"
                       step="0.01"
+                      id="fission-fee"
                       value={config.fissionFee}
                       onChange={(e) => updateConfig("fissionFee", e.target.value)}
                       className={inputClasses}
@@ -916,7 +915,7 @@ export default function CreatePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-[13px] font-medium text-foreground/80">
+                    <Label htmlFor="fusion-fee" className="text-[13px] font-medium text-foreground/80">
                       Fusion Fee (%)
                     </Label>
                     <Input
@@ -924,6 +923,7 @@ export default function CreatePage() {
                       min="0"
                       max="99.9999"
                       step="0.01"
+                      id="fusion-fee"
                       value={config.fusionFee}
                       onChange={(e) => updateConfig("fusionFee", e.target.value)}
                       className={inputClasses}
@@ -1031,15 +1031,19 @@ export default function CreatePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[13px] font-medium text-foreground/80">
-                    Treasury (Fee Recipient)
+                  <Label htmlFor="initial-dev" className="text-[13px] font-medium text-foreground/80">
+                    Initial Dev and Fee Receiver
                   </Label>
                   <Input
                     placeholder="0x..."
-                    value={config.treasury}
-                    onChange={(e) => updateConfig("treasury", e.target.value)}
+                    id="initial-dev"
+                    value={config.dev}
+                    onChange={(e) => updateConfig("dev", e.target.value)}
                     className={`${inputClasses} font-mono`}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    The separate dev fee is 0.1%. Fission, fusion and beta fees remain in the reserve.
+                  </p>
                 </div>
               </div>
 

@@ -34,6 +34,26 @@ The WebUI currently contains development/testnet configuration for:
 
 Factory addresses and network metadata should remain centralized in the WebUI configuration.
 
+## Current Sepolia Test Factory
+
+- **Deployment date:** 2026-10-16
+- **Network:** Ethereum Sepolia (`11155111`)
+- **Factory:** `0x69554023440D59259689B91ede108435a11308c0`
+- **Deployer:** `0x167F6b56DA92400f5e25d02CA0532Ddf2e25da63`
+- **Gluon-EVM source commit:** `6fd98b16ed1a03a5d8d8209552b6dc39a9f88c6d`
+- **Deployment transaction:** https://sepolia.etherscan.io/tx/0x83f1b2751d65794d964d56d0ee3534043fa3e8a2c5fd492f87857160cb0e0bcc
+- **Factory explorer:** https://sepolia.etherscan.io/address/0x69554023440D59259689B91ede108435a11308c0
+- **Verification:** Successful receipt; deployed runtime bytecode exactly matches the tested local build.
+- **Reactor count when verified:** `0`
+
+This factory supports deployment-time immutable beta settings. It was deployed
+from merged contract code and does not include the pending unsigned-volume changes
+in Gluon-EVM PR #56. It is a testnet deployment, not a production deployment.
+
+The OrbOracle and Chainlink records below describe earlier deployments using a
+different factory. Their reactors are not entries in this new factory's registry.
+WebUI reactor creation and transaction testing against this factory remain pending.
+
 ## Production Gluon-EVM Integration
 
 No production Gluon reactor or production coin deployment is currently registered by this WebUI
@@ -265,3 +285,10 @@ GitHub Pages
 ```
 
 No separately deployed WebUI backend is required.
+
+## Separate dev fee interface
+
+The deployment above predates separate dev fees and is not compatible with the new
+18-argument factory interface. It remains a historical test deployment. Its address
+is not configured for reactor creation in this version. A matching factory must be
+deployed and its receipt and runtime bytecode verified before configuring it.
