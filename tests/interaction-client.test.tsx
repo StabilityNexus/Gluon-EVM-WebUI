@@ -360,7 +360,7 @@ describe("reactor interaction", () => {
       view.rerender(<InteractionClient coinId={mocks.reactor} />)
       fireEvent.click(screen.getByRole("button", { name: label }))
       expect(mocks.write).not.toHaveBeenCalled()
-      expect(mocks.error).toHaveBeenLastCalledWith("Wait for an available output quote")
+      expect(mocks.error).toHaveBeenLastCalledWith("Output quote unavailable. Check the amount, balance and reactor status, then try again.")
     }
   })
 

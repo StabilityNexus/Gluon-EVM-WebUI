@@ -378,7 +378,7 @@ export function useReactorTransactions({
       (route === "PROTON_TO_NEUTRON" || route === "NEUTRON_TO_PROTON") &&
       minimumOutput <= 0n
     ) {
-      toast.error("Wait for an available output quote")
+      toast.error("Output quote unavailable. Check the amount, balance and reactor status, then try again.")
       return
     }
 
