@@ -13,13 +13,14 @@ export function useReactorInteraction(reactorAddress: string) {
   const form = useInteractionForm(context)
   const contracts = useReactorContracts({ ...context, ...form })
   const pricing = useReactorPricing({ ...form, ...contracts })
+  const quote = useInteractionQuote({ ...context, ...form, ...contracts, ...pricing })
   const transactions = useReactorTransactions({
     ...context,
     ...form,
     ...contracts,
     ...pricing,
+    ...quote,
   })
-  const quote = useInteractionQuote({ ...context, ...form, ...contracts, ...pricing })
   const parameters = useReactorParameters({
     ...context,
     ...contracts,
@@ -62,6 +63,7 @@ export function useReactorInteraction(reactorAddress: string) {
     setToToken: interaction.setToToken,
     breakdownPopover: interaction.breakdownPopover,
     toLabel: interaction.toLabel,
+    minimumOutputText: interaction.minimumOutputText,
     bundleLabel: interaction.bundleLabel,
     activeBaseSymbol: interaction.activeBaseSymbol,
     toInputType: interaction.toInputType,

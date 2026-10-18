@@ -255,7 +255,7 @@ export function useInteractionQuote({
     functionName: transmutationFunction,
     args:
       transmutationAmount !== null && isAddress(recipient)
-        ? [transmutationAmount, recipient]
+        ? [transmutationAmount, 0n, recipient]
         : undefined,
     account: address,
     chainId,
@@ -729,6 +729,15 @@ export function useInteractionQuote({
     protonSymbolText,
   ])
 
+  const outputDecimals =
+    route === "PROTON_TO_NEUTRON"
+      ? neutronDecimalsNumber
+      : protonDecimalsNumber
+  const minimumOutputText =
+    transmutationOutput !== undefined && transmutationOutput > 0n && outputDecimals !== undefined
+    ? `Minimum received: ${formatUnits(transmutationOutput, outputDecimals)} ${toLabel}. The transaction reverts if output falls below this amount.`
+    : ""
+
   const fromInputReadOnly = isFusionRoute
   const fromInputType = isFusionRoute ? "text" : "number"
   const fromInputValue = isFusionRoute ? fusionBundleSummary : amount
@@ -784,6 +793,8 @@ export function useInteractionQuote({
   ])
 
   return {
+    transmutationOutput,
+    minimumOutputText,
     toLabel,
     disabledTokens,
     fromBalanceDisplay,

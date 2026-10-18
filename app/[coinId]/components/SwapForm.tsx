@@ -25,6 +25,9 @@ export function SwapForm({ model }: SwapFormProps) {
       <CardContent className="space-y-6">
         <BaseAssetMode model={model} />
         <ConversionInputs model={model} />
+        {model.minimumOutputText && (
+          <p className="text-sm text-muted-foreground">{model.minimumOutputText}</p>
+        )}
 
         <div className="space-y-2">
           <label htmlFor="recipient-address" className="text-sm text-muted-foreground">

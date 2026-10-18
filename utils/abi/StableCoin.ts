@@ -644,6 +644,11 @@ export const StableCoinReactorABI = [
         "internalType": "uint256"
       },
       {
+        "name": "minProtonOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
         "name": "to",
         "type": "address",
         "internalType": "address"
@@ -669,6 +674,11 @@ export const StableCoinReactorABI = [
     "inputs": [
       {
         "name": "protonIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minNeutronOut",
         "type": "uint256",
         "internalType": "uint256"
       },

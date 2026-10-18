@@ -23,9 +23,11 @@ import type { InteractionContext } from "./interactionTypes"
 import type { InteractionForm } from "./useInteractionForm"
 import type { ReactorContracts } from "./useReactorContracts"
 import type { ReactorPricing } from "./useReactorPricing"
+import type { InteractionQuote } from "./useInteractionQuote"
 
 type ReactorTransactionsInput = Pick<
-  InteractionContext & InteractionForm & ReactorContracts & ReactorPricing,
+  InteractionContext & InteractionForm & ReactorContracts & ReactorPricing & InteractionQuote,
+  | "transmutationOutput"
   | "address"
   | "chainId"
   | "amount"
@@ -65,6 +67,7 @@ type ReactorTransactionsInput = Pick<
 >
 
 export function useReactorTransactions({
+  transmutationOutput,
   address,
   chainId,
   amount,
@@ -367,6 +370,15 @@ export function useReactorTransactions({
 
     if (!isAddress(recipient)) {
       toast.error("Enter a valid recipient address")
+      return
+    }
+
+    const minimumOutput = transmutationOutput ?? 0n
+    if (
+      (route === "PROTON_TO_NEUTRON" || route === "NEUTRON_TO_PROTON") &&
+      minimumOutput <= 0n
+    ) {
+      toast.error("Output quote unavailable. Check the amount, balance and reactor status, then try again.")
       return
     }
 
@@ -679,7 +691,9 @@ export function useReactorTransactions({
             address: reactorAddress as `0x${string}`,
             abi: StableCoinReactorABI,
             functionName: "transmuteProtonToNeutron",
-            args: [parsed, recipient as `0x${string}`],
+            account: address,
+            chainId,
+            args: [parsed, minimumOutput, recipient as `0x${string}`],
           })
           break
         }
@@ -699,7 +713,9 @@ export function useReactorTransactions({
             address: reactorAddress as `0x${string}`,
             abi: StableCoinReactorABI,
             functionName: "transmuteNeutronToProton",
-            args: [parsed, recipient as `0x${string}`],
+            account: address,
+            chainId,
+            args: [parsed, minimumOutput, recipient as `0x${string}`],
           })
           break
         }

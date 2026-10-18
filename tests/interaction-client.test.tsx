@@ -20,6 +20,9 @@ const mocks = vi.hoisted(() => ({
   allowance: 0n,
   fee: 10n ** 16n,
   devFee: 0n as bigint | undefined,
+  quoteOutput: 900000000000000123n as bigint | undefined,
+  quoteFetching: false,
+  quoteError: false,
   approving: false,
   receiptSuccess: false,
   refetch: vi.fn(),
@@ -96,7 +99,11 @@ vi.mock("wagmi", () => ({
       refetch: pricingRead ? mocks.refetchPricing : mocks.refetch,
     }
   },
-  useSimulateContract: () => ({ data: undefined, isFetching: false, isError: false }),
+  useSimulateContract: () => ({
+    data: mocks.quoteOutput === undefined ? undefined : { result: [mocks.quoteOutput, 0n] },
+    isFetching: mocks.quoteFetching,
+    isError: mocks.quoteError,
+  }),
   useWriteContract: () => ({
     writeContract: mocks.write,
     writeContractAsync: mocks.writeNative,
@@ -205,6 +212,9 @@ beforeEach(() => {
   mocks.allowance = 0n
   mocks.fee = 10n ** 16n
   mocks.devFee = 0n
+  mocks.quoteOutput = 900000000000000123n
+  mocks.quoteFetching = false
+  mocks.quoteError = false
   mocks.approving = false
   mocks.receiptSuccess = false
   mocks.write.mockReset()
@@ -322,15 +332,37 @@ describe("reactor interaction", () => {
       chooseFrom(from)
       expect(screen.getAllByRole("combobox")[1]).toHaveValue(to)
       inputAmount("2")
+      expect(screen.getByText(/Minimum received: 0.900000000000000123/)).toBeInTheDocument()
       fireEvent.click(screen.getByRole("button", { name: label }))
       expect(mocks.write).toHaveBeenCalledWith(
         expect.objectContaining({
           functionName,
-          args: [2n * 10n ** 18n, mocks.wallet],
+          account: mocks.wallet,
+          chainId: mocks.chainId,
+          args: [2n * 10n ** 18n, mocks.quoteOutput, mocks.wallet],
         }),
       )
     },
   )
+
+  it.each(["PROTON", "NEUTRON"])("blocks %s transmutation without a usable quote", (from) => {
+    const view = renderPage()
+    chooseFrom(from)
+    inputAmount("2")
+    const label = from === "PROTON" ? "Transmute β⁺" : "Transmute β⁻"
+    for (const change of [
+      { quoteFetching: true, quoteError: false, quoteOutput: 900000000000000123n },
+      { quoteFetching: false, quoteError: true, quoteOutput: 900000000000000123n },
+      { quoteFetching: false, quoteError: false, quoteOutput: undefined },
+      { quoteFetching: false, quoteError: false, quoteOutput: 0n },
+    ]) {
+      Object.assign(mocks, change)
+      view.rerender(<InteractionClient coinId={mocks.reactor} />)
+      fireEvent.click(screen.getByRole("button", { name: label }))
+      expect(mocks.write).not.toHaveBeenCalled()
+      expect(mocks.error).toHaveBeenLastCalledWith("Output quote unavailable. Check the amount, balance and reactor status, then try again.")
+    }
+  })
 
   it("preserves Max rounding and recipient validation", () => {
     mocks.allowance = 100n * 10n ** 18n
