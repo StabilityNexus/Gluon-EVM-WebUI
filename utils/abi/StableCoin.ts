@@ -1012,7 +1012,7 @@ export const StableCoinReactorABI = [
   },
   {
     "type": "error",
-    "name": "AmountTooSmall",
+    "name": "ExcessiveSlippage",
     "inputs": []
   },
   {

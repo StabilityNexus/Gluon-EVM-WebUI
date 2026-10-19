@@ -235,7 +235,7 @@ describe("reactor interaction", () => {
     fireEvent.click(screen.getByRole("button", { name: "Redeem ETH" }))
     await waitFor(() => expect(mocks.success).toHaveBeenCalledWith("Neutron + proton redeemed for ETH"))
     const gross = mocks.writeNative.mock.calls[0][0].args[0] as bigint
-    const actual = gross - gross * mocks.fee / 10n ** 18n - gross * mocks.devFee / 10n ** 18n
+    const actual = gross * (10n ** 18n - mocks.fee - mocks.devFee) / 10n ** 18n
     expect(actual).toBeGreaterThanOrEqual(10n ** 18n)
     expect(mocks.writeNative.mock.calls[1][0]).toMatchObject({ functionName: "withdraw", args: [actual] })
   })
@@ -448,7 +448,7 @@ describe("reactor interaction", () => {
         1,
         expect.objectContaining({
           functionName: "fusion",
-          args: [1010101010101010101n, mocks.wallet],
+          args: [1010101010101010102n, mocks.wallet],
         }),
       )
       expect(mocks.writeNative).toHaveBeenNthCalledWith(

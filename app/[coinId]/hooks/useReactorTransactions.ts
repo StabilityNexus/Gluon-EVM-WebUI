@@ -554,9 +554,11 @@ export function useReactorTransactions({
             const flowAddress = address
             const flowChainId = chainId
 
-            const fee = mulDiv(fusionGrossBaseRaw, fusionFee, WAD)
-            const devFeeAmount = mulDiv(fusionGrossBaseRaw, devFee, WAD)
-            const nativeOut = fusionGrossBaseRaw - fee - devFeeAmount
+            const nativeOut = mulDiv(
+              fusionGrossBaseRaw,
+              WAD - fusionFee - devFee,
+              WAD,
+            )
 
             if (nativeOut < parsedFusionAmount) {
               toast.error("Unable to calculate native fusion output")

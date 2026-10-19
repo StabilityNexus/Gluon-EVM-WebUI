@@ -70,6 +70,66 @@ afterEach(() => {
 })
 
 describe("contract-simulated transmutation quotes", () => {
+  it.each(["FISSION", "FUSION"] as const)(
+    "%s retains the rounded fee remainder",
+    (route) => {
+      const props = input()
+      Object.assign(props, {
+        route,
+        fromToken: route === "FISSION" ? "BASE" : "BUNDLE",
+        toToken: route === "FISSION" ? "BUNDLE" : "BASE",
+        baseDecimalsNumber: 0,
+        baseAmountRaw: 1n,
+        reserve: 200n,
+        fissionFee: WAD / 1000n,
+        fusionFee: WAD / 1000n,
+        devFee: WAD / 1000n,
+      })
+      const view = setup(props)
+      const rows = view.result.current.breakdownPopover!.rows
+      expect(
+        rows.find((row) => row.label === "Fee retained")?.value,
+      ).toBe("1 B")
+      expect(
+        rows.find((row) => row.label === "Dev fee")?.value,
+      ).toBe("0 B")
+      expect(
+        rows.find(
+          (row) => row.label === (
+            route === "FISSION" ? "Net base" : "Net received"
+          ),
+        )?.value,
+      ).toBe("0 B")
+    },
+  )
+
+  it("rounds both fusion burns up in raw units before formatting", () => {
+    const props = input()
+    Object.assign(props, {
+      route: "FUSION",
+      fromToken: "BUNDLE",
+      toToken: "BASE",
+      baseAmountRaw: 1n,
+      reserve: 3n,
+      neutronTotalSupply: 1000000n,
+      protonTotalSupply: 1n,
+      baseDecimalsNumber: 6,
+      neutronDecimalsNumber: 6,
+      protonDecimalsNumber: 6,
+      reserveWad: 3n * 10n ** 12n,
+      neutronSupplyWad: WAD,
+      protonSupplyWad: 10n ** 12n,
+    })
+    const view = setup(props)
+    const rows = view.result.current.breakdownPopover!.rows
+    expect(
+      rows.find((row) => row.label === "Burn N")?.value,
+    ).toBe("0.333334 N")
+    expect(
+      rows.find((row) => row.label === "Burn P")?.value,
+    ).toBe("0.000001 P")
+  })
+
   it("deducts both fees in the fission breakdown", () => {
     const props = input()
     Object.assign(props, { route: "FISSION", fromToken: "BASE", toToken: "BUNDLE", fissionFee: WAD / 50n, devFee: WAD / 1000n })

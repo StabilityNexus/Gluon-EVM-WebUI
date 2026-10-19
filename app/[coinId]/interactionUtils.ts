@@ -72,6 +72,11 @@ export const mulDiv = (a: bigint, b: bigint, denominator: bigint) => {
   return (a * b) / denominator
 }
 
+export const mulDivUp = (a: bigint, b: bigint, denominator: bigint) => {
+  if (denominator === 0n) return 0n
+  return (a * b + denominator - 1n) / denominator
+}
+
 export const scaleToWad = (value?: bigint, decimals?: number) => {
   if (value === undefined || decimals === undefined) return undefined
   if (decimals === 0) return value * WAD

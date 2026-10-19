@@ -30,7 +30,7 @@ export const resolveNativeAssetConfig = (
 
 /**
  * Returns a gross fusion amount that covers the requested net output after
- * both independently rounded fees. With one fee this is the smallest amount.
+ * rounding the combined post-fee net down, matching the Reactor.
  */
 export const grossFusionAmountForNet = (
   netBaseAmount: bigint,
@@ -42,5 +42,5 @@ export const grossFusionAmountForNet = (
 
   const denominator = WAD - fusionFeeWad - devFeeWad
 
-  return ((netBaseAmount - 1n) * WAD) / denominator + 1n
+  return (netBaseAmount * WAD + denominator - 1n) / denominator
 }
