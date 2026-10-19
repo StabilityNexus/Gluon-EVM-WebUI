@@ -705,7 +705,7 @@ export function useInteractionQuote({
       route === "PROTON_TO_NEUTRON"
         ? neutronSymbolText
         : protonSymbolText
-    return formatTokenValue(transmutationOutput, outputDecimals, outputSymbol, 4)
+    return `${formatUnits(transmutationOutput, outputDecimals)} ${outputSymbol}`
   }, [
     transmutationOutput,
     route,
