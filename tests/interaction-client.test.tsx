@@ -18,6 +18,11 @@ const mocks = vi.hoisted(() => ({
   coin: null as string | null,
   decimals: 18,
   allowance: 0n,
+  reserve: 300n * 10n ** 18n as bigint | undefined,
+  neutronSupply: 100n * 10n ** 18n,
+  protonSupply: 100n * 10n ** 18n,
+  neutronBalance: 12123456789000000000n as bigint | undefined,
+  protonBalance: 12123456789000000000n as bigint | undefined,
   fee: 10n ** 16n,
   devFee: 0n as bigint | undefined,
   quoteOutput: 900000000000000123n as bigint | undefined,
@@ -76,9 +81,15 @@ vi.mock("wagmi", () => ({
           : address === mocks.proton
             ? "P"
             : "WETH",
-      totalSupply: 100n * wad,
-      reserve: 300n * wad,
-      balanceOf: parseUnits("12.123456789", mocks.decimals),
+      totalSupply:
+        address === mocks.neutron ? mocks.neutronSupply : mocks.protonSupply,
+      reserve: mocks.reserve,
+      balanceOf:
+        address === mocks.neutron
+          ? mocks.neutronBalance
+          : address === mocks.proton
+            ? mocks.protonBalance
+            : parseUnits("12.123456789", mocks.decimals),
       allowance: mocks.allowance,
       FISSION_FEE: mocks.fee,
       FUSION_FEE: mocks.fee,
@@ -210,6 +221,11 @@ beforeEach(() => {
   mocks.coin = null
   mocks.decimals = 18
   mocks.allowance = 0n
+  mocks.reserve = 300n * 10n ** 18n
+  mocks.neutronSupply = 100n * 10n ** 18n
+  mocks.protonSupply = 100n * 10n ** 18n
+  mocks.neutronBalance = 12123456789000000000n
+  mocks.protonBalance = 12123456789000000000n
   mocks.fee = 10n ** 16n
   mocks.devFee = 0n
   mocks.quoteOutput = 900000000000000123n
@@ -225,6 +241,99 @@ beforeEach(() => {
 })
 
 describe("reactor interaction", () => {
+
+  it.each([
+    ["Neutron", false],
+    ["Proton", false],
+    ["Neutron", true],
+    ["Proton", true],
+  ] as const)(
+    "blocks fusion when %s is one raw unit short (native: %s)",
+    (token, native) => {
+      mocks.native = native
+      mocks.fee = 0n
+      // A withdrawal of 1 against reserve 300 and supply 100 requires ceil(1/3).
+      if (token === "Neutron") mocks.neutronBalance = 333333333333333333n
+      else mocks.protonBalance = 333333333333333333n
+
+      renderPage()
+      chooseFrom("BUNDLE")
+      if (native) fireEvent.click(screen.getByRole("button", { name: "ETH (native)" }))
+      inputAmount()
+      fireEvent.click(screen.getByRole("button", {
+        name: native ? "Redeem ETH" : "Merge Tokens",
+      }))
+
+      expect(mocks.error).toHaveBeenCalledWith(
+        "Not enough Neutron or Proton for this withdrawal. Try a smaller amount.",
+      )
+      expect(mocks.write).not.toHaveBeenCalled()
+      expect(mocks.writeNative).not.toHaveBeenCalled()
+      expect(mocks.send).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(["neutronBalance", "protonBalance", "reserve"] as const)(
+    "does not submit fusion while %s is unavailable",
+    (field) => {
+      mocks[field] = undefined
+      renderPage()
+      chooseFrom("BUNDLE")
+      inputAmount()
+      fireEvent.click(screen.getByRole("button", { name: "Merge Tokens" }))
+
+      expect(mocks.error).toHaveBeenCalledWith(
+        "Fusion quote or token balances unavailable. Please try again.",
+      )
+      expect(mocks.write).not.toHaveBeenCalled()
+      expect(mocks.writeNative).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each([false, true])(
+    "accepts a smaller redemption after mint-down rounding (native: %s)",
+    async (native) => {
+      const wad = 10n ** 18n
+      mocks.native = native
+      mocks.fee = 0n
+      // State after a 100-base seed followed by a fee-free 1-base deposit.
+      mocks.reserve = 101n * wad
+      mocks.neutronBalance = 666666666666666666n
+      mocks.protonBalance = 333333333333333333n
+      mocks.neutronSupply = 66666666666666666666n + mocks.neutronBalance
+      mocks.protonSupply = 33333333333333333333n + mocks.protonBalance
+
+      renderPage()
+      chooseFrom("BUNDLE")
+      if (native) fireEvent.click(screen.getByRole("button", { name: "ETH (native)" }))
+      inputAmount()
+      const label = native ? "Redeem ETH" : "Merge Tokens"
+      fireEvent.click(screen.getByRole("button", { name: label }))
+
+      expect(mocks.error).toHaveBeenCalledWith(
+        "Not enough Neutron or Proton for this withdrawal. Try a smaller amount.",
+      )
+      expect(mocks.write).not.toHaveBeenCalled()
+      expect(mocks.writeNative).not.toHaveBeenCalled()
+
+      // One base unit less requires exactly the available token balances.
+      inputAmount("0.999999999999999999")
+      fireEvent.click(screen.getByRole("button", { name: label }))
+
+      if (native) {
+        await waitFor(() => expect(mocks.success).toHaveBeenCalledWith(
+          "Neutron + proton redeemed for ETH",
+        ))
+      }
+
+      expect(native ? mocks.writeNative : mocks.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          functionName: "fusion",
+          args: [wad - 1n, mocks.wallet],
+        }),
+      )
+    },
+  )
   it("unwraps only the native amount left after both fees", async () => {
     mocks.native = true
     mocks.devFee = 10n ** 15n

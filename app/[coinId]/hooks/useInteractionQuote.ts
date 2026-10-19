@@ -779,6 +779,7 @@ export function useInteractionQuote({
   ])
 
   return {
+    displayFusionBreakdown,
     transmutationOutput,
     minimumOutputText,
     toLabel,
