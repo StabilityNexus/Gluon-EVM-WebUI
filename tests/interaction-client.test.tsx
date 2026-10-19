@@ -42,7 +42,11 @@ vi.mock("next/navigation", () => ({
 }))
 
 vi.mock("wagmi", () => ({
-  useAccount: () => ({ address: mocks.connected ? mocks.address : undefined }),
+  useAccount: () => ({
+    address: mocks.connected ? mocks.address : undefined,
+    isConnected: mocks.connected,
+    chain: mocks.connected ? { id: mocks.chainId } : undefined,
+  }),
   useChainId: () => mocks.chainId,
   useBalance: () => ({
     data: { value: 5n * 10n ** 18n, decimals: 18 },
@@ -136,16 +140,8 @@ vi.mock("sonner", () => ({
   toast: { success: mocks.success, error: mocks.error },
 }))
 
-vi.mock("@rainbow-me/rainbowkit", () => ({
-  ConnectButton: {
-    Custom: ({ children }: { children: (props: unknown) => ReactNode }) =>
-      children({
-        account: mocks.connected ? {} : undefined,
-        chain: mocks.connected ? {} : undefined,
-        mounted: true,
-        openConnectModal: mocks.openConnect,
-      }),
-  },
+vi.mock("@/components/WalletButton", () => ({
+  WalletButton: () => <button type="button" onClick={mocks.openConnect}>Connect Wallet</button>,
 }))
 
 // Exercise the page's controlled values and handlers independently of Radix's

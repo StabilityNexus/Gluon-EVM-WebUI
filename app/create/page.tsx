@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Wallet, CheckCircle, Zap } from "lucide-react"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { WalletButton } from "@/components/WalletButton"
 import { FactoryABI } from "@/utils/abi/Factory"
 import { parseBetaParameters } from "@/utils/betaParameters"
 import { ERC20ABI } from "@/utils/abi/StableCoin"
@@ -75,7 +75,7 @@ const ChainlinkFeedABI = [
 ] as const
 
 export default function CreatePage() {
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, chain: walletChain } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { deployContractAsync, isPending: isAdapterDeploying } = useDeployContract()
@@ -1048,83 +1048,40 @@ export default function CreatePage() {
               </div>
 
               <div className="space-y-4">
-                <ConnectButton.Custom>
-                  {({ account, chain, openConnectModal, openChainModal, mounted }) => {
-                    const ready = mounted
-                    const connected = ready && account && chain
-
-                    if (!ready) {
-                      return (
-                        <Button
-                          size="lg"
-                          className="w-full h-12 text-[15px]"
-                          disabled
-                        >
-                          <Wallet className="mr-2 h-5 w-5" />
-                          Loading Wallet
-                        </Button>
-                      )
+                {!isConnected || !address || !walletChain ? (
+                  <WalletButton mode="action" className="w-full" />
+                ) : (
+                  <Button
+                    size="lg"
+                    className="w-full h-12 text-[15px]"
+                    onClick={handleDeploy}
+                    disabled={
+                      !StableCoinFactories[chainId] ||
+                      !isFormValid() ||
+                      !isOracleReady ||
+                      isOracleChecking ||
+                      isDeploying ||
+                      isConfirming
                     }
-
-                    if (!connected) {
-                      return (
-                        <Button
-                          size="lg"
-                          className="w-full h-12 text-[15px]"
-                          onClick={openConnectModal}
-                        >
-                          <Wallet className="mr-2 h-5 w-5" />
-                          Connect Wallet
-                        </Button>
-                      )
-                    }
-
-                    if (chain?.unsupported) {
-                      return (
-                        <Button
-                          size="lg"
-                          className="w-full h-12 text-[15px]"
-                          onClick={openChainModal}
-                        >
-                          Switch Network
-                        </Button>
-                      )
-                    }
-
-                    return (
-                      <Button
-                        size="lg"
-                        className="w-full h-12 text-[15px]"
-                        onClick={handleDeploy}
-                        disabled={
-                          !StableCoinFactories[chainId] ||
-                          !isFormValid() ||
-                          !isOracleReady ||
-                          isOracleChecking ||
-                          isDeploying ||
-                          isConfirming
-                        }
-                      >
-                        {isDeploying ? (
-                          <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
-                            Deploying
-                          </>
-                        ) : isConfirming ? (
-                          <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
-                            Confirming
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="mr-2 h-5 w-5" />
-                            Deploy Reactor
-                          </>
-                        )}
-                      </Button>
-                    )
-                  }}
-                </ConnectButton.Custom>
+                  >
+                    {isDeploying ? (
+                      <>
+                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
+                        Deploying
+                      </>
+                    ) : isConfirming ? (
+                      <>
+                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
+                        Confirming
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-5 w-5" />
+                        Deploy Reactor
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 {isSuccess && (
                   <div className="rounded-xl border border-success/30 bg-success/10 px-5 py-4">

@@ -1,112 +1,127 @@
 "use client"
 
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { useEffect, useState } from "react"
+import {
+  useWalletLink,
+  WalletLinkButton,
+  WalletLinkModal,
+} from "@stability-nexus/walletlink"
+import { useSwitchChain } from "wagmi"
 import { ArrowLeftRight } from "lucide-react"
-
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 
-type WalletButtonMode = "full" | "compact" | "network"
+type WalletButtonMode = "full" | "compact" | "network" | "action"
 
-function ChainMark({ iconUrl, iconBackground, name }: { iconUrl?: string; iconBackground?: string; name?: string }) {
-  if (iconUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={iconUrl}
-        alt=""
-        className="size-4 rounded-full"
-        style={{ background: iconBackground }}
-      />
-    )
+export function WalletButton({
+  mode = "full",
+  className,
+}: {
+  mode?: WalletButtonMode
+  className?: string
+}) {
+  const { isConnected, isReconnecting, chain } = useWalletLink()
+  const { chains, switchChain, isPending, error, reset } = useSwitchChain()
+  const [mounted, setMounted] = useState(false)
+  const [connectOpen, setConnectOpen] = useState(false)
+  const [networkOpen, setNetworkOpen] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    setConnectOpen(false)
+    setNetworkOpen(false)
+  }, [isConnected])
+
+  const ready = mounted && !isReconnecting
+
+  const openNetworks = () => {
+    reset()
+    setNetworkOpen(true)
   }
-  return (
-    <span
-      aria-hidden="true"
-      className="grid size-4 place-items-center rounded-full bg-surface-3 text-[9px] font-semibold text-muted-foreground"
+
+  const networkButton = (
+    <Button
+      type="button"
+      size={mode === "action" ? "lg" : "sm"}
+      variant={chain ? "outline" : "destructive"}
+      onClick={openNetworks}
+      disabled={!ready}
+      aria-label={chain ? `Network: ${chain.name}. Switch network` : "Wrong network. Switch network"}
+      className={cn(
+        "gap-2",
+        (mode === "network" || mode === "action") && "w-full justify-between",
+      )}
     >
-      {name?.charAt(0) ?? "?"}
-    </span>
+      {chain?.name ?? "Wrong network"}
+      <ArrowLeftRight aria-hidden="true" className="size-3.5" />
+    </Button>
   )
-}
 
-/**
- * Wallet controls built on RainbowKit's ConnectButton.Custom so they share the
- * site's button system. All connect / account / chain flows are RainbowKit's own modals.
- */
-export function WalletButton({ mode = "full", className }: { mode?: WalletButtonMode; className?: string }) {
+  if (mode === "network" && !isConnected) return null
+
   return (
-    <ConnectButton.Custom>
-      {({ account, chain, openAccountModal, openChainModal, openConnectModal, authenticationStatus, mounted }) => {
-        const ready = mounted && authenticationStatus !== "loading"
-        const connected =
-          ready &&
-          !!account &&
-          !!chain &&
-          (!authenticationStatus || authenticationStatus === "authenticated")
+    <div className={cn("flex items-center gap-1.5", className)}>
+      {mode === "network" ? (
+        networkButton
+      ) : !isConnected ? (
+        <Button
+          type="button"
+          size={mode === "action" ? "lg" : "sm"}
+          disabled={!ready}
+          onClick={() => setConnectOpen(true)}
+          className={mode === "action" ? "w-full h-12 text-[15px]" : undefined}
+        >
+          {!ready ? "Loading wallet" : mode === "compact" ? "Connect" : "Connect Wallet"}
+        </Button>
+      ) : mode === "action" ? (
+        !chain && networkButton
+      ) : (
+        <>
+          {(mode === "full" || !chain) && networkButton}
+          <WalletLinkButton />
+        </>
+      )}
 
-        const wrapperProps = !ready
-          ? { "aria-hidden": true, style: { opacity: 0, pointerEvents: "none" as const, userSelect: "none" as const } }
-          : {}
+      <WalletLinkModal open={connectOpen} onOpenChange={setConnectOpen} />
 
-        if (mode === "network") {
-          if (!connected || !chain) return null
-          return (
-            <div {...wrapperProps} className={className}>
-              <Button type="button" variant="outline" onClick={openChainModal} className="w-full justify-between">
-                <span className="flex items-center gap-2">
-                  <ChainMark iconUrl={chain.hasIcon ? chain.iconUrl : undefined} iconBackground={chain.iconBackground} name={chain.name} />
-                  {chain.unsupported ? "Wrong network" : chain.name}
-                </span>
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  Switch network
-                  <ArrowLeftRight className="size-3.5" />
-                </span>
-              </Button>
-            </div>
-          )
-        }
-
-        return (
-          <div {...wrapperProps} className={cn("flex items-center gap-1.5", className)}>
-            {!connected || !account || !chain ? (
-              <Button type="button" size="sm" onClick={openConnectModal}>
-                {mode === "compact" ? "Connect" : "Connect wallet"}
-              </Button>
-            ) : chain.unsupported ? (
-              <Button type="button" size="sm" variant="destructive" onClick={openChainModal}>
-                Wrong network
-              </Button>
-            ) : (
-              <>
-                {mode === "full" && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={openChainModal}
-                    aria-label={`Network: ${chain.name ?? "unknown"}. Switch network`}
-                    className="bg-transparent px-2.5 hover:bg-foreground/[0.06]"
-                  >
-                    <ChainMark iconUrl={chain.hasIcon ? chain.iconUrl : undefined} iconBackground={chain.iconBackground} name={chain.name} />
-                    <span className="hidden lg:inline">{chain.name}</span>
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={openAccountModal}
-                  aria-label={`Account ${account.displayName}. Open account details`}
-                  className="bg-transparent font-mono text-xs hover:bg-foreground/[0.06]"
-                >
-                  {account.displayName}
-                </Button>
-              </>
-            )}
-          </div>
-        )
-      }}
-    </ConnectButton.Custom>
+      <Dialog open={networkOpen && isConnected} onOpenChange={setNetworkOpen}>
+        <DialogContent>
+          <DialogTitle>Switch network</DialogTitle>
+          <DialogDescription>
+            Choose a supported network. Your wallet may ask you to confirm.
+          </DialogDescription>
+          {chains.map((network) => (
+            <Button
+              key={network.id}
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              aria-pressed={chain?.id === network.id}
+              onClick={() =>
+                switchChain(
+                  { chainId: network.id },
+                  { onSuccess: () => setNetworkOpen(false) },
+                )
+              }
+            >
+              {network.name}
+            </Button>
+          ))}
+          {isPending && <p role="status">Confirm the network change in your wallet.</p>}
+          {error && (
+            <p role="alert">Could not switch network. Try again in your wallet.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

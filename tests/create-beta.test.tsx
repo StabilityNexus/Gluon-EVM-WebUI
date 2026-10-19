@@ -20,7 +20,11 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock("wagmi", () => ({
-  useAccount: () => ({ address: mocks.account, isConnected: true }),
+  useAccount: () => ({
+    address: mocks.account,
+    isConnected: true,
+    chain: { id: 11155111 },
+  }),
   useChainId: () => 11155111,
   usePublicClient: () => ({
     readContract: mocks.readContract,
@@ -42,16 +46,8 @@ vi.mock("sonner", () => ({
   Toaster: () => null,
   toast: { error: mocks.toastError, success: vi.fn(), info: vi.fn() },
 }))
-vi.mock("@rainbow-me/rainbowkit", () => ({
-  ConnectButton: {
-    Custom: ({ children }: { children: (props: object) => React.ReactNode }) => children({
-      account: { address: mocks.account },
-      chain: { unsupported: false },
-      mounted: true,
-      openConnectModal: vi.fn(),
-      openChainModal: vi.fn(),
-    }),
-  },
+vi.mock("@/components/WalletButton", () => ({
+  WalletButton: () => <button type="button" onClick={() => {}}>Connect Wallet</button>,
 }))
 vi.mock("@/components/TokenSelector", () => ({
   default: ({ value, onChange }: { value: string; onChange: (address: string) => void }) => (

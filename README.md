@@ -192,7 +192,7 @@ server rendering of arbitrary contract-address routes.
 | UI | React 18 |
 | Language | TypeScript |
 | Styling | Tailwind CSS |
-| Wallet | RainbowKit / wagmi |
+| Wallet | WalletLink / wagmi |
 | EVM Client | viem |
 | Theme | next-themes |
 | Animation | Framer Motion / GSAP |
@@ -282,8 +282,13 @@ cp .env.example .env.local
 Example:
 
 ```text
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
+# Optional: custom Sepolia RPC endpoint
+NEXT_PUBLIC_SEPOLIA_RPC_URL=
 ```
+
+WalletLink connects to browser-injected wallets without a project ID or hosted relay.
+Desktop-to-phone QR connections are not supported. On mobile, use a wallet's
+built-in browser where it provides a compatible injected wallet.
 
 Anything prefixed with `NEXT_PUBLIC_` is browser-visible and must never contain a secret.
 
