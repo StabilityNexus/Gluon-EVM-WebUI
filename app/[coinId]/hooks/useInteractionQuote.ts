@@ -10,6 +10,7 @@ import {
   safeParseUnits,
   WAD,
   mulDiv,
+  mulDivUp,
   formatTokenValue,
   formatWad,
 } from "../interactionUtils"
@@ -281,9 +282,9 @@ export function useInteractionQuote({
       return null
     }
 
-    const fee = mulDiv(baseAmountRaw, fissionFee, WAD)
     const devFeeAmount = mulDiv(baseAmountRaw, devFee, WAD)
-    const netBase = baseAmountRaw - fee - devFeeAmount
+    const netBase = mulDiv(baseAmountRaw, WAD - fissionFee - devFee, WAD)
+    const fee = baseAmountRaw - netBase - devFeeAmount
     if (netBase <= 0n) {
       return {
         baseIn: baseAmountRaw,
@@ -448,9 +449,9 @@ export function useInteractionQuote({
 
     if (!grossBase || grossBase <= 0n) return null
 
-    const fee = mulDiv(grossBase, fusionFee, WAD)
     const devFeeAmount = mulDiv(grossBase, devFee, WAD)
-    const netBase = grossBase - fee - devFeeAmount
+    const netBase = mulDiv(grossBase, WAD - fusionFee - devFee, WAD)
+    const fee = grossBase - netBase - devFeeAmount
 
     // Burn amounts are displayed from the current Reactor state. The Reactor
     // remains authoritative and computes the exact burns at execution time.
@@ -466,23 +467,11 @@ export function useInteractionQuote({
       return null
     }
 
-    if (!reserveWad || reserveWad === 0n) return null
-    if (!neutronSupplyWad || !protonSupplyWad) return null
+    if (neutronTotalSupply === 0n || protonTotalSupply === 0n) return null
 
-    const baseScale = pow10(baseDecimalsNumber)
-    const grossBaseWad = mulDiv(grossBase, WAD, baseScale)
-
-    const neutronBurnWad = mulDiv(grossBaseWad, neutronSupplyWad, reserveWad)
-
-    const protonBurnWad = mulDiv(grossBaseWad, protonSupplyWad, reserveWad)
-
-    const neutronBurn = mulDiv(
-      neutronBurnWad,
-      pow10(neutronDecimalsNumber),
-      WAD,
-    )
-
-    const protonBurn = mulDiv(protonBurnWad, pow10(protonDecimalsNumber), WAD)
+    // Reserve-unit scales cancel; round both proportional burns up.
+    const neutronBurn = mulDivUp(grossBase, neutronTotalSupply, reserve)
+    const protonBurn = mulDivUp(grossBase, protonTotalSupply, reserve)
 
     return {
       requestedBaseOut: baseAmountRaw,
@@ -506,9 +495,6 @@ export function useInteractionQuote({
     baseDecimalsNumber,
     neutronDecimalsNumber,
     protonDecimalsNumber,
-    reserveWad,
-    neutronSupplyWad,
-    protonSupplyWad,
   ])
 
   const fromBreakdownRows = useMemo(() => {
@@ -793,6 +779,7 @@ export function useInteractionQuote({
   ])
 
   return {
+    displayFusionBreakdown,
     transmutationOutput,
     minimumOutputText,
     toLabel,

@@ -493,3 +493,14 @@ zero minimum to obtain the quote. Fission and fusion are unchanged.
 This requires reactors with the three-argument transmutation functions; it does not
 update existing deployments. Configure a factory only after deploying and verifying
 the matching contracts.
+
+### Reserve-safe rounding
+
+This frontend accompanies reactors that round fission outputs down and fusion
+burns up. Fee breakdowns round the combined post-fee net down and retain the
+remainder in the reserve; the dev payment rounds down. Native fusion requests the
+smallest gross amount that covers the requested rounded-down net and unwraps only
+that net. Transmutation quotes continue to use contract simulation.
+
+Use this version with the matching rounding-enabled contracts. Existing deployed
+reactors are not upgraded, and this change configures no factory addresses.

@@ -20,14 +20,17 @@ import {
 const WAD = 10n ** 18n
 
 describe("native asset integration", () => {
-  it("covers native redemption after independently rounded fusion and dev fees", () => {
+  it("finds the smallest gross amount after the rounded-down combined net", () => {
     for (const fee of [0n, WAD / 100n, WAD / 2n, WAD - 2n]) {
       for (const devFee of [0n, 1n, WAD / 1000n]) {
         if (fee + devFee >= WAD) continue
         for (let wanted = 1n; wanted <= 100n; wanted += 1n) {
           const gross = grossFusionAmountForNet(wanted, fee, devFee)!
-          const actual = gross - gross * fee / WAD - gross * devFee / WAD
+          const actual = gross * (WAD - fee - devFee) / WAD
           expect(actual).toBeGreaterThanOrEqual(wanted)
+          expect(
+            (gross - 1n) * (WAD - fee - devFee) / WAD,
+          ).toBeLessThan(wanted)
         }
       }
     }
@@ -94,14 +97,13 @@ describe("native asset integration", () => {
 
     const gross = grossFusionAmountForNet(net, onePercentFee)
 
-    expect(gross).toBe(1010101010101010101n)
+    expect(gross).toBe(1010101010101010102n)
 
     if (gross === null) {
       throw new Error("gross amount should exist")
     }
 
-    const fee = (gross * onePercentFee) / WAD
-    const actualNet = gross - fee
+    const actualNet = gross * (WAD - onePercentFee) / WAD
 
     expect(actualNet).toBe(net)
   })

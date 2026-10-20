@@ -28,6 +28,9 @@ import type { InteractionQuote } from "./useInteractionQuote"
 type ReactorTransactionsInput = Pick<
   InteractionContext & InteractionForm & ReactorContracts & ReactorPricing & InteractionQuote,
   | "transmutationOutput"
+  | "displayFusionBreakdown"
+  | "neutronBalance"
+  | "protonBalance"
   | "address"
   | "chainId"
   | "amount"
@@ -68,6 +71,9 @@ type ReactorTransactionsInput = Pick<
 
 export function useReactorTransactions({
   transmutationOutput,
+  displayFusionBreakdown,
+  neutronBalance,
+  protonBalance,
   address,
   chainId,
   amount,
@@ -538,6 +544,23 @@ export function useReactorTransactions({
             return
           }
 
+          if (
+            !displayFusionBreakdown ||
+            neutronBalance === undefined ||
+            protonBalance === undefined
+          ) {
+            toast.error("Fusion quote or token balances unavailable. Please try again.")
+            return
+          }
+
+          if (
+            displayFusionBreakdown.neutronBurn > neutronBalance ||
+            displayFusionBreakdown.protonBurn > protonBalance
+          ) {
+            toast.error("Not enough Neutron or Proton for this withdrawal. Try a smaller amount.")
+            return
+          }
+
           if (useNativeBase) {
             if (
               !nativeAsset ||
@@ -554,9 +577,11 @@ export function useReactorTransactions({
             const flowAddress = address
             const flowChainId = chainId
 
-            const fee = mulDiv(fusionGrossBaseRaw, fusionFee, WAD)
-            const devFeeAmount = mulDiv(fusionGrossBaseRaw, devFee, WAD)
-            const nativeOut = fusionGrossBaseRaw - fee - devFeeAmount
+            const nativeOut = mulDiv(
+              fusionGrossBaseRaw,
+              WAD - fusionFee - devFee,
+              WAD,
+            )
 
             if (nativeOut < parsedFusionAmount) {
               toast.error("Unable to calculate native fusion output")
