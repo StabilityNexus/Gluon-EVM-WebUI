@@ -411,6 +411,18 @@ See [Deployments.md](Deployments.md).
 The create flow collects and validates reactor configuration and submits the deployment through the
 configured Gluon factory.
 
+Deployers choose both reserve ratios: the critical ratio must be above 100% and
+below 200%, and the initial seed-issuance ratio must be above the critical ratio
+and below 200%. The form recommends a critical ratio of 101%–105%, with an editable
+103% default; this recommendation does not restrict other valid choices. The
+initial ratio defaults to an editable 150%. Ratios are parsed directly into
+bigint WAD values from decimal percentages, with up to 16 decimal places.
+
+Retained fission fees and rounding can raise the actual initialized ratio above
+the chosen issuance ratio. The contract rejects initialization outside its strict
+bounds. Creation requires a verified factory supporting the new initial-ratio
+argument; older factories are incompatible with this deployment call.
+
 ### Explore Reactors
 
 The explorer reads configured factories and displays discovered reactors.
