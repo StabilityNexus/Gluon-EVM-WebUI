@@ -14,9 +14,8 @@ import { WalletButton } from "@/components/WalletButton"
 import gluonLogo from "@/public/GluonProtocol-Darker.png"
 
 const navItems = [
-  { href: "/", label: "Home" },
-  { href: "/explorer", label: "Explorer" },
-  { href: "/create", label: "Create" },
+  { href: "/explorer", label: "Explore Stablecoins" },
+  { href: "/create", label: "Create a Stablecoin" },
 ] as const
 
 // Reactor pages (/c?coin=… and /0x…) belong to the Explorer section.
@@ -31,7 +30,7 @@ const EASE = [0.22, 1, 0.36, 1] as const
 
 export default function Navigation() {
   const pathname = usePathname() ?? "/"
-  const active = resolveActive(pathname)
+  const active = resolveActive(pathname.replace(/\/+$/, "").replace(/\.html$/, "") || "/")
   const reduceMotion = useReducedMotion()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
@@ -96,7 +95,7 @@ export default function Navigation() {
             </Link>
 
             {/* Desktop: raised pill marks the current route, a flat tint follows the pointer */}
-            <nav aria-label="Primary" className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block">
+            <nav aria-label="Primary" className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:block">
               <ul ref={listRef} className="relative flex items-center gap-1" onMouseLeave={() => setHover(null)}>
                 <motion.span
                   aria-hidden="true"
@@ -129,7 +128,7 @@ export default function Navigation() {
                         onBlur={() => setHover(null)}
                         className={cn(
                           "relative z-10 inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-medium outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring",
-                          isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                          isActive ? "bg-primary/10 font-semibold text-primary ring-1 ring-primary/25" : "text-muted-foreground hover:text-foreground",
                         )}
                       >
                         {item.label}
@@ -142,9 +141,9 @@ export default function Navigation() {
 
             <div className="flex items-center gap-1">
               <ThemeToggle />
-              <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border md:block" />
-              <WalletButton mode="full" className="hidden md:flex" />
-              <WalletButton mode="compact" className="md:hidden" />
+              <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border lg:block" />
+              <WalletButton mode="full" className="hidden lg:flex" />
+              <WalletButton mode="compact" className="lg:hidden" />
               <button
                 ref={menuButtonRef}
                 type="button"
@@ -152,7 +151,7 @@ export default function Navigation() {
                 aria-expanded={open}
                 aria-controls="mobile-navigation"
                 aria-label={open ? "Close menu" : "Open menu"}
-                className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-9 md:hidden")}
+                className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-9 lg:hidden")}
               >
                 <Menu aria-hidden="true" className={cn("absolute size-5 transition-[transform,opacity] duration-200", open && "rotate-90 scale-75 opacity-0")} />
                 <X aria-hidden="true" className={cn("absolute size-5 transition-[transform,opacity] duration-200", !open && "-rotate-90 scale-75 opacity-0")} />
@@ -167,7 +166,7 @@ export default function Navigation() {
                 key="mobile-navigation"
                 id="mobile-navigation"
                 aria-label="Primary"
-                className="overflow-hidden md:hidden"
+                className="overflow-hidden lg:hidden"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -185,7 +184,7 @@ export default function Navigation() {
                             onClick={() => setOpen(false)}
                             className={cn(
                               "flex h-11 items-center rounded-lg px-3 text-[15px] font-medium outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring",
-                              isActive ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                              isActive ? "bg-primary/10 font-semibold text-primary ring-1 ring-primary/25" : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
                             )}
                           >
                             {item.label}
@@ -209,7 +208,7 @@ export default function Navigation() {
           <motion.div
             key="mobile-scrim"
             aria-hidden="true"
-            className="pointer-events-auto fixed inset-0 -z-10 bg-background/40 backdrop-blur-[2px] md:hidden"
+            className="pointer-events-auto fixed inset-0 -z-10 bg-background/40 backdrop-blur-[2px] lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

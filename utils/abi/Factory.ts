@@ -1,5 +1,21 @@
 export const FactoryABI = [
   {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "devParam",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "devFeeParam",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
     "type": "function",
     "name": "deployReactor",
     "inputs": [
@@ -47,16 +63,6 @@ export const FactoryABI = [
         "name": "protonSymbolParam",
         "type": "string",
         "internalType": "string"
-      },
-      {
-        "name": "devParam",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "devFeeParam",
-        "type": "uint256",
-        "internalType": "uint256"
       },
       {
         "name": "fissionFeeParam",
@@ -371,5 +377,31 @@ export const FactoryABI = [
         "internalType": "address"
       }
     ]
+  },
+  {
+    "type": "function",
+    "name": "dev",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "devFee",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   }
 ] as const

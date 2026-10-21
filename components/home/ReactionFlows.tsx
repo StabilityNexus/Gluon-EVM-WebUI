@@ -14,7 +14,7 @@ type Token = "base" | "neutron" | "proton"
  * To flip the pairing, swap the two icon entries and the two colour entries here.
  */
 const TOKENS: Record<Token, { label: string; Icon: ComponentType<{ className?: string }>; color: string }> = {
-  base: { label: "Base token", Icon: ErcIcon, color: "var(--foreground)" },
+  base: { label: "Reserve token", Icon: ErcIcon, color: "var(--foreground)" },
   neutron: { label: "Neutron", Icon: GauIcon, color: "var(--neutron)" },
   proton: { label: "Proton", Icon: GaucIcon, color: "var(--proton)" },
 }
@@ -22,24 +22,24 @@ const TOKENS: Record<Token, { label: string; Icon: ComponentType<{ className?: s
 const REACTIONS: { name: string; description: string; from: Token[]; to: Token[] }[] = [
   {
     name: "Fission",
-    description: "Splits base tokens into Neutron and Proton.",
+    description: "Splits reserve tokens into Neutron and Proton.",
     from: ["base"],
     to: ["neutron", "proton"],
   },
   {
     name: "Fusion",
-    description: "Merges Neutron and Proton back into base tokens.",
+    description: "Merges Neutron and Proton back into reserve tokens.",
     from: ["neutron", "proton"],
     to: ["base"],
   },
   {
-    name: "Transmute β⁺",
+    name: "Transmutation β⁺",
     description: "Converts Proton into Neutron with a dynamic fee based on recent transmutation activity and the reactor reserve.",
     from: ["proton"],
     to: ["neutron"],
   },
   {
-    name: "Transmute β⁻",
+    name: "Transmutation β⁻",
     description: "Converts Neutron into Proton with a dynamic fee based on recent transmutation activity and the reactor reserve.",
     from: ["neutron"],
     to: ["proton"],

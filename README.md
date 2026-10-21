@@ -192,7 +192,7 @@ server rendering of arbitrary contract-address routes.
 | UI | React 18 |
 | Language | TypeScript |
 | Styling | Tailwind CSS |
-| Wallet | RainbowKit / wagmi |
+| Wallet | WalletLink / wagmi |
 | EVM Client | viem |
 | Theme | next-themes |
 | Animation | Framer Motion / GSAP |
@@ -282,8 +282,19 @@ cp .env.example .env.local
 Example:
 
 ```text
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
+# Optional: custom Sepolia RPC endpoint
+NEXT_PUBLIC_SEPOLIA_RPC_URL=
 ```
+
+WalletLink connects to browser-injected wallets without a project ID or hosted relay.
+Desktop-to-phone QR connections are not supported. On mobile, use a wallet's
+built-in browser where it provides a compatible injected wallet.
+
+Explorer lists the recorded Sepolia test reactors through the network's
+`explorerFactoryAddress`, in development and production. This discovery setting
+never enables creation through that older factory. Production mainnet factories
+remain unconfigured. Creation needs a newly deployed and verified matching factory.
+Open `/create` for the creation form and `/c?coin=<reactor-address>` for a reactor.
 
 Anything prefixed with `NEXT_PUBLIC_` is browser-visible and must never contain a secret.
 
@@ -481,9 +492,10 @@ See [License.md](License.md).
 ### Separate Dev Fees
 
 New reactors use separate constructor-set `dev`, `devFeeReceiver` and `devFee`
-settings. Creation initializes both addresses from the Initial Dev and Fee Receiver
-field, defaulting to `0x86B8f920835015c0F1b697dBe0B8b150a986eCE5`.
-The WebUI passes a fixed 0.1% dev fee (`1e15` WAD); zero beta coefficients remain allowed.
+settings. The factory supplies the initial addresses and fee; the creation form
+does not accept or submit creator-controlled dev settings. The displayed fee is
+read from the configured factory. Gluon factories should be deployed with the
+agreed 0.1% rate (`1e15` WAD); zero beta coefficients remain allowed.
 Protocol fission, fusion and beta fees stay in the reserve. The separate dev fee is
 paid in the reserve asset to the current dev fee receiver. Fission and fusion
 breakdowns show both fees; beta previews continue to use contract simulation.
@@ -516,3 +528,32 @@ that net. Transmutation quotes continue to use contract simulation.
 
 Use this version with the matching rounding-enabled contracts. Existing deployed
 reactors are not upgraded, and this change configures no factory addresses.
+
+
+### Bruno’s interface feedback
+
+Navigation, homepage copy, oracle selection and reactor cards use reserve-asset
+terminology. Network targets are Ethereum Classic, Ethereum, Polygon, BSC, Base,
+then Sepolia; unconfigured factories are explicitly labelled. Existing deployment
+records remain historical evidence, not proof of compatibility with this interface.
+
+Creation displays hourly volume retention. The input is converted with bigint
+arithmetic to the smallest per-second WAD multiplier whose contract-style
+3600-second power retains at least the requested fraction. The effective hourly
+fraction is displayed. Zero keeps the existing clear-after-one-second behaviour;
+one means no decay. No contract decay formula changes are made.
+
+The dashboard reads reserve state, ratio bounds and the 36-decimal peg factor.
+Spot Proton leverage is `r / (r - 1)` for `r > 1`; crash cushion to the critical ratio
+is `max(0, 1 - c / r)`, holding supply and peg fixed. Missing reads and unbounded
+ratios do not become fabricated finite metrics. Proton yield is unavailable without
+historical observations and a defined period; no APY is invented.
+
+The peg button appears only outside the contract’s inclusive operating bounds.
+It checks wallet/network, rereads the ratio, simulates `adjustPeg()`, waits for the
+receipt and checks for `PegAdjusted` before reporting an adjustment. A successful
+step need not restore the operating range. The swap pricing reads then refresh.
+
+This creation ABI has 17 arguments: the ratio interface with creator-supplied dev
+address/rate removed. It requires a newly deployed and verified matching factory.
+No creation factory is enabled and no mainnet deployment is claimed by this change.

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 /*
  * An explanatory model of a single reactor, not live data.
  * The circle is the reserve. Neutron's claim is fixed in value, so its share of the
- * reserve shrinks as the base asset appreciates; Proton holds whatever is left.
+ * reserve shrinks as the reserve asset appreciates; Proton holds whatever is left.
  */
 
 const C = 200 // centre
@@ -302,7 +302,7 @@ export default function ReserveInstrument({ className }: { className?: string })
         <div className="mt-6 rounded-2xl border border-border bg-card/75 p-4 backdrop-blur-md">
           <div className="flex items-center justify-between gap-3">
             <label htmlFor={`price-${uid}`} className="text-sm text-muted-foreground">
-              Base asset price
+              Reserve asset price
             </label>
             <div className="flex items-center gap-2">
               <output

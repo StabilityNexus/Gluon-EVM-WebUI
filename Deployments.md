@@ -36,6 +36,62 @@ Factory addresses and network metadata should remain centralized in the WebUI co
 
 ## Current Sepolia Test Factory
 
+- **Deployment date:** 2026-10-19
+- **Network:** Ethereum Sepolia (`11155111`)
+- **Factory:** `0x56a8c79dE3d8e21Dc60e2679c4e296Ac8A4b9F50`
+- **Deployer:** `0x167F6b56DA92400f5e25d02CA0532Ddf2e25da63`
+- **Deployment transaction:** https://sepolia.etherscan.io/tx/0x6cf62c286461e2066b086314009f5962690f301e6b103c274dc2d5803373c148
+- **Factory explorer:** https://sepolia.etherscan.io/address/0x56a8c79dE3d8e21Dc60e2679c4e296Ac8A4b9F50
+- **Contract source:** [Gluon-EVM #62](https://github.com/StabilityNexus/Gluon-EVM/pull/62) at `b7b591a9a014b13b4539b403dc5d43b62e680782`, with [Gluon-EVM #63](https://github.com/StabilityNexus/Gluon-EVM/pull/63) commit `e39d0c9a73cff00b5cb6b19adf1b8becfa1d8599` applied locally.
+- **Exact source tree:** `485c72d4f14c0f2e2c5ca8ecdf3c96238313456d`
+- **WebUI factory configuration commit:** `bdc9da6`
+- **Verification:** Successful receipt, expected deployer, and exact runtime bytecode match with the tested build.
+- **Factory runtime size:** 23,936 bytes.
+- **Contract validation:** 178 tests passed with 512 runs per fuzz test.
+
+This is a Sepolia test deployment incorporating Gluon-EVM PRs #62 and #63, which
+were pending at deployment time. The bytecode comparison does not claim explorer
+source verification. This is not a mainnet deployment.
+
+### Reactors Used for WebUI Testing
+
+Both reactors use reserve token `0x54C5eE811cC0be3FCF66CBb8104900bB3A44b44a`
+(`dETH`, 18 decimals). Their initial dev and dev fee receiver are
+`0x86B8f920835015c0F1b697dBe0B8b150a986eCE5`, with a 0.1% dev fee.
+
+| Item | Orb reactor | Chainlink reactor |
+|---|---|---|
+| Reactor | `0x0cd0C6f7a63F674A963B8DeaA6051a7f6666b94c` | `0x66ef27993c7a082a2d60e7e8836e6c695623c95a` |
+| Oracle | `0xff2b1fca4aF0c9BCb576178e6989AA92819a0294` (direct Orb) | `0xf21077d705ff140e801288ffee1ff26b849f8d0f` (Chainlink adapter) |
+| Neutron | `0x1C3b68De741DA1B713Ba601426E6457812B8AFb2` (`NORB`) | `0x7dF4BfB8A36cfD8Fe89860Bb14b26517a06f2C10` (`NCL`) |
+| Proton | `0xfA66482f02b8958947F87Ed7796F97165Bbb0CE7` (`PORB`) | `0xCC3dC8f7999F6ebB8C51F07B02C6f08537e547f4` (`PCL`) |
+
+The Chainlink adapter reads the Sepolia ETH/USD feed at
+`0x694AA1769357215DE4FAC081bf1f309aDC325306`. Its feed address and WAD scaling
+were checked on-chain.
+
+Reactor creation transactions:
+
+- Orb: https://sepolia.etherscan.io/tx/0xc350cc2c0dcba67e19a30d934cfb7ee83e1e92916e6a5164627bb7498b9d70a8
+- Chainlink: https://sepolia.etherscan.io/tx/0x6d1757465966aacd4fac0979bff5ffcf74f758349a0c7691d003415cbf111b98
+
+Creation, ERC-20 fission, fusion and both transmutation directions were exercised
+through the local WebUI using MetaMask. Transaction notifications, input clearing
+and balance refresh were also checked.
+
+At Sepolia block `11948150`, the Orb reactor reserve was
+`0.005794136558066680 dETH` and its reserve ratio was approximately `150.31%`.
+The Chainlink reactor reserve was `0.005794138550635281 dETH` and its reserve
+ratio was approximately `151.23%`. Both were inside their configured 120%–200%
+operating range.
+
+This factory was used by the October 19 local test configuration. It predates
+deployer-selected initial ratios and factory-owned dev settings. It is not enabled
+for creation by the current interface. Explorer uses it only to discover the existing
+Sepolia test reactors. Deploy and verify a matching factory before enabling creation.
+
+## Historical Sepolia Test Factory (2026-10-16)
+
 - **Deployment date:** 2026-10-16
 - **Network:** Ethereum Sepolia (`11155111`)
 - **Factory:** `0x69554023440D59259689B91ede108435a11308c0`
@@ -288,7 +344,10 @@ No separately deployed WebUI backend is required.
 
 ## Separate dev fee interface
 
-The deployment above predates separate dev fees and is not compatible with the new
-18-argument factory interface. It remains a historical test deployment. Its address
-is not configured for reactor creation in this version. A matching factory must be
-deployed and its receipt and runtime bytecode verified before configuring it.
+The older factories at `0x69554023440D59259689B91ede108435a11308c0` and
+`0x3Ca248b434DF95F20fc6469393D2e242243C47C6` predate the separate dev fee
+interface and remain historical records. The October 19 Sepolia factory recorded
+above supports the historical 18-argument deployment interface. Its receipt and
+runtime bytecode were verified for that build. The current 17-argument creation
+interface requires a new deployment; historical bytecode verification does not
+establish compatibility.

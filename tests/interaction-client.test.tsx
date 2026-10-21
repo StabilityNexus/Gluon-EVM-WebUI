@@ -47,7 +47,12 @@ vi.mock("next/navigation", () => ({
 }))
 
 vi.mock("wagmi", () => ({
-  useAccount: () => ({ address: mocks.connected ? mocks.address : undefined }),
+  useReadContracts: () => ({ data: undefined, refetch: vi.fn() }),
+  useAccount: () => ({
+    address: mocks.connected ? mocks.address : undefined,
+    isConnected: mocks.connected,
+    chain: mocks.connected ? { id: mocks.chainId } : undefined,
+  }),
   useChainId: () => mocks.chainId,
   useBalance: () => ({
     data: { value: 5n * 10n ** 18n, decimals: 18 },
@@ -133,6 +138,7 @@ vi.mock("wagmi", () => ({
 
 vi.mock("@/utils/networks", () => ({
   getGluonNetwork: () => ({
+    chain: { id: mocks.chainId },
     nativeAsset: mocks.native
       ? {
           nativeSymbol: "ETH",
@@ -147,16 +153,8 @@ vi.mock("sonner", () => ({
   toast: { success: mocks.success, error: mocks.error },
 }))
 
-vi.mock("@rainbow-me/rainbowkit", () => ({
-  ConnectButton: {
-    Custom: ({ children }: { children: (props: unknown) => ReactNode }) =>
-      children({
-        account: mocks.connected ? {} : undefined,
-        chain: mocks.connected ? {} : undefined,
-        mounted: true,
-        openConnectModal: mocks.openConnect,
-      }),
-  },
+vi.mock("@/components/WalletButton", () => ({
+  WalletButton: () => <button type="button" onClick={mocks.openConnect}>Connect Wallet</button>,
 }))
 
 // Exercise the page's controlled values and handlers independently of Radix's
@@ -432,8 +430,8 @@ describe("reactor interaction", () => {
   })
 
   it.each([
-    ["PROTON", "NEUTRON", "Transmute β⁺", "transmuteProtonToNeutron"],
-    ["NEUTRON", "PROTON", "Transmute β⁻", "transmuteNeutronToProton"],
+    ["PROTON", "NEUTRON", "Transmutation β⁺", "transmuteProtonToNeutron"],
+    ["NEUTRON", "PROTON", "Transmutation β⁻", "transmuteNeutronToProton"],
   ])(
     "runs %s transmutation with the paired target",
     (from, to, label, functionName) => {
@@ -458,7 +456,7 @@ describe("reactor interaction", () => {
     const view = renderPage()
     chooseFrom(from)
     inputAmount("2")
-    const label = from === "PROTON" ? "Transmute β⁺" : "Transmute β⁻"
+    const label = from === "PROTON" ? "Transmutation β⁺" : "Transmutation β⁻"
     for (const change of [
       { quoteFetching: true, quoteError: false, quoteOutput: 900000000000000123n },
       { quoteFetching: false, quoteError: true, quoteOutput: 900000000000000123n },

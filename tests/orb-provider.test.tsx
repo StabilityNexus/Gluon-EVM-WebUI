@@ -15,6 +15,7 @@ vi.mock("wagmi", () => ({
     address: undefined,
     isConnected: false,
   }),
+  useReadContract: () => ({ data: undefined }),
   useChainId: () => mocks.chainId,
   usePublicClient: () => ({}),
   useDeployContract: () => ({
@@ -32,27 +33,8 @@ vi.mock("wagmi", () => ({
   }),
 }))
 
-vi.mock("@rainbow-me/rainbowkit", () => ({
-  ConnectButton: {
-    Custom: ({
-      children,
-    }: {
-      children: (props: {
-        account: undefined
-        chain: { unsupported: boolean }
-        openConnectModal: () => void
-        openChainModal: () => void
-        mounted: boolean
-      }) => React.ReactNode
-    }) =>
-      children({
-        account: undefined,
-        chain: { unsupported: false },
-        openConnectModal: vi.fn(),
-        openChainModal: vi.fn(),
-        mounted: true,
-      }),
-  },
+vi.mock("@/components/WalletButton", () => ({
+  WalletButton: () => <button type="button" onClick={() => {}}>Connect Wallet</button>,
 }))
 
 vi.mock("sonner", () => ({

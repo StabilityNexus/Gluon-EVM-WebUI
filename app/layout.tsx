@@ -1,26 +1,25 @@
 /* eslint-disable @next/next/no-page-custom-font */
 // Fonts are loaded from the App Router root layout and therefore apply application-wide.
 
-import '@rainbow-me/rainbowkit/styles.css'
 import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/providers/theme-provider'
 import { WalletProvider } from '@/providers/WalletProvider'
 import Navigation from '@/components/navigation'
 import ClientFooter from '@/components/ClientFooter'
+import { Toaster } from '@/components/ui/sonner'
 import gluonLogo from '@/public/GluonProtocol-Darker.png'
 import { SITE_URL } from '@/utils/seo'
 
 export const metadata: Metadata = {
   title: 'Gluon | Decentralized Stablecoin Creation Platform',
-  description: 'Gluon is a decentralized platform for creating and managing stablecoins. Build custom stablecoin reactors, manage collateral, and create algorithmic stablecoins with advanced DeFi mechanisms. Powered by The Stable Order.',
+  description: 'Gluon is a decentralized platform for creating and managing stablecoins. Build custom stablecoin reactors, manage reserves, and create algorithmic stablecoins with advanced DeFi mechanisms. Powered by The Stable Order.',
   keywords: [
     'Gluon',
     'stablecoin',
     'DeFi',
     'decentralized finance',
     'algorithmic stablecoin',
-    'collateral',
     'reactor',
     'Ethereum',
     'Polygon',
@@ -122,6 +121,7 @@ export default function RootLayout({
               {children}
             </main>
             <ClientFooter />
+            <Toaster position="bottom-right" richColors />
           </WalletProvider>
         </ThemeProvider>
       </body>

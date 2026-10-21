@@ -79,7 +79,7 @@ export function useReactorParameters({
   const baseTokenAddress = typeof baseToken === "string" ? baseToken : undefined
 
   const reserveBalanceText =
-    reserve && baseDecimalsNumber !== undefined
+    reserve !== undefined && baseDecimalsNumber !== undefined
       ? `${formatBalance(reserve, baseDecimalsNumber)} ${baseSymbolText}`
       : "—"
   const neutronSupplyText =
@@ -112,7 +112,7 @@ export function useReactorParameters({
     const sections: InfoSection[] = []
 
     sections.push({
-      title: "Vault Posture",
+      title: "Reserve & fees",
       description: "Core reserve state and fee policy for this reactor.",
       items: [
         {
@@ -122,20 +122,20 @@ export function useReactorParameters({
         },
         { label: "Reserve Ratio", value: reserveRatioText },
         { label: "Critical Ratio", value: criticalRatioText },
-        { label: "Base/Peg Price", value: basePricePeggedText },
+        { label: "Reserve/Peg Price", value: basePricePeggedText },
         { label: "Fission Fee", value: fissionFeeText },
         { label: "Fusion Fee", value: fusionFeeText },
-        { label: "Base Asset", value: baseAssetDisplay },
+        { label: "Reserve Asset", value: baseAssetDisplay },
         { label: "Pegged Asset", value: peggedAssetDisplay },
       ],
     })
 
     sections.push({
-      title: "Program Addresses",
+      title: "Addresses",
       description: "Key accounts that control this vault.",
       items: [
         {
-          label: "Vault Address",
+          label: "Reactor",
           value: reactorAddress ?? "—",
           monospace: true,
         },
@@ -144,7 +144,7 @@ export function useReactorParameters({
         { label: "Dev Fee", value: devFee === undefined ? "—" : `${formatWad(devFee * 100n)}%` },
         { label: "Oracle", value: oracleAddressText ?? "—", monospace: true },
         {
-          label: "Base Token",
+          label: "Reserve Token",
           value: baseTokenAddress ?? "—",
           monospace: true,
         },

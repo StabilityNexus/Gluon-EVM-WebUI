@@ -26,19 +26,20 @@ export default function HomePage() {
         <HeroField />
         <div className="container-page grid min-h-[calc(100svh-5rem)] items-center gap-12 py-10 sm:gap-16 sm:py-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-10 lg:py-12 xl:gap-12">
           <div className="relative z-10 max-w-[38rem]">
-            <h1 id="hero-title" className="type-display gluon-rise text-balance" style={delay(60)}>
-              Fully crypto-backed stablecoins, pegged to anything.
+            <h1 id="hero-title" className="gluon-rise text-[clamp(1.125rem,4.5vw,3rem)] lg:text-[clamp(1.75rem,2.45vw,2.65rem)] font-semibold leading-[1.12] tracking-tight" style={delay(60)}>
+              <span className="block whitespace-nowrap">Decentralized stablecoins,</span>
+              <span className="block whitespace-nowrap">backed by cryptocurrencies,</span>
+              <span className="block whitespace-nowrap">pegged to anything</span>
             </h1>
             <p className="type-lead gluon-rise mt-6 max-w-[34rem] text-pretty text-muted-foreground" style={delay(160)}>
-              Deploy a reactor that splits an ERC-20 reserve into two tokens: Neutron, a stablecoin, and
-              Proton, which tokenizes the reserve surplus. Both stay fully backed by the base asset.
+              Gluon allows anyone to deploy and use reactors that can split any reserve asset into stable coins and volatile coins.
             </p>
             <div className="gluon-rise mt-10 flex flex-wrap items-center gap-3" style={delay(260)}>
               <Button asChild size="lg" className="max-sm:w-full">
-                <Link href="/create">Create a stablecoin</Link>
+                <Link href="/explorer">Explore Stablecoins</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="max-sm:w-full">
-                <Link href="/explorer">Explore reactors</Link>
+                <Link href="/create">Create a Stablecoin</Link>
               </Button>
             </div>
           </div>
@@ -57,8 +58,7 @@ export default function HomePage() {
               Two tokens, one reserve.
             </h2>
             <p className="type-lead mt-5 max-w-md text-pretty text-muted-foreground">
-              Every reactor is an autonomous, permissionless contract that holds a single base asset and
-              issues two claims against it.
+              Every Gluon reactor is an autonomous permissionless contract that holds a single reserve asset (an ERC-20 token) that backs two tokens:
             </p>
 
             <div className="mt-12 space-y-8">
@@ -85,6 +85,7 @@ export default function HomePage() {
           </div>
 
           <div className="lg:col-span-7 lg:pl-6">
+            <p className="mb-6 text-muted-foreground">Every Gluon Reactor allows you to perform 4 operations that mint, redeem and swap neutrons and protons.</p>
             <ReactionFlows />
           </div>
         </div>
@@ -95,17 +96,19 @@ export default function HomePage() {
         <div className="container-page grid items-center gap-12 py-24 sm:py-32 lg:grid-cols-2 lg:gap-16">
           <div className="max-w-xl">
             <h2 id="research-title" className="type-title text-balance">
-              Built on published research.
+              Thoroughly Researched
             </h2>
             <p className="type-lead mt-5 text-pretty text-muted-foreground">
-              Gluon&apos;s settlement, oracle, and reserve controls follow the Stability Nexus research note on
-              the Gluon dual-token design, published on IACR ePrint as 2025/1372.
+              Gluon enjoys many stability theorems that have been mathematically proven, formally verified with automated proof assistants, peer-reviewed and accepted for publication at the Journal of Financial Technology.
             </p>
             <Button asChild variant="outline" className="mt-8">
               <a href="https://eprint.iacr.org/2025/1372" target="_blank" rel="noopener noreferrer">
-                Read the research note
+                Read the Research Article
                 <ArrowUpRight aria-hidden="true" />
               </a>
+            </Button>
+            <Button asChild variant="outline" className="mt-3 sm:ml-3 sm:mt-8">
+              <a href="https://github.com/StabilityNexus/Gluon-Formalization-Coq" target="_blank" rel="noopener noreferrer">See the Formal Proofs<ArrowUpRight aria-hidden="true" /></a>
             </Button>
           </div>
 
@@ -136,18 +139,17 @@ export default function HomePage() {
         <div className="container-page grid gap-12 py-24 sm:py-32 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-5">
             <h2 id="deploy-title" className="type-title text-balance">
-              Deploy a reactor.
+              Available on Multiple Blockchains
             </h2>
             <p className="type-lead mt-5 max-w-md text-pretty text-muted-foreground">
-              Choose a base asset, connect a price oracle, and set the reserve policy. Reactors are created by
-              a factory contract on each supported network.
+              Gluon’s factory contracts and reactors are available on EVM blockchains and also on non-EVM blockchains. This interface allows you to interact with Gluon on any EVM blockchain on which it is available.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild className="max-sm:w-full">
-                <Link href="/create">Create a stablecoin</Link>
+                <a href="https://gluon.stability.nexus/" target="_blank" rel="noopener noreferrer">See Gluon on non-EVM chains</a>
               </Button>
-              <Button asChild variant="outline" className="max-sm:w-full">
-                <Link href="/explorer">Explore reactors</Link>
+              <Button asChild variant="outline" className="h-auto min-h-10 whitespace-normal text-center max-sm:w-full">
+                <a href="mailto:contact@stability.nexus">Contact Us to have Gluon available on another chain</a>
               </Button>
             </div>
           </div>
@@ -156,7 +158,7 @@ export default function HomePage() {
             <div className="rounded-2xl border border-border bg-card">
               <div className="flex items-baseline justify-between gap-4 border-b border-border px-4 py-4 sm:px-6">
                 <h3 className="text-[15px] font-semibold text-foreground">Factory contracts</h3>
-                <p className="text-sm text-muted-foreground">Testnets</p>
+                <p className="text-sm text-muted-foreground">Deployment status</p>
               </div>
               <ul className="divide-y divide-border">
                 {GLUON_NETWORKS.map(({ chain, displayName, factoryAddress }) => {

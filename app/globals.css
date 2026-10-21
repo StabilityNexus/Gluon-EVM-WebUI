@@ -357,18 +357,6 @@ html.theme-fading *::after {
   }
 }
 
-/* Keep RainbowKit modal close controls clearly visible. */
-[data-rk] button[aria-label*="close" i] {
-  width: 34px !important;
-  height: 34px !important;
-  min-width: 34px !important;
-  min-height: 34px !important;
-  padding: 8px !important;
-}
-[data-rk] button[aria-label*="close" i] svg {
-  width: 16px !important;
-  height: 16px !important;
-}
 
 /* ---- v2: hero field + reaction beams ---------------------------------- */
 :root {

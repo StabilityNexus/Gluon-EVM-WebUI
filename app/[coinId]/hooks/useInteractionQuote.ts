@@ -187,9 +187,9 @@ export function useInteractionQuote({
           ? `Redeem ${nativeAsset.nativeSymbol}`
           : "Merge Tokens"
       case "PROTON_TO_NEUTRON":
-        return "Transmute β⁺"
+        return "Transmutation β⁺"
       case "NEUTRON_TO_PROTON":
-        return "Transmute β⁻"
+        return "Transmutation β⁻"
       default:
         return "Select Pair"
     }
@@ -560,7 +560,7 @@ export function useInteractionQuote({
             value: formatTokenValue(fissionBreakdown.devFeeAmount, baseDecimalsNumber, baseSymbolText),
           },
           {
-            label: "Net base",
+            label: "Net reserve",
             value: formatTokenValue(
               fissionBreakdown.netBase,
               baseDecimalsNumber,
@@ -610,7 +610,7 @@ export function useInteractionQuote({
             ),
           },
           {
-            label: "Gross base",
+            label: "Gross reserve",
             value: formatTokenValue(
               displayFusionBreakdown.grossBase,
               baseDecimalsNumber,
@@ -705,7 +705,7 @@ export function useInteractionQuote({
       route === "PROTON_TO_NEUTRON"
         ? neutronSymbolText
         : protonSymbolText
-    return formatTokenValue(transmutationOutput, outputDecimals, outputSymbol, 4)
+    return `${formatUnits(transmutationOutput, outputDecimals)} ${outputSymbol}`
   }, [
     transmutationOutput,
     route,

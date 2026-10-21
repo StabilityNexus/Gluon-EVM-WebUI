@@ -14,22 +14,22 @@ export function SwapForm({ model }: SwapFormProps) {
   const { swapDescription, recipient, setRecipient } = model
 
   return (
-    <Card className="rounded-2xl border border-border bg-card">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-semibold flex items-center gap-2 text-foreground">
+    <Card className="h-full gap-4 rounded-2xl border border-border bg-card py-5 sm:py-6">
+      <CardHeader className="space-y-1 px-5 sm:px-6">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
           <Sparkles className="h-5 w-5 text-primary" />
-          Swap Anywhere, Anytime
+          Convert tokens
         </CardTitle>
         <p className="text-sm text-muted-foreground">{swapDescription}</p>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="flex flex-1 flex-col gap-4 px-5 sm:px-6">
         <BaseAssetMode model={model} />
         <ConversionInputs model={model} />
         {model.minimumOutputText && (
           <p className="text-sm text-muted-foreground">{model.minimumOutputText}</p>
         )}
 
-        <div className="space-y-2">
+        <div className="mt-auto space-y-2">
           <label htmlFor="recipient-address" className="text-sm text-muted-foreground">
             Recipient Address
           </label>

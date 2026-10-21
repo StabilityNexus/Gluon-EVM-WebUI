@@ -96,7 +96,7 @@ describe("contract-simulated transmutation quotes", () => {
       expect(
         rows.find(
           (row) => row.label === (
-            route === "FISSION" ? "Net base" : "Net received"
+            route === "FISSION" ? "Net reserve" : "Net received"
           ),
         )?.value,
       ).toBe("0 B")
@@ -137,7 +137,7 @@ describe("contract-simulated transmutation quotes", () => {
     const rows = view.result.current.breakdownPopover!.rows
     expect(rows.find((row) => row.label === "Fee retained")?.value).toBe("0.02 B")
     expect(rows.find((row) => row.label === "Dev fee")?.value).toBe("0.001 B")
-    expect(rows.find((row) => row.label === "Net base")?.value).toBe("0.979 B")
+    expect(rows.find((row) => row.label === "Net reserve")?.value).toBe("0.979 B")
   })
 
   it("deducts both fees in the fusion output", () => {
@@ -164,6 +164,25 @@ describe("contract-simulated transmutation quotes", () => {
       functionName, args: [WAD, 0n, recipient],
     })
   })
+
+  it.each([
+    ["NEUTRON_TO_PROTON", 20485501923821n, "0.000020485501923821 P"],
+    ["PROTON_TO_NEUTRON", 20485501923821n, "0.000020485501923821 N"],
+    ["NEUTRON_TO_PROTON", 1n, "0.000000000000000001 P"],
+    ["PROTON_TO_NEUTRON", 1n, "0.000000000000000001 N"],
+  ] as const)(
+    "%s displays a small positive quote without truncating it to zero: %s",
+    async (route, output, expected) => {
+      const view = setup(input(route), (call) => encodedResult(call, output))
+      await waitFor(() =>
+        expect(view.result.current.toInputValue).toBe(expected),
+      )
+      expect(view.result.current.transmutationOutput).toBe(output)
+      expect(view.result.current.minimumOutputText).toContain(
+        `Minimum received: ${expected}.`,
+      )
+    },
+  )
 
   it("supports a zero-fee reactor without a separate local pricing formula", async () => {
     const view = setup(input(), (call) => encodedResult(call, WAD, 0n))

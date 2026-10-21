@@ -140,7 +140,7 @@ export function useReactorPricing({
     typeof baseAssetNameContract === "string" &&
     baseAssetNameContract.length > 0
       ? baseAssetNameContract
-      : baseSymbolText || "Base Asset"
+      : baseSymbolText || "Reserve Asset"
   const peggedSymbolText =
     typeof peggedAssetSymbolContract === "string" &&
     peggedAssetSymbolContract.length > 0
