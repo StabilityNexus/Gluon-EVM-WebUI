@@ -18,7 +18,7 @@ import {
 } from "@/utils/abi/ChainlinkToOracleAdapter"
 import { StableCoinFactories } from "@/utils/addresses"
 import { GLUON_NETWORKS, SEPOLIA_CHAIN_ID } from "@/utils/networks"
-import { Toaster, toast } from "sonner"
+import { toast } from "sonner"
 import TokenSelector from "@/components/TokenSelector"
 import { PageHeader } from "@/components/PageHeader"
 import OraclePreflightPanel from "@/components/OraclePreflightPanel"
@@ -646,7 +646,6 @@ export default function CreatePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      <Toaster position="bottom-right" richColors />
 
 
       <div className="container-page py-10 sm:py-14">

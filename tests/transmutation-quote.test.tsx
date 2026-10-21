@@ -165,6 +165,25 @@ describe("contract-simulated transmutation quotes", () => {
     })
   })
 
+  it.each([
+    ["NEUTRON_TO_PROTON", 20485501923821n, "0.000020485501923821 P"],
+    ["PROTON_TO_NEUTRON", 20485501923821n, "0.000020485501923821 N"],
+    ["NEUTRON_TO_PROTON", 1n, "0.000000000000000001 P"],
+    ["PROTON_TO_NEUTRON", 1n, "0.000000000000000001 N"],
+  ] as const)(
+    "%s displays a small positive quote without truncating it to zero: %s",
+    async (route, output, expected) => {
+      const view = setup(input(route), (call) => encodedResult(call, output))
+      await waitFor(() =>
+        expect(view.result.current.toInputValue).toBe(expected),
+      )
+      expect(view.result.current.transmutationOutput).toBe(output)
+      expect(view.result.current.minimumOutputText).toContain(
+        `Minimum received: ${expected}.`,
+      )
+    },
+  )
+
   it("supports a zero-fee reactor without a separate local pricing formula", async () => {
     const view = setup(input(), (call) => encodedResult(call, WAD, 0n))
     await waitFor(() => expect(view.result.current.toInputValue).toBe("1 P"))

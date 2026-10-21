@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/providers/theme-provider'
 import { WalletProvider } from '@/providers/WalletProvider'
 import Navigation from '@/components/navigation'
 import ClientFooter from '@/components/ClientFooter'
+import { Toaster } from '@/components/ui/sonner'
 import gluonLogo from '@/public/GluonProtocol-Darker.png'
 import { SITE_URL } from '@/utils/seo'
 
@@ -121,6 +122,7 @@ export default function RootLayout({
               {children}
             </main>
             <ClientFooter />
+            <Toaster position="bottom-right" richColors />
           </WalletProvider>
         </ThemeProvider>
       </body>
