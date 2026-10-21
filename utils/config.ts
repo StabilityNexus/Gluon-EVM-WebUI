@@ -1,14 +1,7 @@
 // src/utils/config.ts
-import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import { createWalletLinkConfig } from '@stability-nexus/walletlink'
 import { http, type Transport } from 'viem'
 import { GLUON_CHAINS, SEPOLIA_CHAIN_ID } from '@/utils/networks'
-
-  
-// Sanitize the project ID to avoid stray quotes/semicolons that break the WalletConnect API URL
-const walletConnectProjectId = (process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '').replace(/["';]/g, '').trim()
-
-// Fallback project ID if not provided - this prevents Coinbase wallet errors
-const projectId = walletConnectProjectId || 'fallback-project-id-for-development'
 
 const sepoliaRpcUrl =
   (process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || '').trim() ||
@@ -25,9 +18,7 @@ const transports = Object.fromEntries(
   ])
 ) as Record<number, Transport>
 
-export const config = getDefaultConfig({
-  appName: 'StableCoin',
-  projectId: projectId,
+export const config = createWalletLinkConfig({
   chains: GLUON_CHAINS,
   transports,
   ssr: true,

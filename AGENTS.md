@@ -11,7 +11,7 @@ file for build commands, style conventions, architecture constraints, and Web3 s
 - **UI:** React 18
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
-- **Wallet:** RainbowKit, wagmi
+- **Wallet:** WalletLink, wagmi
 - **EVM Client:** viem
 - **Testing:** Vitest, Testing Library
 - **Deployment:** GitHub Pages
