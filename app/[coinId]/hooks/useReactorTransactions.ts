@@ -287,7 +287,7 @@ export function useReactorTransactions({
     if (!baseToken) return
 
     if (baseDecimalsNumber === undefined) {
-      toast.error("Base token decimals not available")
+      toast.error("Reserve token decimals not available")
       return
     }
 
@@ -513,7 +513,7 @@ export function useReactorTransactions({
           }
 
           if (baseDecimalsNumber === undefined) {
-            toast.error("Base token decimals not available yet")
+            toast.error("Reserve token decimals not available yet")
             return
           }
 
@@ -533,7 +533,7 @@ export function useReactorTransactions({
         }
         case "FUSION": {
           if (baseDecimalsNumber === undefined) {
-            toast.error("Base token decimals not available yet")
+            toast.error("Reserve token decimals not available yet")
             return
           }
 

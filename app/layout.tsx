@@ -13,14 +13,13 @@ import { SITE_URL } from '@/utils/seo'
 
 export const metadata: Metadata = {
   title: 'Gluon | Decentralized Stablecoin Creation Platform',
-  description: 'Gluon is a decentralized platform for creating and managing stablecoins. Build custom stablecoin reactors, manage collateral, and create algorithmic stablecoins with advanced DeFi mechanisms. Powered by The Stable Order.',
+  description: 'Gluon is a decentralized platform for creating and managing stablecoins. Build custom stablecoin reactors, manage reserves, and create algorithmic stablecoins with advanced DeFi mechanisms. Powered by The Stable Order.',
   keywords: [
     'Gluon',
     'stablecoin',
     'DeFi',
     'decentralized finance',
     'algorithmic stablecoin',
-    'collateral',
     'reactor',
     'Ethereum',
     'Polygon',

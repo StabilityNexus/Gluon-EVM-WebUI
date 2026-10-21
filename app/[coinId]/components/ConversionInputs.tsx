@@ -82,20 +82,20 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
 
   return (
     <>
-      <div className="space-y-3 rounded-xl border border-border bg-background p-4 sm:p-5">
+      <div className="space-y-2 rounded-xl border border-border bg-background p-3">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>From</span>
           <span className="font-mono text-xs text-foreground/80">
             {fromBalanceDisplay}
           </span>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:h-14">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[10rem_minmax(0,1fr)_auto]">
           <Select
             value={fromToken}
             onValueChange={(value) => setFromToken(value as TokenOption)}
           >
-            <SelectTrigger className="h-12 sm:h-14 w-full sm:w-48 sm:flex-none bg-background/80">
-              <SelectValue placeholder="Token" />
+            <SelectTrigger className="col-span-2 h-11 data-[size=default]:h-11 w-full sm:col-span-1 sm:w-40 sm:flex-none bg-background/80">
+              <SelectValue placeholder="Token">{fromToken === "BASE" ? activeBaseSymbol : undefined}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="BASE" disabled={disabledTokens.BASE}>
@@ -124,7 +124,7 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
               setAmount(event.target.value)
             }}
             readOnly={fromInputReadOnly}
-            className="w-full sm:flex-1 sm:min-w-0 text-xl sm:text-2xl font-semibold h-12 sm:h-14 bg-background/60"
+            className="min-w-0 w-full text-xl sm:text-2xl font-semibold h-11 sm:h-11 bg-background/60"
           />
 
           {renderMaxButton && (
@@ -132,7 +132,7 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
               type="button"
               variant="outline"
               size="sm"
-              className="w-full sm:w-auto h-12 sm:h-14 border-border hover:bg-muted"
+              className="w-full sm:w-auto h-11 sm:h-11 border-border hover:bg-muted"
               onClick={handleMaxClick}
             >
               Max
@@ -146,7 +146,7 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
           type="button"
           variant="ghost"
           aria-label="Reverse conversion direction"
-          className="size-11 rounded-full border border-border bg-background p-0 hover:bg-secondary"
+          className="size-9 rounded-full border border-border bg-background p-0 hover:bg-secondary"
           onClick={() => {
             const newFrom = toToken
             const newTo = allowedTargets[newFrom][0]
@@ -158,7 +158,7 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
         </Button>
       </div>
 
-      <div className="space-y-3 rounded-xl border border-border bg-background p-4 sm:p-5">
+      <div className="space-y-2 rounded-xl border border-border bg-background p-3">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>To</span>
           <div className="flex items-center gap-2">
@@ -198,12 +198,12 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
             </span>
           </div>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:h-14">
+        <div className="grid items-center gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
           <Select
             value={toToken}
             onValueChange={(value) => setToToken(value as TokenOption)}
           >
-            <SelectTrigger className="h-12 sm:h-14 sm:w-52 sm:flex-none bg-background/80">
+            <SelectTrigger className="h-11 data-[size=default]:h-11 w-full sm:w-40 sm:flex-none bg-background/80">
               <SelectValue placeholder="Token" />
             </SelectTrigger>
             <SelectContent>
@@ -231,7 +231,7 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
               }
             }}
             readOnly={toInputReadOnly}
-            className="w-full sm:flex-1 sm:min-w-0 text-xl sm:text-2xl font-semibold h-12 sm:h-14 bg-background/60"
+            className="min-w-0 w-full text-xl sm:text-2xl font-semibold h-11 sm:h-11 bg-background/60"
           />
         </div>
       </div>

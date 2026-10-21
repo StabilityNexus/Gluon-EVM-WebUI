@@ -27,7 +27,7 @@ export function BaseAssetMode({ model }: BaseAssetModeProps) {
         <div className="rounded-xl border border-border bg-background p-3">
           <div className="mb-2 flex items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground">
-              Base asset mode
+              Reserve asset mode
             </span>
             <span className="text-xs font-mono text-foreground/70">
               {useNativeBase ? nativeAsset.nativeSymbol : baseSymbolText}

@@ -96,7 +96,7 @@ describe("contract-simulated transmutation quotes", () => {
       expect(
         rows.find(
           (row) => row.label === (
-            route === "FISSION" ? "Net base" : "Net received"
+            route === "FISSION" ? "Net reserve" : "Net received"
           ),
         )?.value,
       ).toBe("0 B")
@@ -137,7 +137,7 @@ describe("contract-simulated transmutation quotes", () => {
     const rows = view.result.current.breakdownPopover!.rows
     expect(rows.find((row) => row.label === "Fee retained")?.value).toBe("0.02 B")
     expect(rows.find((row) => row.label === "Dev fee")?.value).toBe("0.001 B")
-    expect(rows.find((row) => row.label === "Net base")?.value).toBe("0.979 B")
+    expect(rows.find((row) => row.label === "Net reserve")?.value).toBe("0.979 B")
   })
 
   it("deducts both fees in the fusion output", () => {

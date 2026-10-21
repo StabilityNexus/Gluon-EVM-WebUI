@@ -47,6 +47,7 @@ vi.mock("next/navigation", () => ({
 }))
 
 vi.mock("wagmi", () => ({
+  useReadContracts: () => ({ data: undefined, refetch: vi.fn() }),
   useAccount: () => ({
     address: mocks.connected ? mocks.address : undefined,
     isConnected: mocks.connected,
@@ -137,6 +138,7 @@ vi.mock("wagmi", () => ({
 
 vi.mock("@/utils/networks", () => ({
   getGluonNetwork: () => ({
+    chain: { id: mocks.chainId },
     nativeAsset: mocks.native
       ? {
           nativeSymbol: "ETH",
@@ -428,8 +430,8 @@ describe("reactor interaction", () => {
   })
 
   it.each([
-    ["PROTON", "NEUTRON", "Transmute β⁺", "transmuteProtonToNeutron"],
-    ["NEUTRON", "PROTON", "Transmute β⁻", "transmuteNeutronToProton"],
+    ["PROTON", "NEUTRON", "Transmutation β⁺", "transmuteProtonToNeutron"],
+    ["NEUTRON", "PROTON", "Transmutation β⁻", "transmuteNeutronToProton"],
   ])(
     "runs %s transmutation with the paired target",
     (from, to, label, functionName) => {
@@ -454,7 +456,7 @@ describe("reactor interaction", () => {
     const view = renderPage()
     chooseFrom(from)
     inputAmount("2")
-    const label = from === "PROTON" ? "Transmute β⁺" : "Transmute β⁻"
+    const label = from === "PROTON" ? "Transmutation β⁺" : "Transmutation β⁻"
     for (const change of [
       { quoteFetching: true, quoteError: false, quoteOutput: 900000000000000123n },
       { quoteFetching: false, quoteError: true, quoteOutput: 900000000000000123n },

@@ -49,12 +49,16 @@ function TokenRow({
 }
 
 // Simple reactor card component
-function SimpleReactorCard({ address }: { address: string }) {
+function SimpleReactorCard({ address, chainId }: { address: string; chainId: number }) {
+  const explorer = GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)?.chain.blockExplorers?.default.url
+  const { data: reserveToken } = useReadContract({ address: address as `0x${string}`, abi: StableCoinReactorABI, functionName: "BASE_TOKEN", chainId })
+  const { data: reserveSymbol } = useReadContract({ address: reserveToken, abi: ERC20ABI, functionName: "symbol", chainId, query: { enabled: !!reserveToken } })
   // Get vault name
   const { data: vaultName } = useReadContract({
     address: address as `0x${string}`,
     abi: StableCoinReactorABI,
     functionName: 'vaultName',
+    chainId,
   })
 
   // Get neutron and proton token addresses directly from reactor
@@ -62,12 +66,14 @@ function SimpleReactorCard({ address }: { address: string }) {
     address: address as `0x${string}`,
     abi: StableCoinReactorABI,
     functionName: 'NEUTRON_TOKEN',
+    chainId,
   })
 
   const { data: protonAddress } = useReadContract({
     address: address as `0x${string}`,
     abi: StableCoinReactorABI,
     functionName: 'PROTON_TOKEN',
+    chainId,
   })
 
   // Get neutron token details
@@ -75,6 +81,7 @@ function SimpleReactorCard({ address }: { address: string }) {
     address: neutronAddress as `0x${string}`,
     abi: ERC20ABI,
     functionName: 'name',
+    chainId,
     query: {
       enabled: !!neutronAddress,
     }
@@ -84,6 +91,7 @@ function SimpleReactorCard({ address }: { address: string }) {
     address: neutronAddress as `0x${string}`,
     abi: ERC20ABI,
     functionName: 'symbol',
+    chainId,
     query: {
       enabled: !!neutronAddress,
     }
@@ -94,6 +102,7 @@ function SimpleReactorCard({ address }: { address: string }) {
     address: protonAddress as `0x${string}`,
     abi: ERC20ABI,
     functionName: 'name',
+    chainId,
     query: {
       enabled: !!protonAddress,
     }
@@ -103,6 +112,7 @@ function SimpleReactorCard({ address }: { address: string }) {
     address: protonAddress as `0x${string}`,
     abi: ERC20ABI,
     functionName: 'symbol',
+    chainId,
     query: {
       enabled: !!protonAddress,
     }
@@ -110,18 +120,20 @@ function SimpleReactorCard({ address }: { address: string }) {
 
   return (
     <article className="group flex flex-col rounded-2xl border border-border bg-card p-5 transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-line-strong hover:shadow-[var(--shadow-md)]">
-      <header className="min-w-0">
+      <header className="flex min-w-0 flex-wrap items-start justify-between gap-2">
         <h2 className="truncate text-base font-semibold tracking-[-0.01em] text-foreground">
           {vaultName || `Vault ${address.slice(-6)}`}
         </h2>
-        <p className="mt-1 font-mono text-xs text-muted-foreground" title={address}>
-          {shortAddress(address)}
-        </p>
+        {explorer ? <a href={`${explorer}/address/${address}`} target="_blank" rel="noopener noreferrer" className="ml-auto shrink-0 rounded font-mono text-xs text-muted-foreground underline underline-offset-4" title={address}>{shortAddress(address)}</a> : <span className="ml-auto font-mono text-xs">{shortAddress(address)}</span>}
       </header>
 
       <dl className="mt-5 divide-y divide-border rounded-xl border border-border bg-background">
-        <TokenRow kind="neutron" label="Neutron" symbol={neutronSymbol} name={neutronName} />
-        <TokenRow kind="proton" label="Proton" symbol={protonSymbol} name={protonName} />
+        <TokenRow kind="neutron" label="Stable Coin" symbol={neutronSymbol} name={neutronName} />
+        <TokenRow kind="proton" label="Volatile Coin" symbol={protonSymbol} name={protonName} />
+        <div className="flex flex-wrap justify-between gap-2 px-3.5 py-3 text-sm">
+          <dt className="text-muted-foreground">Reserve Token</dt>
+          <dd>{reserveToken && explorer ? <a href={`${explorer}/address/${reserveToken}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4" title={reserveToken}>{reserveSymbol || shortAddress(reserveToken)}</a> : "—"}</dd>
+        </div>
       </dl>
 
       <Button asChild variant="outline" className="mt-5 w-full justify-between">
@@ -150,15 +162,11 @@ export default function ExplorerPage() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid")
   const chainId = useChainId()
 
-  // Get current chain's factory address
+  const currentNetwork = GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)
   const factoryAddress = StableCoinFactories[chainId as keyof typeof StableCoinFactories]
+    ?? currentNetwork?.explorerFactoryAddress
 
-
-
-  const currentNetwork = GLUON_NETWORKS.find(
-    ({ chain }) => chain.id === chainId
-  )
-// Get all deployed reactors
+  // Get all deployed reactors
   const {
     data: deployedReactors,
     isLoading: isLoadingReactors,
@@ -168,6 +176,7 @@ export default function ExplorerPage() {
     address: factoryAddress,
     abi: FactoryABI,
     functionName: 'getAllDeployedReactors',
+    chainId,
     query: { enabled: !!factoryAddress },
   })
 
@@ -179,6 +188,7 @@ export default function ExplorerPage() {
     address: factoryAddress,
     abi: FactoryABI,
     functionName: 'getDeployedReactorsCount',
+    chainId,
     query: { enabled: !!factoryAddress },
   })
 
@@ -217,9 +227,13 @@ export default function ExplorerPage() {
   return (
     <div className="container-page min-h-[calc(100vh-12rem)] py-10 sm:py-14">
       <PageHeader
-        title="Reactor explorer"
-        description="Browse deployed reactors and open one to inspect its live state or interact with its token pair."
+        title="Reactors"
+        description="Browse deployed reactors and open them to use their stablecoins and volatile leveraged yield coins."
       />
+
+      {!currentNetwork?.factoryAddress && currentNetwork?.explorerFactoryAddress && (
+        <p role="status" className="mb-6 text-sm text-muted-foreground">Sepolia test reactors. New reactor creation requires an updated factory.</p>
+      )}
 
       {/* Error State */}
       {hasError && (
@@ -281,7 +295,7 @@ export default function ExplorerPage() {
           {viewMode === "grid" ? (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filteredReactorAddresses.map((address) => (
-                <SimpleReactorCard key={address} address={address} />
+                <SimpleReactorCard key={address} address={address} chainId={chainId} />
               ))}
             </div>
           ) : (

@@ -15,6 +15,7 @@ vi.mock("wagmi", () => ({
     address: undefined,
     isConnected: false,
   }),
+  useReadContract: () => ({ data: undefined }),
   useChainId: () => mocks.chainId,
   usePublicClient: () => ({}),
   useDeployContract: () => ({

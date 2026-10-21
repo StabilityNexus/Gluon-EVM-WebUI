@@ -37,6 +37,12 @@ export function useReactorInteraction(reactorAddress: string) {
   }
 
   return {
+    chainId,
+    refreshPricing: () => Promise.all([
+      contracts.refetchReserve(), contracts.refetchBasePrice(), contracts.refetchReserveRatio(),
+      contracts.refetchNeutronPrice(), contracts.refetchProtonPrice(),
+    ]),
+    baseDecimalsNumber: interaction.baseDecimalsNumber,
     vaultHeading: interaction.vaultHeading,
     reactorAddress: interaction.reactorAddress,
     swapDescription: interaction.swapDescription,

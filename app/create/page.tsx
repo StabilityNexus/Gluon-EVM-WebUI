@@ -1,16 +1,15 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, useDeployContract, usePublicClient } from "wagmi"
-import { isAddress, parseUnits, zeroAddress } from "viem"
-import { DEV_FEE_WAD, GLUON_DEV_ADDRESS } from "@/utils/devFee"
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, useDeployContract, usePublicClient, useReadContract } from "wagmi"
+import { formatUnits, parseUnits } from "viem"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Wallet, CheckCircle, Zap } from "lucide-react"
+import { Wallet, CheckCircle, ChevronDown, Zap } from "lucide-react"
 import { WalletButton } from "@/components/WalletButton"
 import { FactoryABI } from "@/utils/abi/Factory"
-import { parseBetaParameters } from "@/utils/betaParameters"
+import { parseBetaParameters, retentionAfterHour } from "@/utils/betaParameters"
 import { ERC20ABI } from "@/utils/abi/StableCoin"
 import {
   ChainlinkToOracleAdapterABI,
@@ -37,7 +36,6 @@ interface ReactorConfig {
   protonSymbol: string
   baseToken: string
   oracleAddress: string
-  dev: string
   criticalReserveRatio: string
   initialReserveRatio: string
   initialReserve: string
@@ -45,7 +43,7 @@ interface ReactorConfig {
   fusionFee: string
   betaFeePercent: string
   betaVolumeCoefficient: string
-  volumeRetentionPerSecond: string
+  volumeRetentionPerHour: string
 }
 
 type OracleProvider = "existing" | "chainlink" | "orb"
@@ -90,7 +88,6 @@ export default function CreatePage() {
     protonSymbol: "",
     baseToken: "",
     oracleAddress: "",
-    dev: GLUON_DEV_ADDRESS,
     criticalReserveRatio: "103",
     initialReserveRatio: "150",
     initialReserve: "0.1",
@@ -98,7 +95,7 @@ export default function CreatePage() {
     fusionFee: "0",
     betaFeePercent: "0",
     betaVolumeCoefficient: "0",
-    volumeRetentionPerSecond: "1",
+    volumeRetentionPerHour: "1",
   })
 
   const [oracleProvider, setOracleProvider] = useState<OracleProvider>("existing")
@@ -114,6 +111,18 @@ export default function CreatePage() {
   const isChainlinkSupported = CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)
   const currentNetwork = GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)
   const isAdapterDeploymentBusy = isAdapterDeploying || isAdapterConfirming
+
+  const { data: factoryDevFee } = useReadContract({
+    address: currentNetwork?.factoryAddress,
+    abi: FactoryABI,
+    functionName: "devFee",
+    chainId,
+    query: { enabled: !!currentNetwork?.factoryAddress },
+  })
+  let hourlyRetentionText = "—"
+  try {
+    hourlyRetentionText = formatUnits(retentionAfterHour(parseBetaParameters(config).decayPerSecondWad), 18)
+  } catch { /* Invalid input is explained before submission. */ }
 
   // Contract interaction
   const { data: hash, isPending: isDeploying, writeContractAsync } = useWriteContract()
@@ -234,7 +243,6 @@ export default function CreatePage() {
            config.protonSymbol && 
            config.baseToken && 
            config.oracleAddress &&
-           config.dev &&
            config.criticalReserveRatio &&
            config.initialReserveRatio &&
            config.initialReserve &&
@@ -242,7 +250,7 @@ export default function CreatePage() {
            config.fusionFee !== "" &&
            config.betaFeePercent !== "" &&
            config.betaVolumeCoefficient !== "" &&
-           config.volumeRetentionPerSecond !== ""
+           config.volumeRetentionPerHour !== ""
   }
 
   const handleDeployChainlinkAdapter = async () => {
@@ -401,13 +409,13 @@ export default function CreatePage() {
 
     const baseAssetName = config.baseAssetName.trim()
     if (!baseAssetName) {
-      toast.error("Base asset name cannot be empty")
+      toast.error("Reserve asset name cannot be empty")
       return
     }
 
     const baseAssetSymbol = config.baseAssetSymbol.trim()
     if (!baseAssetSymbol) {
-      toast.error("Base asset symbol cannot be empty")
+      toast.error("Reserve asset symbol cannot be empty")
       return
     }
 
@@ -437,19 +445,13 @@ export default function CreatePage() {
 
     const baseToken = config.baseToken.trim()
     if (!/^0x[0-9a-fA-F]{40}$/.test(baseToken)) {
-      toast.error("Base token must be a 20-byte checksum address")
+      toast.error("Reserve token must be a 20-byte checksum address")
       return
     }
 
     const oracleAddress = config.oracleAddress.trim()
     if (!/^0x[0-9a-fA-F]{40}$/.test(oracleAddress)) {
       toast.error("Oracle address must be a 20-byte checksum address")
-      return
-    }
-
-    const devAddress = config.dev.trim()
-    if (!isAddress(devAddress) || devAddress === zeroAddress) {
-      toast.error("Dev must be a valid nonzero address")
       return
     }
 
@@ -514,8 +516,12 @@ export default function CreatePage() {
     const fissionFeeWad = parseUnits(config.fissionFee, 16)
     const fusionFeeWad = parseUnits(config.fusionFee, 16)
 
-    if (fissionFeeWad + DEV_FEE_WAD >= 10n ** 18n || fusionFeeWad + DEV_FEE_WAD >= 10n ** 18n) {
-      toast.error("Each fission or fusion fee plus the 0.1% dev fee must be below 100%")
+    if (typeof factoryDevFee !== "bigint" || factoryDevFee < 0n || factoryDevFee >= 10n ** 18n) {
+      toast.error("Factory dev fee unavailable. Please try again.")
+      return
+    }
+    if (fissionFeeWad + factoryDevFee >= 10n ** 18n || fusionFeeWad + factoryDevFee >= 10n ** 18n) {
+      toast.error("Each fission or fusion fee plus the factory dev fee must be below 100%")
       return
     }
 
@@ -613,8 +619,6 @@ export default function CreatePage() {
         oracleAddress as `0x${string}`,
         protonName,
         protonSymbol,
-        devAddress as `0x${string}`,
-        DEV_FEE_WAD,
         fissionFeeWad,
         fusionFeeWad,
         criticalReserveRatioWad,
@@ -642,17 +646,17 @@ export default function CreatePage() {
 
   const fieldBaseClasses =
     "bg-background border border-input text-sm text-foreground placeholder:text-faint-foreground hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus:border-foreground/40 transition-[border-color,box-shadow] duration-150 px-3.5 rounded-lg cursor-text"
-  const inputClasses = `${fieldBaseClasses} h-12`
+  const inputClasses = `${fieldBaseClasses} h-11`
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
 
 
       <div className="container-page py-10 sm:py-14">
-        <div className="w-full max-w-3xl mx-auto">
+        <div className="w-full max-w-4xl mx-auto">
           <PageHeader
-            title="Create a reactor"
-            description="Configure collateral, oracle wiring, token parameters, dev, and reserve policy for a new Gluon reactor."
+            title="Deploy a new Reactor"
+            description="Choose the parameters and create your own stablecoin."
           />
 
           {!currentNetwork?.factoryAddress && (
@@ -662,16 +666,7 @@ export default function CreatePage() {
           )}
 
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
-            <div className="border-b border-border px-5 py-5 sm:px-8">
-              <h2 className="text-base font-semibold tracking-tight">
-                Reactor configuration
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Review each field carefully before submitting the deployment transaction.
-              </p>
-            </div>
-
-            <div className="grid gap-8 px-5 py-7 sm:px-8 sm:py-8">
+            <div className="grid gap-6 px-5 py-6 sm:px-6">
 
               {!isConnected && (
                 <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3.5 text-sm text-muted-foreground">
@@ -682,7 +677,7 @@ export default function CreatePage() {
                 </div>
               )}
 
-              <div className="grid gap-7">
+              <div className="grid gap-6">
                 <div className="space-y-2">
                   <Label className="text-[13px] font-medium text-foreground/80">
                     Vault Name
@@ -698,7 +693,7 @@ export default function CreatePage() {
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label className="text-[13px] font-medium text-foreground/80">
-                      Base Asset Name
+                      Reserve Asset Name
                     </Label>
                     <Input
                       placeholder="Bitcoin Reserve"
@@ -709,7 +704,7 @@ export default function CreatePage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[13px] font-medium text-foreground/80">
-                      Base Asset Symbol
+                      Reserve Asset Symbol
                     </Label>
                     <Input
                       placeholder="BTC"
@@ -722,7 +717,7 @@ export default function CreatePage() {
 
                 <div className="space-y-2">
                   <Label className="text-[13px] font-medium text-foreground/80">
-                    Base Token (Collateral)
+                    Reserve Token
                   </Label>
                   <TokenSelector
                     value={config.baseToken}
@@ -733,18 +728,37 @@ export default function CreatePage() {
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <Label className="text-[13px] font-medium text-foreground/80">
-                    Oracle Provider
-                  </Label>
+                <fieldset className="space-y-4 rounded-xl border border-border p-4">
+                  <legend className="px-2 text-sm font-medium">Oracle</legend>
+                  <div className="space-y-2">
+                    <Label htmlFor="deployed-oracle" className="text-xs text-muted-foreground">Choose a deployed oracle</Label>
+                    <div className="relative">
+                      <select
+                        id="deployed-oracle"
+                        className={`${inputClasses} w-full appearance-none pr-10`}
+                        value={currentNetwork?.oracles?.some(({ address }) => address.toLowerCase() === config.oracleAddress.toLowerCase()) ? config.oracleAddress : ""}
+                        disabled={isAdapterDeploymentBusy}
+                        onChange={(event) => {
+                          const selected = currentNetwork?.oracles?.find(({ address }) => address === event.target.value)
+                          selectOracleProvider(selected?.provider ?? "existing")
+                          setOracleAddress(selected?.address ?? "")
+                        }}
+                      >
+                        <option value="">Enter manually</option>
+                        {currentNetwork?.oracles?.map(({ address, name }) => <option key={address} value={address}>{name}</option>)}
+                      </select>
+                      <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    </div>
+                  </div>
+                  {!currentNetwork?.oracles?.length && <p className="text-xs text-muted-foreground">No deployed oracles have been verified for this network.</p>}
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <button
                       type="button"
                       aria-pressed={oracleProvider === "existing"}
                       disabled={isAdapterDeploymentBusy}
                       onClick={() => selectOracleProvider("existing")}
-                      className={`h-12 rounded-lg border text-[13px] transition-colors ${
+                      className={`h-10 rounded-lg border px-2 text-xs sm:text-[13px] transition-colors ${
                         oracleProvider === "existing"
                           ? "border-foreground bg-foreground text-background"
                           : "border-border bg-background text-muted-foreground hover:border-foreground/40"
@@ -758,7 +772,7 @@ export default function CreatePage() {
                       aria-pressed={oracleProvider === "chainlink"}
                       disabled={!isChainlinkSupported || isAdapterDeploymentBusy}
                       onClick={() => selectOracleProvider("chainlink")}
-                      className={`h-12 rounded-lg border text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                      className={`h-10 rounded-lg border px-2 text-xs sm:text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                         oracleProvider === "chainlink"
                           ? "border-foreground bg-foreground text-background"
                           : "border-border bg-background text-muted-foreground hover:border-foreground/40"
@@ -772,7 +786,7 @@ export default function CreatePage() {
                       aria-pressed={oracleProvider === "orb"}
                       disabled={isAdapterDeploymentBusy}
                       onClick={() => selectOracleProvider("orb")}
-                      className={`h-12 rounded-lg border text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                      className={`h-10 rounded-lg border px-2 text-xs sm:text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                         oracleProvider === "orb"
                           ? "border-foreground bg-foreground text-background"
                           : "border-border bg-background text-muted-foreground hover:border-foreground/40"
@@ -871,9 +885,10 @@ export default function CreatePage() {
                       )}
                     </div>
                   )}
-                </div>
+                </fieldset>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <fieldset className="grid gap-4 sm:grid-cols-3">
+                  <legend className="mb-3 text-sm font-medium">Reserve settings</legend>
                   <div className="space-y-2">
                     <Label className="text-[13px] font-medium text-foreground/80">
                       Initial Reserve
@@ -890,7 +905,7 @@ export default function CreatePage() {
                       className={inputClasses}
                     />
                     <p className="text-[12px] text-muted-foreground/75">
-                      Amount of the selected base token deposited when the reactor is created.
+                      Amount of the selected reserve token deposited when the reactor is created.
                     </p>
                   </div>
 
@@ -936,6 +951,10 @@ export default function CreatePage() {
                     </p>
                   </div>
 
+                </fieldset>
+
+                <fieldset className="grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">
+                  <legend className="px-2 text-sm font-medium">Protocol fees</legend>
                   <div className="space-y-2">
                     <Label htmlFor="fission-fee" className="text-[13px] font-medium text-foreground/80">
                       Fission Fee (%)
@@ -967,15 +986,12 @@ export default function CreatePage() {
                       className={inputClasses}
                     />
                   </div>
-                </div>
+                </fieldset>
 
-                <fieldset className="space-y-5 rounded-xl border border-border p-5">
+                <fieldset className="grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-3">
                   <legend className="px-1 text-[13px] font-medium text-foreground/80">
                     Transmutation settings
                   </legend>
-                  <p className="text-[12px] text-muted-foreground">
-                    These settings are fixed when the reactor is created and cannot be changed afterwards.
-                  </p>
                   <div className="space-y-2">
                     <Label htmlFor="beta-fee-percent" className="text-[13px] font-medium text-foreground/80">
                       Base transmutation fee (%)
@@ -1007,25 +1023,31 @@ export default function CreatePage() {
                       className={inputClasses}
                     />
                     <p id="beta-volume-help" className="text-[12px] text-muted-foreground">
-                      Between 0 and 1. Controls how strongly recorded trading volume increases the fee.
+                      Between 0 and 1. Controls how strongly historical transmutation volume increases the fee.
                     </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="volume-retention" className="text-[13px] font-medium text-foreground/80">
-                      Volume retained each second
+                      Volume retained each hour
                     </Label>
                     <Input
                       id="volume-retention"
                       type="text"
                       inputMode="decimal"
-                      value={config.volumeRetentionPerSecond}
-                      onChange={(e) => updateConfig("volumeRetentionPerSecond", e.target.value)}
+                      value={config.volumeRetentionPerHour}
+                      onChange={(e) => updateConfig("volumeRetentionPerHour", e.target.value)}
                       aria-describedby="volume-retention-help"
                       className={inputClasses}
                     />
                     <p id="volume-retention-help" className="text-[12px] text-muted-foreground">
-                      Between 0 and 1. Use 1 for no decay; 0 clears past volume after a second has elapsed.
+                      Enter 0–1. Use 1 for no decay; 0.5 keeps about 50% after an hour.
                     </p>
+                    <details className="text-xs text-muted-foreground">
+                      <summary className="cursor-pointer underline underline-offset-4">Conversion details</summary>
+                      <p className="mt-2 leading-relaxed">
+                        Rounded to a per-second setting that retains at least the requested fraction over an hour. Actual hourly retention: {hourlyRetentionText}. Zero clears past volume after the first second.
+                      </p>
+                    </details>
                   </div>
                 </fieldset>
 
@@ -1068,21 +1090,11 @@ export default function CreatePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="initial-dev" className="text-[13px] font-medium text-foreground/80">
-                    Initial Dev and Fee Receiver
-                  </Label>
-                  <Input
-                    placeholder="0x..."
-                    id="initial-dev"
-                    value={config.dev}
-                    onChange={(e) => updateConfig("dev", e.target.value)}
-                    className={`${inputClasses} font-mono`}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    The separate dev fee is 0.1%. Fission, fusion and beta fees remain in the reserve.
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  {typeof factoryDevFee === "bigint"
+                    ? `The separate dev fee is ${formatUnits(factoryDevFee, 16)}%. Fission, fusion and transmutation fees remain in the reserve.`
+                    : "The separate dev fee is read from the configured factory. Fission, fusion and transmutation fees remain in the reserve."}
+                </p>
               </div>
 
               <div className="space-y-4">
@@ -1120,6 +1132,7 @@ export default function CreatePage() {
                     )}
                   </Button>
                 )}
+                <p className="mt-3 text-center text-xs text-muted-foreground">Review all parameters carefully before deploying. They are immutable: they cannot be changed afterwards.</p>
 
                 {isSuccess && (
                   <div className="rounded-xl border border-success/30 bg-success/10 px-5 py-4">
