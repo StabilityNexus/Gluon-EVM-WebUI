@@ -23,7 +23,7 @@ export const GLUON_NETWORKS: readonly GluonNetworkConfig[] = [
   {
     chain: sepolia,
     displayName: "Ethereum Sepolia",
-    factoryAddress: "0x56a8c79dE3d8e21Dc60e2679c4e296Ac8A4b9F50",
+    // Configure after the factory with deployer-selected reserve ratios is deployed and verified.
   },
   {
     chain: scrollSepolia,

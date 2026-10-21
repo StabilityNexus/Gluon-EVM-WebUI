@@ -85,8 +85,9 @@ The Chainlink reactor reserve was `0.005794138550635281 dETH` and its reserve
 ratio was approximately `151.23%`. Both were inside their configured 120%–200%
 operating range.
 
-The local WebUI configuration points to this factory. Updating the shared website
-requires merging and deploying the corresponding frontend changes.
+This records the factory used for the October 19 tests. It predates the
+deployer-selected initial-ratio interface and is not configured for creation
+by the current WebUI. A matching factory must be deployed and verified first.
 
 ## Historical Sepolia Test Factory (2026-10-16)
 
@@ -344,6 +345,6 @@ No separately deployed WebUI backend is required.
 
 The older factories at `0x69554023440D59259689B91ede108435a11308c0` and
 `0x3Ca248b434DF95F20fc6469393D2e242243C47C6` predate the separate dev fee
-interface and remain historical records. The current Sepolia factory recorded
-above supports the 18-argument deployment interface. Its receipt and runtime
-bytecode were verified before configuring its address.
+interface and remain historical records. The October 19 Sepolia factory
+supports the older 18-argument deployment interface. Its receipt and runtime
+bytecode were checked, but it is not enabled for creation by the current WebUI.

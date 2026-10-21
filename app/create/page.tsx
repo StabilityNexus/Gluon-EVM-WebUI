@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Wallet, CheckCircle, Zap } from "lucide-react"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { WalletButton } from "@/components/WalletButton"
 import { FactoryABI } from "@/utils/abi/Factory"
 import { parseBetaParameters } from "@/utils/betaParameters"
 import { ERC20ABI } from "@/utils/abi/StableCoin"
@@ -39,6 +39,7 @@ interface ReactorConfig {
   oracleAddress: string
   dev: string
   criticalReserveRatio: string
+  initialReserveRatio: string
   initialReserve: string
   fissionFee: string
   fusionFee: string
@@ -75,7 +76,7 @@ const ChainlinkFeedABI = [
 ] as const
 
 export default function CreatePage() {
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, chain: walletChain } = useAccount()
   const chainId = useChainId()
   const publicClient = usePublicClient()
   const { deployContractAsync, isPending: isAdapterDeploying } = useDeployContract()
@@ -90,7 +91,8 @@ export default function CreatePage() {
     baseToken: "",
     oracleAddress: "",
     dev: GLUON_DEV_ADDRESS,
-    criticalReserveRatio: "120",
+    criticalReserveRatio: "103",
+    initialReserveRatio: "150",
     initialReserve: "0.1",
     fissionFee: "0",
     fusionFee: "0",
@@ -234,6 +236,7 @@ export default function CreatePage() {
            config.oracleAddress &&
            config.dev &&
            config.criticalReserveRatio &&
+           config.initialReserveRatio &&
            config.initialReserve &&
            config.fissionFee !== "" &&
            config.fusionFee !== "" &&
@@ -450,25 +453,34 @@ export default function CreatePage() {
       return
     }
 
-    const ratioValue = Number(config.criticalReserveRatio)
-    if (!Number.isFinite(ratioValue) || ratioValue < 100 || ratioValue >= 200) {
-      toast.error("Critical reserve ratio must be at least 100% and below 200%")
-      return
-    }
-
-    if (ratioValue > 150) {
-      toast.error(
-        "Critical reserve ratio cannot exceed the 150% initial reserve ratio"
-      )
-      return
-    }
-
-    const criticalReserveRatioWad = parseUnits((ratioValue / 100).toString(), 18)
-    if (
-      criticalReserveRatioWad < parseUnits("1", 18) ||
-      criticalReserveRatioWad >= parseUnits("2", 18)
-    ) {
-      toast.error("Critical reserve ratio must be at least 100% and below 200%")
+    let criticalReserveRatioWad: bigint
+    let initialReserveRatioWad: bigint
+    try {
+      [criticalReserveRatioWad, initialReserveRatioWad] = [
+        config.criticalReserveRatio,
+        config.initialReserveRatio,
+      ].map((value) => {
+        const text = value.trim()
+        if (!/^\d+(?:\.\d{0,16})?$/.test(text)) {
+          throw new Error("Reserve ratios must be decimal percentages with at most 16 decimal places")
+        }
+        // One percentage point equals 1e16 in WAD units.
+        return parseUnits(text, 16)
+      })
+      if (
+        criticalReserveRatioWad <= parseUnits("1", 18) ||
+        criticalReserveRatioWad >= parseUnits("2", 18)
+      ) {
+        throw new Error("Critical reserve ratio must be above 100% and below 200%")
+      }
+      if (
+        initialReserveRatioWad <= criticalReserveRatioWad ||
+        initialReserveRatioWad >= parseUnits("2", 18)
+      ) {
+        throw new Error("Initial reserve ratio must be above the critical ratio and below 200%")
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Invalid reserve ratios")
       return
     }
 
@@ -606,6 +618,7 @@ export default function CreatePage() {
         fissionFeeWad,
         fusionFeeWad,
         criticalReserveRatioWad,
+        initialReserveRatioWad,
         initialReserveAmount,
       ] as const
       await writeContractAsync({
@@ -882,19 +895,45 @@ export default function CreatePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-[13px] font-medium text-foreground/80">
+                    <Label htmlFor="critical-reserve-ratio" className="text-[13px] font-medium text-foreground/80">
                       Critical Reserve Ratio (%)
                     </Label>
                     <Input
+                      id="critical-reserve-ratio"
                       type="number"
                       min={100}
-                      max={150}
-                      step={1}
-                      placeholder="120"
+                      max={200}
+                      step="any"
+                      placeholder="103"
                       value={config.criticalReserveRatio}
                       onChange={(e) => updateConfig("criticalReserveRatio", e.target.value)}
+                      aria-describedby="critical-reserve-ratio-help"
                       className={inputClasses}
                     />
+                    <p id="critical-reserve-ratio-help" className="text-[12px] text-muted-foreground/75">
+                      Recommended: 101%–105%. Must be above 100% and below 200%.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="initial-reserve-ratio" className="text-[13px] font-medium text-foreground/80">
+                      Initial Reserve Ratio (%)
+                    </Label>
+                    <Input
+                      id="initial-reserve-ratio"
+                      type="number"
+                      min={100}
+                      max={200}
+                      step="any"
+                      placeholder="150"
+                      value={config.initialReserveRatio}
+                      onChange={(e) => updateConfig("initialReserveRatio", e.target.value)}
+                      aria-describedby="initial-reserve-ratio-help"
+                      className={inputClasses}
+                    />
+                    <p id="initial-reserve-ratio-help" className="text-[12px] text-muted-foreground/75">
+                      Must be above the critical ratio and below 200%. Retained fission fees and rounding can raise the actual starting ratio.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -1047,83 +1086,40 @@ export default function CreatePage() {
               </div>
 
               <div className="space-y-4">
-                <ConnectButton.Custom>
-                  {({ account, chain, openConnectModal, openChainModal, mounted }) => {
-                    const ready = mounted
-                    const connected = ready && account && chain
-
-                    if (!ready) {
-                      return (
-                        <Button
-                          size="lg"
-                          className="w-full h-12 text-[15px]"
-                          disabled
-                        >
-                          <Wallet className="mr-2 h-5 w-5" />
-                          Loading Wallet
-                        </Button>
-                      )
+                {!isConnected || !address || !walletChain ? (
+                  <WalletButton mode="action" className="w-full" />
+                ) : (
+                  <Button
+                    size="lg"
+                    className="w-full h-12 text-[15px]"
+                    onClick={handleDeploy}
+                    disabled={
+                      !StableCoinFactories[chainId] ||
+                      !isFormValid() ||
+                      !isOracleReady ||
+                      isOracleChecking ||
+                      isDeploying ||
+                      isConfirming
                     }
-
-                    if (!connected) {
-                      return (
-                        <Button
-                          size="lg"
-                          className="w-full h-12 text-[15px]"
-                          onClick={openConnectModal}
-                        >
-                          <Wallet className="mr-2 h-5 w-5" />
-                          Connect Wallet
-                        </Button>
-                      )
-                    }
-
-                    if (chain?.unsupported) {
-                      return (
-                        <Button
-                          size="lg"
-                          className="w-full h-12 text-[15px]"
-                          onClick={openChainModal}
-                        >
-                          Switch Network
-                        </Button>
-                      )
-                    }
-
-                    return (
-                      <Button
-                        size="lg"
-                        className="w-full h-12 text-[15px]"
-                        onClick={handleDeploy}
-                        disabled={
-                          !StableCoinFactories[chainId] ||
-                          !isFormValid() ||
-                          !isOracleReady ||
-                          isOracleChecking ||
-                          isDeploying ||
-                          isConfirming
-                        }
-                      >
-                        {isDeploying ? (
-                          <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
-                            Deploying
-                          </>
-                        ) : isConfirming ? (
-                          <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
-                            Confirming
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="mr-2 h-5 w-5" />
-                            Deploy Reactor
-                          </>
-                        )}
-                      </Button>
-                    )
-                  }}
-                </ConnectButton.Custom>
+                  >
+                    {isDeploying ? (
+                      <>
+                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
+                        Deploying
+                      </>
+                    ) : isConfirming ? (
+                      <>
+                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-background" />
+                        Confirming
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-5 w-5" />
+                        Deploy Reactor
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 {isSuccess && (
                   <div className="rounded-xl border border-success/30 bg-success/10 px-5 py-4">

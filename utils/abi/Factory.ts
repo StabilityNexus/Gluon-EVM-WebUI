@@ -74,6 +74,11 @@ export const FactoryABI = [
         "internalType": "uint256"
       },
       {
+        "name": "initialReserveRatioWadParam",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
         "name": "initialReserveParam",
         "type": "uint256",
         "internalType": "uint256"

@@ -64,7 +64,7 @@ Any information transmitted to such services is limited to what is necessary for
 The following third parties or categories of third parties may receive information:
 
 * **Blockchain networks and RPC providers:** Public wallet addresses, blockchain queries, transaction data, network information, and technical request metadata may be transmitted when the App reads blockchain data or when you submit transactions.
-* **Wallet providers and WalletConnect-compatible services:** Information required to establish and maintain wallet connections may be processed when you connect a wallet. The App uses wallet connection libraries including RainbowKit and WalletConnect-compatible infrastructure.
+* **Wallet providers:** WalletLink connects directly to wallets injected into your browser through EIP-1193 and EIP-6963. The App does not use a hosted wallet connection relay. Your wallet may independently use infrastructure governed by its own privacy policy.
 * **GitHub:** GitHub infrastructure may be used to host the App or retrieve public project resources such as token lists and the Stability Nexus Terms of Use. GitHub may receive technical request information such as your IP address, browser information, and request details.
 * **Blockchain explorers:** If you choose to open an external blockchain explorer link, your browser communicates directly with that explorer and the explorer may receive technical request information.
 

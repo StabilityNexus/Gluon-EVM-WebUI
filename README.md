@@ -192,7 +192,7 @@ server rendering of arbitrary contract-address routes.
 | UI | React 18 |
 | Language | TypeScript |
 | Styling | Tailwind CSS |
-| Wallet | RainbowKit / wagmi |
+| Wallet | WalletLink / wagmi |
 | EVM Client | viem |
 | Theme | next-themes |
 | Animation | Framer Motion / GSAP |
@@ -282,8 +282,13 @@ cp .env.example .env.local
 Example:
 
 ```text
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
+# Optional: custom Sepolia RPC endpoint
+NEXT_PUBLIC_SEPOLIA_RPC_URL=
 ```
+
+WalletLink connects to browser-injected wallets without a project ID or hosted relay.
+Desktop-to-phone QR connections are not supported. On mobile, use a wallet's
+built-in browser where it provides a compatible injected wallet.
 
 Anything prefixed with `NEXT_PUBLIC_` is browser-visible and must never contain a secret.
 
@@ -410,6 +415,18 @@ See [Deployments.md](Deployments.md).
 
 The create flow collects and validates reactor configuration and submits the deployment through the
 configured Gluon factory.
+
+Deployers choose both reserve ratios: the critical ratio must be above 100% and
+below 200%, and the initial seed-issuance ratio must be above the critical ratio
+and below 200%. The form recommends a critical ratio of 101%–105%, with an editable
+103% default; this recommendation does not restrict other valid choices. The
+initial ratio defaults to an editable 150%. Ratios are parsed directly into
+bigint WAD values from decimal percentages, with up to 16 decimal places.
+
+Retained fission fees and rounding can raise the actual initialized ratio above
+the chosen issuance ratio. The contract rejects initialization outside its strict
+bounds. Creation requires a verified factory supporting the new initial-ratio
+argument; older factories are incompatible with this deployment call.
 
 ### Explore Reactors
 
