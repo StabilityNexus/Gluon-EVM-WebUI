@@ -447,6 +447,11 @@ export const StableCoinReactorABI = [
         "name": "amountIn",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "initialReserveRatioWad",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -1119,6 +1124,11 @@ export const StableCoinReactorABI = [
   {
     "type": "error",
     "name": "InvalidInitialReserve",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidInitialReserveRatio",
     "inputs": []
   },
   {

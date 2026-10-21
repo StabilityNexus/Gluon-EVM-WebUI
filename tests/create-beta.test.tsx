@@ -121,8 +121,9 @@ describe("reactor creation with immutable beta settings", () => {
       "0x86B8f920835015c0F1b697dBe0B8b150a986eCE5",
       1_000_000_000_000_000n,
     ])
-    expect(deployment.args).toHaveLength(18)
-    expect(deployment.args.slice(14)).toEqual([
+    expect(deployment.args).toHaveLength(19)
+    expect(deployment.args.slice(13, 15)).toEqual([1030000000000000000n, 1500000000000000000n])
+    expect(deployment.args.slice(15)).toEqual([
       100000n, 12345678901234567n, 500000000000000000n, 999999999999999999n,
     ])
   })
@@ -132,7 +133,39 @@ describe("reactor creation with immutable beta settings", () => {
     const user = await fillRequiredFields()
     await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
     await waitFor(() => expect(mocks.writeContractAsync).toHaveBeenCalledTimes(2))
-    expect(mocks.writeContractAsync.mock.calls[1][0].args.slice(15)).toEqual([0n, 0n, 10n ** 18n])
+    expect(mocks.writeContractAsync.mock.calls[1][0].args.slice(16)).toEqual([0n, 0n, 10n ** 18n])
+  })
+
+  it.each([
+    ["100", "150", "Critical reserve ratio must be above 100% and below 200%"],
+    ["200", "150", "Critical reserve ratio must be above 100% and below 200%"],
+    ["103", "103", "Initial reserve ratio must be above the critical ratio and below 200%"],
+    ["103", "102", "Initial reserve ratio must be above the critical ratio and below 200%"],
+    ["103", "200", "Initial reserve ratio must be above the critical ratio and below 200%"],
+    ["103.12345678901234567", "150", "Reserve ratios must be decimal percentages with at most 16 decimal places"],
+    ["1e2", "150", "Reserve ratios must be decimal percentages with at most 16 decimal places"],
+  ])("rejects critical %s and initial %s before approval", async (critical, initial, message) => {
+    render(<CreatePage />)
+    const user = await fillRequiredFields()
+    fireEvent.change(screen.getByLabelText("Critical Reserve Ratio (%)"), { target: { value: critical } })
+    fireEvent.change(screen.getByLabelText("Initial Reserve Ratio (%)"), { target: { value: initial } })
+    await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
+    expect(mocks.toastError).toHaveBeenCalledWith(message)
+    expect(mocks.writeContractAsync).not.toHaveBeenCalled()
+    expect(mocks.readContract.mock.calls.some(([call]) => call.functionName === "allowance")).toBe(false)
+  })
+
+  it.each([
+    ["190.1234567890123456", "195.1234567890123456", 1901234567890123456n, 1951234567890123456n],
+    ["100.0000000000000001", "150.0000000000000001", 1000000000000000001n, 1500000000000000001n],
+  ])("sends chosen ratios %s and %s without rounding", async (critical, initial, criticalWad, initialWad) => {
+    render(<CreatePage />)
+    const user = await fillRequiredFields()
+    fireEvent.change(screen.getByLabelText("Critical Reserve Ratio (%)"), { target: { value: critical } })
+    fireEvent.change(screen.getByLabelText("Initial Reserve Ratio (%)"), { target: { value: initial } })
+    await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
+    await waitFor(() => expect(mocks.writeContractAsync).toHaveBeenCalledTimes(2))
+    expect(mocks.writeContractAsync.mock.calls[1][0].args.slice(13, 15)).toEqual([criticalWad, initialWad])
   })
 
   it("disables deployment when no current factory is configured", () => {
@@ -210,7 +243,7 @@ describe("reactor creation with immutable beta settings", () => {
     await user.click(screen.getByRole("button", { name: "Deploy Reactor" }))
     await waitFor(() => expect(mocks.writeContractAsync).toHaveBeenCalledTimes(2))
     expect(mocks.writeContractAsync.mock.calls[0][0].args).toEqual([mocks.factoryAddress, 1n])
-    expect(mocks.writeContractAsync.mock.calls[1][0].args[14]).toBe(1n)
+    expect(mocks.writeContractAsync.mock.calls[1][0].args[15]).toBe(1n)
   })
 
   it("rejects a zero initial reserve before approval or deployment", async () => {
@@ -236,6 +269,10 @@ describe("reactor creation with immutable beta settings", () => {
 
   it("gives the new settings accessible names and explanations", async () => {
     render(<CreatePage />)
+    expect(screen.getByLabelText("Critical Reserve Ratio (%)")).toHaveValue(103)
+    expect(screen.getByLabelText("Critical Reserve Ratio (%)")).toHaveAccessibleDescription(/Recommended: 101%–105%/)
+    expect(screen.getByLabelText("Initial Reserve Ratio (%)")).toHaveValue(150)
+    expect(screen.getByLabelText("Initial Reserve Ratio (%)")).toHaveAccessibleDescription(/above the critical ratio/)
     const group = screen.getByRole("group", { name: "Transmutation settings" })
     expect(screen.getByLabelText("Base transmutation fee (%)")).toHaveAccessibleDescription(/Between 0 and 100/)
     expect(screen.getByLabelText("Volume retained each second")).toHaveAccessibleDescription(/Use 1 for no decay/)
