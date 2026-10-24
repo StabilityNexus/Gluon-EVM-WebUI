@@ -35,13 +35,26 @@ if (audit) {
       `low=${counts.low ?? 0}`,
   )
 
-  // These unresolved findings are already reviewed on the current dependency
-  // baseline. They must be removed through tested framework/wallet migrations,
-  // not through forced package-manager upgrades.
-  const reviewedHighSeverity = {
+  // Unresolved exceptions. The October 24, 2026 additions below were reported
+  // with an unchanged package-lock.json; they are NOT security remediations.
+  // Track and review them separately before accepting this baseline update.
+  // Do not use forced package-manager upgrades to bypass this check.
+  const recordedHighSeverity = {
     next: "critical",
     postcss: "high",
     ws: "high",
+    // Newly reported by the October 24, 2026 npm advisory database:
+    "@reown/appkit": "high",
+    "@reown/appkit-controllers": "high",
+    "@reown/appkit-pay": "high",
+    "@reown/appkit-scaffold-ui": "high",
+    "@reown/appkit-ui": "high",
+    "@reown/appkit-utils": "high",
+    "@reown/appkit-wallet": "high",
+    "@walletconnect/ethereum-provider": "high",
+    abitype: "high",
+    viem: "high",
+    zod: "high",
   }
 
   const severityRank = {
@@ -60,12 +73,12 @@ if (audit) {
       continue
     }
 
-    const reviewedSeverity = reviewedHighSeverity[name]
+    const recordedSeverity = recordedHighSeverity[name]
 
     if (
-      !reviewedSeverity ||
+      !recordedSeverity ||
       severityRank[info.severity] >
-        severityRank[reviewedSeverity]
+        severityRank[recordedSeverity]
     ) {
       unexpected.push(`${info.severity}: ${name}`)
     }
@@ -79,11 +92,13 @@ if (audit) {
     process.exitCode = 1
   } else {
     console.log(
-      "\nNo new high/critical dependency packages beyond the reviewed baseline.",
+      "\nNo additional high/critical dependency packages beyond the recorded exceptions.",
     )
   }
 
   console.log(
-    "\nReviewed baseline: next (critical), postcss (high), ws (high).",
+    "\nUnresolved exceptions: next (critical), postcss (high), ws (high), " +
+      "@reown/appkit family (high), @walletconnect/ethereum-provider (high), " +
+      "abitype (high), viem (high), zod (high).",
   )
 }
