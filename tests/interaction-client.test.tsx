@@ -67,6 +67,7 @@ vi.mock("wagmi", () => ({
   }) => {
     const wad = 10n ** 18n
     const data: Record<string, unknown> = {
+      getAllDeployedReactors: [mocks.reactor],
       vaultName: "Test",
       ORACLE: mocks.recipient,
       BASE_TOKEN: mocks.base,
@@ -112,6 +113,8 @@ vi.mock("wagmi", () => ({
     ].includes(functionName)
     return {
       data: data[functionName],
+      isPending: false,
+      isError: false,
       refetch: pricingRead ? mocks.refetchPricing : mocks.refetch,
     }
   },
@@ -137,6 +140,10 @@ vi.mock("wagmi", () => ({
 }))
 
 vi.mock("@/utils/networks", () => ({
+  GLUON_NETWORKS: [{
+    chain: { id: 11155111 },
+    factoryAddress: "0x0000000000000000000000000000000000000002",
+  }],
   getGluonNetwork: () => ({
     chain: { id: mocks.chainId },
     nativeAsset: mocks.native
@@ -600,7 +607,12 @@ describe("reactor interaction", () => {
       expect(mocks.error).toHaveBeenCalledWith(
         "Wallet account or network changed during native fission. Check the original wallet before retrying.",
       )
-      expect(screen.getByRole("spinbutton")).toHaveValue(null)
+      if (change === "network") {
+        // The new verification gate unmounts transaction controls on this chain.
+        expect(screen.getByRole("alert")).toHaveTextContent("No reactor factory configured")
+      } else {
+        expect(screen.getByRole("spinbutton")).toHaveValue(null)
+      }
     },
   )
 

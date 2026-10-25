@@ -117,6 +117,11 @@ export function useReactorTransactions({
   useLayoutEffect(() => {
     latestAddressRef.current = address
     latestChainIdRef.current = chainId
+    return () => {
+      // An unverified reactor or network switch unmounts this hook. Any pending
+      // native flow must not continue using its previous account and chain.
+      latestAddressRef.current = undefined
+    }
   }, [address, chainId])
 
   const {
