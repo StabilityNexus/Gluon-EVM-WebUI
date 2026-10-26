@@ -445,7 +445,7 @@ export function useInteractionQuote({
     if (!baseAmountRaw || baseAmountRaw <= 0n) return null
     if (fusionFee === undefined || devFee === undefined) return null
 
-    const grossBase = useNativeBase ? fusionGrossBaseRaw : baseAmountRaw
+    const grossBase = fusionGrossBaseRaw
 
     if (!grossBase || grossBase <= 0n) return null
 
@@ -488,7 +488,6 @@ export function useInteractionQuote({
     fusionGrossBaseRaw,
     fusionFee,
     devFee,
-    useNativeBase,
     reserve,
     neutronTotalSupply,
     protonTotalSupply,

@@ -430,21 +430,26 @@ describe("reactor interaction", () => {
     )
   })
 
-  it("reverses the pair and preserves gross ERC20 fusion input semantics", () => {
+  it("requests net ERC20 fusion output with fusion and developer fees on top", () => {
+    mocks.fee = 7n * 10n ** 15n
+    mocks.devFee = 1n * 10n ** 15n
     renderPage()
     fireEvent.click(
       screen.getByRole("button", { name: "Reverse conversion direction" }),
     )
     expect(screen.getAllByRole("combobox")[0]).toHaveValue("BUNDLE")
     expect(screen.getAllByRole("combobox")[1]).toHaveValue("BASE")
-    inputAmount()
+    inputAmount("0.002")
     fireEvent.click(screen.getByRole("button", { name: "Merge Tokens" }))
+    const gross = 2016129032258065n
     expect(mocks.write).toHaveBeenCalledWith(
       expect.objectContaining({
         functionName: "fusion",
-        args: [10n ** 18n, mocks.wallet],
+        args: [gross, mocks.wallet],
       }),
     )
+    const net = gross * (10n ** 18n - mocks.fee - mocks.devFee) / 10n ** 18n
+    expect(net).toBeGreaterThanOrEqual(2n * 10n ** 15n)
   })
 
   it.each([
