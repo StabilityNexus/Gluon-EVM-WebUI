@@ -226,10 +226,10 @@ describe("contract-simulated transmutation quotes", () => {
     await waitFor(() => expect(view.result.current.toInputValue).toBe("0.9 P"))
     const refresh = view.client.refetchQueries({ queryKey: ["simulateContract"] })
     await waitFor(() => expect(resolveRefresh).toBeDefined())
+    await waitFor(() => expect(view.result.current.transmutationOutput).toBeUndefined())
 
     expect(view.result.current.toInputValue).toBe("0.9 P")
     expect(view.result.current.minimumOutputText).toContain("Minimum received: 0.9 P")
-    expect(view.result.current.transmutationOutput).toBeUndefined()
 
     await act(async () => { resolveRefresh!(); await refresh })
     await waitFor(() => expect(view.result.current.toInputValue).toBe("0.8 P"))
