@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   quoteOutput: 900000000000000123n as bigint | undefined,
   quoteFetching: false,
   quoteError: false,
+  quoteUpdatedAt: 0,
   approving: false,
   receiptSuccess: false,
   refetch: vi.fn(),
@@ -122,6 +123,7 @@ vi.mock("wagmi", () => ({
     data: mocks.quoteOutput === undefined ? undefined : { result: [mocks.quoteOutput, 0n] },
     isFetching: mocks.quoteFetching,
     isError: mocks.quoteError,
+    dataUpdatedAt: mocks.quoteUpdatedAt,
   }),
   useWriteContract: () => ({
     writeContract: mocks.write,
@@ -236,6 +238,7 @@ beforeEach(() => {
   mocks.quoteOutput = 900000000000000123n
   mocks.quoteFetching = false
   mocks.quoteError = false
+  mocks.quoteUpdatedAt = 0
   mocks.approving = false
   mocks.receiptSuccess = false
   mocks.write.mockReset()
@@ -452,12 +455,24 @@ describe("reactor interaction", () => {
     ["NEUTRON", "PROTON", "Transmutation β⁻", "transmuteNeutronToProton"],
   ])(
     "runs %s transmutation with the paired target",
-    (from, to, label, functionName) => {
-      renderPage()
+    async (from, to, label, functionName) => {
+      const view = renderPage()
       chooseFrom(from)
       expect(screen.getAllByRole("combobox")[1]).toHaveValue(to)
+
+      mocks.quoteFetching = true
       inputAmount("2")
-      expect(screen.getByText(/Minimum received: 0.900000000000000123/)).toBeInTheDocument()
+
+      // Model completion of a fresh simulation for this amount.
+      mocks.quoteUpdatedAt = 1
+      mocks.quoteFetching = false
+      view.rerender(<InteractionClient coinId={mocks.reactor} />)
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Minimum received: 0.900000000000000123/),
+        ).toBeInTheDocument()
+      })
       fireEvent.click(screen.getByRole("button", { name: label }))
       expect(mocks.write).toHaveBeenCalledWith(
         expect.objectContaining({

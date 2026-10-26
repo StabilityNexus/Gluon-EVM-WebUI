@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { formatUnits, isAddress } from "viem"
 import { useSimulateContract } from "wagmi"
 import { StableCoinReactorABI } from "@/utils/abi/StableCoin"
@@ -272,11 +272,108 @@ export function useInteractionQuote({
     !transmutationSimulation.isError
       ? transmutationSimulation.data?.result[0]
       : undefined
-  // Keep the last successful quote visible during background refresh, but do
-  // not authorize a transaction with it until the simulation has finished.
+  // A retained quote belongs only to an uninterrupted set of inputs.
+  const quoteContext = JSON.stringify([
+    chainId,
+    address?.toLowerCase(),
+    reactorAddress.toLowerCase(),
+    recipient.toLowerCase(),
+    route,
+    transmutationAmount?.toString(),
+    neutronDecimalsNumber,
+    protonDecimalsNumber,
+  ])
+  const simulationResult = transmutationSimulation.data?.result[0]
+  const simulationUpdatedAt = transmutationSimulation.dataUpdatedAt
+  const simulationIsFetching = transmutationSimulation.isFetching
+  const simulationIsError = transmutationSimulation.isError
+
+  const [quoteDisplay, setQuoteDisplay] = useState<{
+    context: string
+    baselineUpdatedAt: number
+    updatedAt: number
+    sawFetch: boolean
+    value?: bigint
+  }>({
+    context: quoteContext,
+    baselineUpdatedAt: 0,
+    updatedAt: 0,
+    sawFetch: false,
+  })
+
+  // Reset immediately when the inputs change, even if the user returns
+  // to a previously cached amount.
+  if (quoteDisplay.context !== quoteContext) {
+    setQuoteDisplay({
+      context: quoteContext,
+      baselineUpdatedAt: simulationUpdatedAt,
+      updatedAt: 0,
+      sawFetch: false,
+    })
+  }
+
+  useEffect(() => {
+    if (!canSimulateTransmutation || simulationIsError) {
+      setQuoteDisplay((previous) =>
+        previous.context === quoteContext &&
+        (previous.value !== undefined || previous.sawFetch)
+          ? {
+              ...previous,
+              baselineUpdatedAt: Math.max(
+                previous.baselineUpdatedAt,
+                simulationUpdatedAt,
+              ),
+              sawFetch: false,
+              value: undefined,
+            }
+          : previous,
+      )
+      return
+    }
+
+    if (simulationIsFetching) {
+      setQuoteDisplay((previous) =>
+        previous.context === quoteContext && !previous.sawFetch
+          ? { ...previous, sawFetch: true }
+          : previous,
+      )
+      return
+    }
+
+    if (simulationResult === undefined) return
+
+    setQuoteDisplay((previous) => {
+      if (previous.context !== quoteContext) return previous
+
+      const newerTimestamp =
+        simulationUpdatedAt > previous.baselineUpdatedAt &&
+        simulationUpdatedAt > previous.updatedAt
+
+      // Completion of a fetch is sufficient even when timestamps match.
+      if (!previous.sawFetch && !newerTimestamp) return previous
+
+      return {
+        ...previous,
+        updatedAt: simulationUpdatedAt,
+        sawFetch: false,
+        value: simulationResult,
+      }
+    })
+  }, [
+    quoteContext,
+    canSimulateTransmutation,
+    simulationIsError,
+    simulationIsFetching,
+    simulationResult,
+    simulationUpdatedAt,
+  ])
+
+  // The transaction quote remains independently protected by isFetching.
   const displayedTransmutationOutput =
-    canSimulateTransmutation && !transmutationSimulation.isError
-      ? transmutationSimulation.data?.result[0]
+    canSimulateTransmutation &&
+    !simulationIsError &&
+    quoteDisplay.context === quoteContext
+      ? quoteDisplay.value
       : undefined
 
   const isFissionRoute = route === "FISSION"
