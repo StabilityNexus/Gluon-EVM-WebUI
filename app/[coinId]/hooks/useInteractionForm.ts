@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   type TokenOption,
   type SwapRoute,
@@ -15,14 +15,18 @@ export function useInteractionForm({ address }: InteractionFormInput) {
   const [amount, setAmount] = useState("")
   const [useNativeBase, setUseNativeBase] = useState(false)
   const [recipient, setRecipient] = useState("")
-  const [hasSetDefaultRecipient, setHasSetDefaultRecipient] = useState(false)
+  const recipientEdited = useRef(false)
 
   useEffect(() => {
-    if (address && recipient === "" && !hasSetDefaultRecipient) {
+    if (address && !recipientEdited.current) {
       setRecipient(address)
-      setHasSetDefaultRecipient(true)
     }
-  }, [address, recipient, hasSetDefaultRecipient])
+  }, [address])
+
+  const updateRecipient = (value: string) => {
+    recipientEdited.current = true
+    setRecipient(value)
+  }
 
   useEffect(() => {
     const targets = allowedTargets[fromToken]
@@ -46,7 +50,7 @@ export function useInteractionForm({ address }: InteractionFormInput) {
     useNativeBase,
     setUseNativeBase,
     recipient,
-    setRecipient,
+    setRecipient: updateRecipient,
     route,
   }
 }
