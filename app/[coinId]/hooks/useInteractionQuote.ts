@@ -272,6 +272,12 @@ export function useInteractionQuote({
     !transmutationSimulation.isError
       ? transmutationSimulation.data?.result[0]
       : undefined
+  // Keep the last successful quote visible during background refresh, but do
+  // not authorize a transaction with it until the simulation has finished.
+  const displayedTransmutationOutput =
+    canSimulateTransmutation && !transmutationSimulation.isError
+      ? transmutationSimulation.data?.result[0]
+      : undefined
 
   const isFissionRoute = route === "FISSION"
   const isFusionRoute = route === "FUSION"
@@ -695,7 +701,7 @@ export function useInteractionQuote({
   ])
 
   const transmutationSummary = useMemo(() => {
-    if (transmutationOutput === undefined || transmutationOutput <= 0n) return ""
+    if (displayedTransmutationOutput === undefined || displayedTransmutationOutput <= 0n) return ""
     const outputDecimals =
       route === "PROTON_TO_NEUTRON"
         ? neutronDecimalsNumber
@@ -705,9 +711,9 @@ export function useInteractionQuote({
       route === "PROTON_TO_NEUTRON"
         ? neutronSymbolText
         : protonSymbolText
-    return `${formatUnits(transmutationOutput, outputDecimals)} ${outputSymbol}`
+    return `${formatUnits(displayedTransmutationOutput, outputDecimals)} ${outputSymbol}`
   }, [
-    transmutationOutput,
+    displayedTransmutationOutput,
     route,
     neutronDecimalsNumber,
     protonDecimalsNumber,
@@ -720,8 +726,8 @@ export function useInteractionQuote({
       ? neutronDecimalsNumber
       : protonDecimalsNumber
   const minimumOutputText =
-    transmutationOutput !== undefined && transmutationOutput > 0n && outputDecimals !== undefined
-    ? `Minimum received: ${formatUnits(transmutationOutput, outputDecimals)} ${toLabel}. The transaction reverts if output falls below this amount.`
+    displayedTransmutationOutput !== undefined && displayedTransmutationOutput > 0n && outputDecimals !== undefined
+    ? `Minimum received: ${formatUnits(displayedTransmutationOutput, outputDecimals)} ${toLabel}. The transaction reverts if output falls below this amount.`
     : ""
 
   const fromInputReadOnly = isFusionRoute
