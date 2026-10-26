@@ -212,6 +212,30 @@ describe("contract-simulated transmutation quotes", () => {
     if (_name !== "another route") expect(view.result.current.toInputValue).toBe("")
   })
 
+  it("keeps the quote visible during a background refresh without making it executable", async () => {
+    let resolveRefresh: (() => void) | undefined
+    let calls = 0
+    const view = setup(input(), async (call) => {
+      calls += 1
+      if (calls === 2) {
+        await new Promise<void>((resolve) => { resolveRefresh = resolve })
+      }
+      return encodedResult(call, calls === 1 ? 9n * WAD / 10n : 8n * WAD / 10n)
+    })
+
+    await waitFor(() => expect(view.result.current.toInputValue).toBe("0.9 P"))
+    const refresh = view.client.refetchQueries({ queryKey: ["simulateContract"] })
+    await waitFor(() => expect(resolveRefresh).toBeDefined())
+
+    expect(view.result.current.toInputValue).toBe("0.9 P")
+    expect(view.result.current.minimumOutputText).toContain("Minimum received: 0.9 P")
+    expect(view.result.current.transmutationOutput).toBeUndefined()
+
+    await act(async () => { resolveRefresh!(); await refresh })
+    await waitFor(() => expect(view.result.current.toInputValue).toBe("0.8 P"))
+    expect(view.result.current.transmutationOutput).toBe(8n * WAD / 10n)
+  })
+
   it.each(["execution reverted", "RPC unavailable"])("clears a prior quote on %s instead of falling back to gross output", async (message) => {
     let failing = false
     const view = setup(input(), (call) => {
