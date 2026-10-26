@@ -374,6 +374,17 @@ describe("reactor interaction", () => {
     expect(mocks.write).not.toHaveBeenCalled()
   })
 
+  it("updates an untouched default recipient when the wallet changes", () => {
+    const view = renderPage()
+    expect(screen.getByPlaceholderText("0x...")).toHaveValue(mocks.wallet)
+    mocks.address = mocks.base
+    view.rerender(<InteractionClient coinId={mocks.reactor} />)
+    expect(screen.getByPlaceholderText("0x...")).toHaveValue(mocks.base)
+    mocks.address = mocks.wallet
+    view.rerender(<InteractionClient coinId={mocks.reactor} />)
+    expect(screen.getByPlaceholderText("0x...")).toHaveValue(mocks.wallet)
+  })
+
   it("defaults the recipient once and preserves edits when the wallet changes", () => {
     const view = renderPage()
     expect(screen.getByPlaceholderText("0x...")).toHaveValue(mocks.wallet)
