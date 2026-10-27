@@ -45,7 +45,7 @@ function encodedResult(call: Call, output: bigint, fee = WAD / 10n) {
   })
 }
 
-function setup(initial: Input, respond: (call: Call) => string | Promise<string> = (call) => encodedResult(call, 9n * WAD / 10n)) {
+function setup(initial: Input, respond: (call: Call) => string | Promise<string> = (call) => encodedResult(call, 9n * WAD / 10n), cacheMs = 0) {
   const request = vi.fn(async ({ method, params }: { method: string; params?: unknown[] }) => {
     if (method === "eth_chainId") return "0xaa36a7"
     if (method === "eth_call") return respond(params![0] as Call)
@@ -55,7 +55,7 @@ function setup(initial: Input, respond: (call: Call) => string | Promise<string>
     chains: [sepolia, mainnet], connectors: [], ssr: true,
     transports: { [sepolia.id]: custom({ request }, { retryCount: 0 }), [mainnet.id]: custom({ request }, { retryCount: 0 }) },
   })
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: cacheMs } } })
   clients.push(client)
   const wrapper = ({ children }: { children: ReactNode }) => (
     <WagmiProvider config={config}>
@@ -219,6 +219,120 @@ describe("contract-simulated transmutation quotes", () => {
     await act(async () => {})
     expect(view.request.mock.calls.filter(([request]) => request.method === "eth_call")).toHaveLength(0)
     if (_name !== "another route") expect(view.result.current.toInputValue).toBe("")
+  })
+
+  it("does not reuse a cached display quote after amount 1 -> 2 -> 1", async () => {
+    let firstOne = true
+    let finishRevisit: (() => void) | undefined
+
+    const view = setup(input(), async (call) => {
+      const { args } = decodeFunctionData({
+        abi: StableCoinReactorABI,
+        data: call.data,
+      })
+
+      if (args?.[0] === 2n * WAD) {
+        return encodedResult(call, 18n * WAD / 10n)
+      }
+
+      if (firstOne) {
+        firstOne = false
+        return encodedResult(call, 9n * WAD / 10n)
+      }
+
+      await new Promise<void>((resolve) => {
+        finishRevisit = resolve
+      })
+      return encodedResult(call, 7n * WAD / 10n)
+    }, 60_000)
+
+    await waitFor(() =>
+      expect(view.result.current.toInputValue).toBe("0.9 P"),
+    )
+
+    view.rerender({ ...input(), amount: "2" })
+    await waitFor(() =>
+      expect(view.result.current.toInputValue).toBe("1.8 P"),
+    )
+
+    view.rerender(input())
+    await waitFor(() => expect(finishRevisit).toBeDefined())
+
+    expect(view.result.current.toInputValue).toBe("")
+    expect(view.result.current.minimumOutputText).toBe("")
+    expect(view.result.current.transmutationOutput).toBeUndefined()
+
+    await act(async () => { finishRevisit!() })
+    await waitFor(() =>
+      expect(view.result.current.toInputValue).toBe("0.7 P"),
+    )
+  })
+
+  it("accepts a completed refresh with the same millisecond timestamp", async () => {
+    const clock = vi.spyOn(Date, "now").mockReturnValue(1700000000000)
+    try {
+      let calls = 0
+      let finishRefresh: (() => void) | undefined
+
+      const view = setup(input(), async (call) => {
+        calls += 1
+        if (calls === 2) {
+          await new Promise<void>((resolve) => {
+            finishRefresh = resolve
+          })
+        }
+        return encodedResult(
+          call,
+          calls === 1 ? 9n * WAD / 10n : 8n * WAD / 10n,
+        )
+      })
+
+      await waitFor(() =>
+        expect(view.result.current.toInputValue).toBe("0.9 P"),
+      )
+
+      const refresh = view.client.refetchQueries({
+        queryKey: ["simulateContract"],
+      })
+      await waitFor(() => expect(finishRefresh).toBeDefined())
+
+      expect(view.result.current.toInputValue).toBe("0.9 P")
+
+      await act(async () => {
+        finishRefresh!()
+        await refresh
+      })
+
+      await waitFor(() =>
+        expect(view.result.current.toInputValue).toBe("0.8 P"),
+      )
+    } finally {
+      clock.mockRestore()
+    }
+  })
+
+  it("keeps the quote visible during a background refresh without making it executable", async () => {
+    let resolveRefresh: (() => void) | undefined
+    let calls = 0
+    const view = setup(input(), async (call) => {
+      calls += 1
+      if (calls === 2) {
+        await new Promise<void>((resolve) => { resolveRefresh = resolve })
+      }
+      return encodedResult(call, calls === 1 ? 9n * WAD / 10n : 8n * WAD / 10n)
+    })
+
+    await waitFor(() => expect(view.result.current.toInputValue).toBe("0.9 P"))
+    const refresh = view.client.refetchQueries({ queryKey: ["simulateContract"] })
+    await waitFor(() => expect(resolveRefresh).toBeDefined())
+    await waitFor(() => expect(view.result.current.transmutationOutput).toBeUndefined())
+
+    expect(view.result.current.toInputValue).toBe("0.9 P")
+    expect(view.result.current.minimumOutputText).toContain("Minimum received: 0.9 P")
+
+    await act(async () => { resolveRefresh!(); await refresh })
+    await waitFor(() => expect(view.result.current.toInputValue).toBe("0.8 P"))
+    expect(view.result.current.transmutationOutput).toBe(8n * WAD / 10n)
   })
 
   it.each(["execution reverted", "RPC unavailable"])("clears a prior quote on %s instead of falling back to gross output", async (message) => {
