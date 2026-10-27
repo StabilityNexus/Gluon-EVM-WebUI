@@ -74,18 +74,15 @@ export function useReactorPricing({
     return safeParseUnits(amount, baseDecimalsNumber)
   }, [amount, baseDecimalsNumber])
 
-  // Native mode treats the entered amount as the native amount the user
-  // wants to receive. Calculate a gross Reactor fusion amount
-  // whose post-fee wrapped-native output reaches that amount.
-  //
-  // Existing ERC-20 fusion semantics remain unchanged.
+  // Treat the entered Fusion amount as net received for both ERC-20 and native.
+  // Calculate the gross reserve withdrawal needed to cover fees.
   const fusionGrossBaseRaw = useMemo(() => {
-    if (route !== "FUSION" || !useNativeBase) return null
+    if (route !== "FUSION") return null
     if (!baseAmountRaw || baseAmountRaw <= 0n) return null
     if (fusionFee === undefined || devFee === undefined) return null
 
     return grossFusionAmountForNet(baseAmountRaw, fusionFee, devFee)
-  }, [route, useNativeBase, baseAmountRaw, fusionFee, devFee])
+  }, [route, baseAmountRaw, fusionFee, devFee])
 
   const reserveWad = useMemo(
     () => scaleToWad(reserve, baseDecimalsNumber),

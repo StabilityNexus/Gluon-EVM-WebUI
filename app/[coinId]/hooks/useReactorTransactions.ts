@@ -551,6 +551,7 @@ export function useReactorTransactions({
 
           if (
             !displayFusionBreakdown ||
+            fusionGrossBaseRaw === null ||
             neutronBalance === undefined ||
             protonBalance === undefined
           ) {
@@ -700,7 +701,7 @@ export function useReactorTransactions({
             address: reactorAddress as `0x${string}`,
             abi: StableCoinReactorABI,
             functionName: "fusion",
-            args: [parsedFusionAmount, recipient as `0x${string}`],
+            args: [fusionGrossBaseRaw, recipient as `0x${string}`],
           })
 
           break

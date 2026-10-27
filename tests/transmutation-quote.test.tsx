@@ -6,6 +6,7 @@ import { createConfig, WagmiProvider } from "wagmi"
 import { mainnet, sepolia } from "wagmi/chains"
 import { custom, decodeFunctionData, encodeFunctionResult } from "viem"
 import { StableCoinReactorABI } from "@/utils/abi/StableCoin"
+import { grossFusionAmountForNet } from "@/utils/nativeAsset"
 import { useInteractionQuote } from "@/app/[coinId]/hooks/useInteractionQuote"
 
 const WAD = 10n ** 18n
@@ -61,7 +62,15 @@ function setup(initial: Input, respond: (call: Call) => string | Promise<string>
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     </WagmiProvider>
   )
-  const view = renderHook((props: Input) => useInteractionQuote(props), { initialProps: initial, wrapper })
+  const props = initial.route === "FUSION"
+    ? {
+        ...initial,
+        fusionGrossBaseRaw: grossFusionAmountForNet(
+          initial.baseAmountRaw!, initial.fusionFee!, initial.devFee!,
+        ),
+      }
+    : initial
+  const view = renderHook((props: Input) => useInteractionQuote(props), { initialProps: props, wrapper })
   return { ...view, request, client }
 }
 
@@ -99,7 +108,7 @@ describe("contract-simulated transmutation quotes", () => {
             route === "FISSION" ? "Net reserve" : "Net received"
           ),
         )?.value,
-      ).toBe("0 B")
+      ).toBe(route === "FUSION" ? "1 B" : "0 B")
     },
   )
 
@@ -145,8 +154,8 @@ describe("contract-simulated transmutation quotes", () => {
     Object.assign(props, { route: "FUSION", fromToken: "BUNDLE", toToken: "BASE", fusionFee: WAD / 50n, devFee: WAD / 1000n })
     const view = setup(props)
     expect(view.result.current.toInputValue).toBe("1")
-    expect(view.result.current.breakdownPopover!.rows.find((row) => row.label === "Net received")?.value).toBe("0.979 B")
-    expect(view.result.current.breakdownPopover!.rows.find((row) => row.label === "Dev fee")?.value).toBe("0.001 B")
+    expect(view.result.current.breakdownPopover!.rows.find((row) => row.label === "Net received")?.value).toBe("1 B")
+    expect(view.result.current.breakdownPopover!.rows.find((row) => row.label === "Dev fee")?.value).toBe("0.001021 B")
   })
   it.each([
     ["PROTON_TO_NEUTRON", "transmuteProtonToNeutron", "0.9 N"],
