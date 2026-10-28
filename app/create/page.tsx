@@ -16,7 +16,7 @@ import {
   ChainlinkToOracleAdapterBytecode,
 } from "@/utils/abi/ChainlinkToOracleAdapter"
 import { StableCoinFactories } from "@/utils/addresses"
-import { GLUON_NETWORKS, SEPOLIA_CHAIN_ID } from "@/utils/networks"
+import { GLUON_NETWORKS, MAINNET_CHAIN_ID, SEPOLIA_CHAIN_ID } from "@/utils/networks"
 import { toast } from "sonner"
 import TokenSelector from "@/components/TokenSelector"
 import { PageHeader } from "@/components/PageHeader"
@@ -48,7 +48,7 @@ interface ReactorConfig {
 
 type OracleProvider = "existing" | "chainlink" | "orb"
 
-const CHAINLINK_SUPPORTED_CHAIN_IDS = new Set<number>([SEPOLIA_CHAIN_ID])
+const CHAINLINK_SUPPORTED_CHAIN_IDS = new Set<number>([SEPOLIA_CHAIN_ID, MAINNET_CHAIN_ID])
 
 const ChainlinkFeedABI = [
   {

@@ -292,8 +292,9 @@ built-in browser where it provides a compatible injected wallet.
 
 Explorer lists the recorded Sepolia test reactors through the network's
 `explorerFactoryAddress`, in development and production. This discovery setting
-never enables creation through that older factory. Production mainnet factories
-remain unconfigured. Creation needs a newly deployed and verified matching factory.
+never enables creation through that older factory. Ethereum Mainnet now has a verified matching factory configured for creation.
+See [Deployments.md](Deployments.md) for deployment evidence and ABI compatibility.
+Other mainnets remain unconfigured. The WebUI is experimental and not externally audited.
 Open `/create` for the creation form and `/c?coin=<reactor-address>` for a reactor.
 
 Anything prefixed with `NEXT_PUBLIC_` is browser-visible and must never contain a secret.

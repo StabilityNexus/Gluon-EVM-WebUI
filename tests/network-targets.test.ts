@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest"
 import {
   GLUON_CHAINS,
   GLUON_NETWORKS,
+  MAINNET_CHAIN_ID,
   SEPOLIA_CHAIN_ID,
 } from "@/utils/networks"
 
 describe("deployment targets", () => {
-  it("limits historical registry discovery to Sepolia and keeps creation disabled", () => {
+  it("limits historical registry discovery to Sepolia without enabling creation there", () => {
     const configured = GLUON_NETWORKS.filter(({ explorerFactoryAddress }) => explorerFactoryAddress)
     expect(configured.map(({ chain }) => chain.id)).toEqual([SEPOLIA_CHAIN_ID])
     expect(configured[0].explorerFactoryAddress).toBe("0x56a8c79dE3d8e21Dc60e2679c4e296Ac8A4b9F50")
@@ -24,7 +25,10 @@ describe("deployment targets", () => {
     expect(GLUON_CHAINS[0].id).toBe(SEPOLIA_CHAIN_ID)
     expect(GLUON_CHAINS.filter(({ testnet }) => testnet)).toHaveLength(1)
     expect(
-      GLUON_NETWORKS.every(
+      GLUON_NETWORKS.find(({ chain }) => chain.id === MAINNET_CHAIN_ID)?.factoryAddress,
+    ).toBe("0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a")
+    expect(
+      GLUON_NETWORKS.filter(({ chain }) => chain.id !== MAINNET_CHAIN_ID).every(
         ({ factoryAddress }) => factoryAddress === undefined,
       ),
     ).toBe(true)

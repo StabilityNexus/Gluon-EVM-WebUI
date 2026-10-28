@@ -38,6 +38,14 @@ describe("Bruno's homepage wording", () => {
         name: "Contact Us to have Gluon available on another chain",
       }),
     ).toHaveAttribute("href", "mailto:contact@stability.nexus")
-    expect(screen.getAllByText("Not configured")).toHaveLength(6)
+    expect(screen.getAllByText("Not configured")).toHaveLength(5)
+    expect(
+      screen.getByRole("link", {
+        name: "Ethereum factory 0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a on block explorer",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "https://etherscan.io/address/0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a",
+    )
   })
 })
