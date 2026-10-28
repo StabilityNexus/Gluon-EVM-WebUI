@@ -48,7 +48,7 @@ interface ReactorConfig {
 
 type OracleProvider = "existing" | "chainlink" | "orb"
 
-const CHAINLINK_SUPPORTED_CHAIN_IDS = new Set<number>([SEPOLIA_CHAIN_ID])
+const CHAINLINK_SUPPORTED_CHAIN_IDS = new Set<number>([SEPOLIA_CHAIN_ID, 1])
 
 const ChainlinkFeedABI = [
   {

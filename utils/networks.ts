@@ -22,7 +22,11 @@ export type GluonNetworkConfig = {
 
 export const GLUON_NETWORKS: readonly GluonNetworkConfig[] = [
   { chain: classic, displayName: "Ethereum Classic" },
-  { chain: mainnet, displayName: "Ethereum" },
+  {
+    chain: mainnet,
+    displayName: "Ethereum",
+    factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a",
+  },
   { chain: polygon, displayName: "Polygon" },
   { chain: bsc, displayName: "BSC" },
   { chain: base, displayName: "Base" },
