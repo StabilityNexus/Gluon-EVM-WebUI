@@ -110,16 +110,54 @@ The OrbOracle and Chainlink records below describe earlier deployments using a
 different factory. Their reactors are not entries in this new factory's registry.
 WebUI reactor creation and transaction testing against this factory remain pending.
 
+## Ethereum Mainnet Factory (2026-10-28)
+
+The WebUI uses this verified Factory for permissionless Reactor creation.
+
+- **Network:** Ethereum Mainnet (chain ID 1)
+- **Factory:** `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a`
+- **Deployer:** `0x4924D0C5C26F8031df7713dEb6bb351B9Df03CDE`
+- **Deployment block:** `26290845`
+- **Transaction receipt:** [Etherscan](https://etherscan.io/tx/0x80437034864480b15e768ceb391a93dadbd06c2722435646747b9574c16e2960) (`status = 1`)
+- **Verified source:** [StableCoinFactory on Etherscan](https://etherscan.io/address/0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a#code)
+- **Source verification:** `forge verify-contract` returned `Pass - Verified`
+- **Gluon-EVM source commit:** `d39081c3112fba0c22a1bb5dfc1ebb6a8f1d6f10`
+- **Developer:** `0x86B8f920835015c0F1b697dBe0B8b150a986eCE5`
+- **Developer fee:** `1000000000000000` WAD (0.1%)
+- **WebUI configuration commit:** `43a2aa675c696749373101b9478373e170f4370d`
+
+### FactoryABI compatibility
+
+The deployed source revision's `src/StableCoinFactory.sol` defines
+`deployReactor` with 17 parameters. Their types and ordering match
+`utils/abi/Factory.ts` and the arguments submitted by `app/create/page.tsx`.
+
+The Factory constructor accepts `(address,uint256)`. Its `dev()`,
+`devFee()`, `getAllDeployedReactors()` and `getDeployedReactorsCount()`
+interfaces also match the WebUI ABI.
+
+### Mainnet status
+
+The initial post-deployment check returned zero deployed Reactors.
+
+No Ethereum Mainnet Reactor or Chainlink adapter deployment is recorded
+here. The existing WebUI allows users to supply a compatible `IOracle`
+or deploy a Chainlink adapter using their wallet.
+
+Mainnet Reactor creation and real-funds interactions have not yet
+been validated end-to-end through this WebUI.
+
+Source verification is not an independent security audit.
+
 ## Production Gluon-EVM Integration
 
-No production Gluon reactor or production coin deployment is currently registered by this WebUI
-repository.
+The Ethereum Mainnet Factory is configured, but no production Reactor
+or stablecoin deployment is currently registered.
 
-| Network | Chain ID | Factory | Reactor(s) | Oracle | Status |
-|---|---:|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | Not configured |
-
-The TODO values are intentional until a maintainer-approved deployment exists.
+| Network | Factory | Status |
+|---|---|---|
+| Ethereum Mainnet (1) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; no Reactor recorded |
+| Other production networks | Not configured | Not configured |
 
 ## OrbOracle
 

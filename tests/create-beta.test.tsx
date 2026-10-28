@@ -38,7 +38,11 @@ vi.mock("wagmi", () => ({
   useWaitForTransactionReceipt: () => ({ isLoading: false, isSuccess: false }),
 }))
 
-vi.mock("@/utils/networks", () => ({ GLUON_NETWORKS: [mocks.network], SEPOLIA_CHAIN_ID: 11155111 }))
+vi.mock("@/utils/networks", () => ({
+  GLUON_NETWORKS: [mocks.network],
+  MAINNET_CHAIN_ID: 1,
+  SEPOLIA_CHAIN_ID: 11155111,
+}))
 vi.mock("@/utils/addresses", () => ({
   get StableCoinFactories() {
     return mocks.network.factoryAddress ? { 11155111: mocks.network.factoryAddress } : {}

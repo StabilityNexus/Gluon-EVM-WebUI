@@ -1,6 +1,7 @@
 import type { Address, Chain } from "viem"
 import { base, bsc, classic, mainnet, polygon, sepolia } from "wagmi/chains"
 
+export const MAINNET_CHAIN_ID = mainnet.id
 export const SEPOLIA_CHAIN_ID = sepolia.id
 
 export type NativeAssetConfig = {
@@ -46,7 +47,7 @@ export const getGluonNetwork = (chainId?: number) =>
   GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)
 
 export const GLUON_CHAINS: [Chain, ...Chain[]] = [
-  // Preserve the existing default while mainnet factories are unconfigured.
+  // Preserve the existing default with Sepolia as the default wallet network.
   sepolia,
   ...GLUON_NETWORKS.filter(({ chain }) => chain.id !== sepolia.id).map(({ chain }) => chain),
 ]
