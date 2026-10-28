@@ -24,7 +24,10 @@ describe("deployment targets", () => {
     expect(GLUON_CHAINS[0].id).toBe(SEPOLIA_CHAIN_ID)
     expect(GLUON_CHAINS.filter(({ testnet }) => testnet)).toHaveLength(1)
     expect(
-      GLUON_NETWORKS.every(
+      GLUON_NETWORKS.find(({ chain }) => chain.id === 1)?.factoryAddress,
+    ).toBe("0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a")
+    expect(
+      GLUON_NETWORKS.filter(({ chain }) => chain.id !== 1).every(
         ({ factoryAddress }) => factoryAddress === undefined,
       ),
     ).toBe(true)
