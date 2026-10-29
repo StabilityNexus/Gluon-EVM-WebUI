@@ -175,7 +175,7 @@ Both networks use the current `StableCoinFactory` interface.
 
 No Reactor, token pair, reserve deposit, or oracle adapter was deployed as part of these deployments.
 
-PolygonScan and BaseScan source-code verification should be completed separately.
+PolygonScan source verification: [Pass - Verified](https://polygonscan.com/address/0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a#code) (2026-10-29). BaseScan source verification remains pending.
 These Factory deployments do not establish production security or imply an external audit.
 
 ---
@@ -187,7 +187,7 @@ or stablecoin deployment is currently registered.
 
 | Network | Factory | Status |
 |---|---|---|
-| Ethereum Mainnet (1) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; live Reactor tested |
+| Ethereum Mainnet (1) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; no production Reactor registered |
 | Polygon PoS (137) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; 0 Reactors |
 | Base Mainnet (8453) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; 0 Reactors |
 | Other production networks | Not configured | Not configured |
