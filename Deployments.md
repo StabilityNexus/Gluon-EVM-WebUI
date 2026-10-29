@@ -175,7 +175,8 @@ Both networks use the current `StableCoinFactory` interface.
 
 No Reactor, token pair, reserve deposit, or oracle adapter was deployed as part of these deployments.
 
-PolygonScan source verification: [Pass - Verified](https://polygonscan.com/address/0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a#code) (2026-10-29). BaseScan source verification remains pending.
+PolygonScan source verification: [Pass - Verified](https://polygonscan.com/address/0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a#code) (2026-10-29).
+BaseScan source verification: [Pass - Verified](https://basescan.org/address/0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a#code) (2026-10-29).
 These Factory deployments do not establish production security or imply an external audit.
 
 ---
