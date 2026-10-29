@@ -149,6 +149,37 @@ been validated end-to-end through this WebUI.
 
 Source verification is not an independent security audit.
 
+## Polygon and Base Mainnet Factories (2026-10-29)
+
+Both networks use the current `StableCoinFactory` interface.
+
+- **Gluon-EVM source commit:** `d39081c3112fba0c22a1bb5dfc1ebb6a8f1d6f10`
+- **Deployer:** `0x4924D0C5C26F8031df7713dEb6bb351B9Df03CDE`
+- **Developer:** `0x86B8f920835015c0F1b697dBe0B8b150a986eCE5`
+- **Developer fee:** `1000000000000000` WAD (0.1%)
+- **Factory:** `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a`
+
+| Network | Chain ID | Deployment transaction | Initial Reactors |
+|---|---:|---|---:|
+| Polygon PoS | 137 | [PolygonScan](https://polygonscan.com/tx/0xb328ca86884dd7ffcdabd79d7b9c9763aa61b9b782766f9410fb612852abe8f9) | 0 |
+| Base | 8453 | [BaseScan](https://basescan.org/tx/0x9eb3050c1231d8b5f18d44793c02f2ee250a5e26c713c31d08593b4669d73833) | 0 |
+
+### Verification
+
+- Both Factory deployments returned successful receipts.
+- Both contracts expose the expected developer and 0.1% developer fee.
+- Both runtime contracts are 24,418 bytes.
+- Runtime bytecode matches the Ethereum Mainnet Factory.
+- Both Factory registries initially contain zero Reactors.
+- Both chains have independent contracts and storage despite sharing the same address.
+
+No Reactor, token pair, reserve deposit, or oracle adapter was deployed as part of these deployments.
+
+PolygonScan and BaseScan source-code verification should be completed separately.
+These Factory deployments do not establish production security or imply an external audit.
+
+---
+
 ## Production Gluon-EVM Integration
 
 The Ethereum Mainnet Factory is configured, but no production Reactor
@@ -156,7 +187,9 @@ or stablecoin deployment is currently registered.
 
 | Network | Factory | Status |
 |---|---|---|
-| Ethereum Mainnet (1) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; no Reactor recorded |
+| Ethereum Mainnet (1) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; live Reactor tested |
+| Polygon PoS (137) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; 0 Reactors |
+| Base Mainnet (8453) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; 0 Reactors |
 | Other production networks | Not configured | Not configured |
 
 ## OrbOracle

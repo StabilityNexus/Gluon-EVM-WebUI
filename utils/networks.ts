@@ -28,9 +28,9 @@ export const GLUON_NETWORKS: readonly GluonNetworkConfig[] = [
     displayName: "Ethereum",
     factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a",
   },
-  { chain: polygon, displayName: "Polygon" },
+  { chain: polygon, displayName: "Polygon", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
   { chain: bsc, displayName: "BSC" },
-  { chain: base, displayName: "Base" },
+  { chain: base, displayName: "Base", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
   {
     chain: sepolia,
     displayName: "Ethereum Sepolia",

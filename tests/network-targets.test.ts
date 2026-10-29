@@ -24,13 +24,15 @@ describe("deployment targets", () => {
     ])
     expect(GLUON_CHAINS[0].id).toBe(SEPOLIA_CHAIN_ID)
     expect(GLUON_CHAINS.filter(({ testnet }) => testnet)).toHaveLength(1)
+    for (const chainId of [MAINNET_CHAIN_ID, 137, 8453]) {
+      expect(
+        GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)?.factoryAddress,
+      ).toBe("0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a")
+    }
     expect(
-      GLUON_NETWORKS.find(({ chain }) => chain.id === MAINNET_CHAIN_ID)?.factoryAddress,
-    ).toBe("0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a")
-    expect(
-      GLUON_NETWORKS.filter(({ chain }) => chain.id !== MAINNET_CHAIN_ID).every(
-        ({ factoryAddress }) => factoryAddress === undefined,
-      ),
+      GLUON_NETWORKS.filter(
+        ({ chain }) => ![MAINNET_CHAIN_ID, 137, 8453].includes(chain.id),
+      ).every(({ factoryAddress }) => factoryAddress === undefined),
     ).toBe(true)
   })
   it("does not offer Sepolia oracles on mainnet", () => {
