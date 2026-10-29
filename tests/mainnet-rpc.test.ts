@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { createPublicClient } from "viem"
-import { mainnet } from "viem/chains"
+import { config } from "@/utils/config"
+import { MAINNET_CHAIN_ID } from "@/utils/networks"
 import {
-  createMainnetTransport,
   MAINNET_RPC_PRIMARY,
   MAINNET_RPC_BACKUP,
 } from "@/utils/mainnetTransport"
@@ -53,12 +52,11 @@ describe("Mainnet RPC transport", () => {
       })
     )
 
-    const client = createPublicClient({
-      chain: mainnet,
-      transport: createMainnetTransport(),
+    const client = config.getClient({
+      chainId: MAINNET_CHAIN_ID,
     })
 
-    expect(await client.getChainId()).toBe(1)
+    expect(await client.request({ method: "eth_chainId" })).toBe("0x1")
     expect(requested).toEqual([
       MAINNET_RPC_PRIMARY,
       MAINNET_RPC_BACKUP,
