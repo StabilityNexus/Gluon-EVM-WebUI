@@ -1,6 +1,28 @@
 import type { Address, Chain } from "viem"
 import { base, bsc, classic, mainnet, polygon, sepolia } from "wagmi/chains"
 
+// Override unavailable public RPCs for both contract reads and wallet network setup.
+const withRpc = (chain: Chain, url: string): Chain => ({
+  ...chain,
+  rpcUrls: {
+    ...chain.rpcUrls,
+    default: {
+      ...chain.rpcUrls.default,
+      http: [url],
+    },
+  },
+})
+
+const polygonWithRpc = withRpc(
+  polygon,
+  "https://polygon-bor-rpc.publicnode.com",
+)
+
+const classicWithRpc = withRpc(
+  classic,
+  "https://etc.blockscout.com/api/eth-rpc",
+)
+
 export const MAINNET_CHAIN_ID = mainnet.id
 export const SEPOLIA_CHAIN_ID = sepolia.id
 
@@ -22,13 +44,13 @@ export type GluonNetworkConfig = {
 }
 
 export const GLUON_NETWORKS: readonly GluonNetworkConfig[] = [
-  { chain: classic, displayName: "Ethereum Classic", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
+  { chain: classicWithRpc, displayName: "Ethereum Classic", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
   {
     chain: mainnet,
     displayName: "Ethereum",
     factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a",
   },
-  { chain: polygon, displayName: "Polygon", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
+  { chain: polygonWithRpc, displayName: "Polygon", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
   { chain: bsc, displayName: "BSC", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
   { chain: base, displayName: "Base", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
   {
