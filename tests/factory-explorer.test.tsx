@@ -1,6 +1,6 @@
 import React from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 
 const mocks = vi.hoisted(() => ({
   chainId: 11155111,
@@ -146,6 +146,8 @@ describe("current factory explorer", () => {
     mocks.network.factoryAddress = current
     mocks.network.explorerFactoryAddress = historical
 
+    const failedRegistryRefetch = vi.fn()
+
     mocks.read.mockImplementation(({
       address, functionName,
     }: {
@@ -158,7 +160,8 @@ describe("current factory explorer", () => {
       error: functionName === "getAllDeployedReactors" && address === historical
         ? new Error("Historical RPC unavailable")
         : null,
-      refetch: vi.fn(),
+      refetch: address === historical && functionName === "getAllDeployedReactors"
+        ? failedRegistryRefetch : vi.fn(),
     }))
 
     render(<ExplorerPage />)
@@ -170,6 +173,8 @@ describe("current factory explorer", () => {
       name: /Open reactor/i,
     })).toBeInTheDocument()
     expect(screen.queryByText("Unable to load reactors")).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }))
+    expect(failedRegistryRefetch).toHaveBeenCalledTimes(1)
   })
 
   it("keeps historical Reactors visible if the current registry fails", () => {
@@ -179,6 +184,8 @@ describe("current factory explorer", () => {
 
     mocks.network.factoryAddress = current
     mocks.network.explorerFactoryAddress = historical
+
+    const failedRegistryRefetch = vi.fn()
 
     mocks.read.mockImplementation(({
       address, functionName,
@@ -192,7 +199,8 @@ describe("current factory explorer", () => {
       error: functionName === "getAllDeployedReactors" && address === current
         ? new Error("Current RPC unavailable")
         : null,
-      refetch: vi.fn(),
+      refetch: address === current && functionName === "getAllDeployedReactors"
+        ? failedRegistryRefetch : vi.fn(),
     }))
 
     render(<ExplorerPage />)
@@ -204,6 +212,55 @@ describe("current factory explorer", () => {
       name: /Open reactor/i,
     })).toBeInTheDocument()
     expect(screen.queryByText("Unable to load reactors")).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }))
+    expect(failedRegistryRefetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not report incomplete registries when only the count query fails", () => {
+    mocks.network.factoryAddress = "0x0000000000000000000000000000000000000002"
+
+    mocks.read.mockImplementation(({ functionName }: { functionName: string }) => ({
+      data: functionName === "getAllDeployedReactors" ? [] : undefined,
+      error: functionName === "getDeployedReactorsCount"
+        ? new Error("Count RPC failed") : null,
+      refetch: vi.fn(),
+    }))
+
+    render(<ExplorerPage />)
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+    expect(screen.getByText("No reactors have been deployed on this network yet.")).toBeInTheDocument()
+  })
+
+  it("does not claim zero deployments when a registry is unavailable", () => {
+    const current = "0x0000000000000000000000000000000000000002"
+    const historical = "0x0000000000000000000000000000000000000005"
+    mocks.network.factoryAddress = current
+    mocks.network.explorerFactoryAddress = historical
+
+    mocks.read.mockImplementation(({ address, functionName }: {
+      address?: string
+      functionName: string
+    }) => ({
+      data: functionName === "getAllDeployedReactors" && address === current
+        ? [] : undefined,
+      error: functionName === "getAllDeployedReactors" && address === historical
+        ? new Error("Historical registry unavailable") : null,
+      refetch: vi.fn(),
+    }))
+
+    render(<ExplorerPage />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Results may be incomplete")
+    expect(screen.getByText(
+      "No reactors could be displayed from the available registry data."
+    )).toBeInTheDocument()
+    expect(screen.queryByText(
+      "No reactors have been deployed on this network yet."
+    )).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", {
+      name: "Deploy the first reactor",
+    })).not.toBeInTheDocument()
   })
 
   it("links reactor and reserve addresses and labels the two coins", () => {
