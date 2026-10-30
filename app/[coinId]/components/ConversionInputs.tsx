@@ -94,7 +94,7 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
             value={fromToken}
             onValueChange={(value) => setFromToken(value as TokenOption)}
           >
-            <SelectTrigger className="col-span-2 h-11 data-[size=default]:h-11 w-full sm:col-span-1 sm:w-40 sm:flex-none bg-background/80">
+            <SelectTrigger aria-label="From token" className="col-span-2 h-11 data-[size=default]:h-11 w-full sm:col-span-1 sm:w-40 sm:flex-none bg-background/80">
               <SelectValue placeholder="Token">{fromToken === "BASE" ? activeBaseSymbol : undefined}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -203,7 +203,7 @@ export function ConversionInputs({ model }: ConversionInputsProps) {
             value={toToken}
             onValueChange={(value) => setToToken(value as TokenOption)}
           >
-            <SelectTrigger className="h-11 data-[size=default]:h-11 w-full sm:w-40 sm:flex-none bg-background/80">
+            <SelectTrigger aria-label="To token" className="h-11 data-[size=default]:h-11 w-full sm:w-40 sm:flex-none bg-background/80">
               <SelectValue placeholder="Token" />
             </SelectTrigger>
             <SelectContent>

@@ -1,9 +1,10 @@
-import React from "react"
+import React, { type ComponentProps } from "react"
 import axe from "axe-core"
 import { describe, expect, it, vi } from "vitest"
 import { render } from "@testing-library/react"
 import OraclePreflightPanel from "@/components/OraclePreflightPanel"
 import { ManagementActionCard } from "@/components/management-action-card"
+import { ConversionInputs } from "@/app/[coinId]/components/ConversionInputs"
 
 async function expectNoAxeViolations(container: HTMLElement) {
   const result = await axe.run(container, {
@@ -47,6 +48,16 @@ describe("accessibility", () => {
         action="mint"
         coinSymbol="GLN"
         onAction={vi.fn()}
+      />,
+    )
+
+    await expectNoAxeViolations(container)
+  })
+
+  it("has no automated WCAG violations in the conversion inputs", async () => {
+    const { container } = render(
+      <ConversionInputs
+        model={{ fromToken: "BASE", toToken: "BUNDLE", disabledTokens: {}, fromInputPlaceholder: "0.0", toInputPlaceholder: "0.0" } as unknown as ComponentProps<typeof ConversionInputs>["model"]}
       />,
     )
 
