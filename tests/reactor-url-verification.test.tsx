@@ -7,9 +7,13 @@ const mocks = vi.hoisted(() => ({
   queryAddress: "0x00000000000000000000000000000000000000aa",
   currentFactory: undefined as `0x${string}` | undefined,
   explorerFactory: undefined as `0x${string}` | undefined,
+  mainnetFactory: undefined as `0x${string}` | undefined,
   registeredAddresses: [] as string[],
+  historicalAddresses: [] as string[],
   isPending: false,
   isError: false,
+  historicalPending: false,
+  historicalError: false,
   read: vi.fn(),
   useReactorInteraction: vi.fn(),
 }))
@@ -26,19 +30,44 @@ vi.mock("next/link", () => ({
 
 vi.mock("wagmi", () => ({
   useChainId: () => mocks.chainId,
-  useReadContract: (request: unknown) => {
+  useReadContract: (request: {
+    address?: `0x${string}`
+    chainId?: number
+    query?: { enabled?: boolean }
+  }) => {
     mocks.read(request)
+
+    const isHistorical =
+      request.chainId === 11155111 &&
+      !!mocks.currentFactory &&
+      !!mocks.explorerFactory &&
+      mocks.currentFactory.toLowerCase() !==
+        mocks.explorerFactory.toLowerCase() &&
+      request.address?.toLowerCase() ===
+        mocks.explorerFactory.toLowerCase()
+
+    const pending = isHistorical
+      ? mocks.historicalPending : mocks.isPending
+    const error = isHistorical
+      ? mocks.historicalError : mocks.isError
+    const enabled = request.query?.enabled === true
+
     return {
-      data: mocks.registeredAddresses,
-      isPending: mocks.isPending,
-      isError: mocks.isError,
+      data: isHistorical
+        ? mocks.historicalAddresses : mocks.registeredAddresses,
+      isPending: enabled ? pending : true,
+      isError: enabled ? error : false,
+      isSuccess: enabled && !pending && !error,
     }
   },
 }))
 
 vi.mock("@/utils/addresses", () => ({
   get StableCoinFactories() {
-    return mocks.currentFactory ? { 11155111: mocks.currentFactory } : {}
+    return {
+      ...(mocks.currentFactory ? { 11155111: mocks.currentFactory } : {}),
+      ...(mocks.mainnetFactory ? { 1: mocks.mainnetFactory } : {}),
+    }
   },
 }))
 
@@ -80,9 +109,13 @@ describe("reactor URL verification", () => {
     mocks.queryAddress = validReactor
     mocks.currentFactory = primaryFactory
     mocks.explorerFactory = undefined
+    mocks.mainnetFactory = undefined
     mocks.registeredAddresses = []
+    mocks.historicalAddresses = []
     mocks.isPending = false
     mocks.isError = false
+    mocks.historicalPending = false
+    mocks.historicalError = false
     mocks.read.mockReset()
     mocks.useReactorInteraction.mockReset()
     mocks.useReactorInteraction.mockReturnValue({ chainId: mocks.chainId })
@@ -155,11 +188,120 @@ describe("reactor URL verification", () => {
     }))
   })
 
-  it("prefers the active factory, matching the Explorer", () => {
+  it("accepts historical-only membership with both Sepolia factories configured", () => {
+    mocks.explorerFactory = legacyFactory
+    mocks.registeredAddresses = []
+    mocks.historicalAddresses = [validReactor]
+
+    render(<InteractionClient coinId="c" />)
+
+    expect(screen.getByTestId("reactor-interaction")).toBeInTheDocument()
+    expect(mocks.read).toHaveBeenCalledWith(expect.objectContaining({
+      address: primaryFactory,
+      chainId: 11155111,
+      query: { enabled: true },
+    }))
+    expect(mocks.read).toHaveBeenCalledWith(expect.objectContaining({
+      address: legacyFactory,
+      chainId: 11155111,
+      query: { enabled: true },
+    }))
+  })
+
+  it("accepts current-only membership with both registries configured", () => {
     mocks.explorerFactory = legacyFactory
     mocks.registeredAddresses = [validReactor]
+    mocks.historicalAddresses = [otherReactor]
+
     render(<InteractionClient coinId="c" />)
-    expect(mocks.read).toHaveBeenCalledWith(expect.objectContaining({ address: primaryFactory }))
+
+    expect(screen.getByTestId("reactor-interaction")).toBeInTheDocument()
+    expect(mocks.useReactorInteraction).toHaveBeenCalledWith(validReactor)
+  })
+
+  it("blocks an address absent from both trusted registries", () => {
+    mocks.explorerFactory = legacyFactory
+    mocks.registeredAddresses = [otherReactor]
+    mocks.historicalAddresses = []
+
+    render(<InteractionClient coinId="c" />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Reactor not verified")
+    expect(mocks.useReactorInteraction).not.toHaveBeenCalled()
+  })
+
+  it("allows a successful historical verification if the current read fails", () => {
+    mocks.explorerFactory = legacyFactory
+    mocks.isError = true
+    mocks.registeredAddresses = [validReactor]
+    mocks.historicalAddresses = [validReactor]
+
+    render(<InteractionClient coinId="c" />)
+
+    expect(screen.getByTestId("reactor-interaction")).toBeInTheDocument()
+  })
+
+  it("does not trust cached historical membership after that read fails", () => {
+    mocks.explorerFactory = legacyFactory
+    mocks.registeredAddresses = []
+    mocks.historicalAddresses = [validReactor]
+    mocks.historicalError = true
+
+    render(<InteractionClient coinId="c" />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Reactor not verified")
+    expect(mocks.useReactorInteraction).not.toHaveBeenCalled()
+  })
+
+  it("fails closed when both registries fail despite cached membership", () => {
+    mocks.explorerFactory = legacyFactory
+    mocks.registeredAddresses = [validReactor]
+    mocks.historicalAddresses = [validReactor]
+    mocks.isError = true
+    mocks.historicalError = true
+
+    render(<InteractionClient coinId="c" />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Reactor not verified")
+    expect(mocks.useReactorInteraction).not.toHaveBeenCalled()
+  })
+
+  it("waits while historical verification is pending after a current read failure", () => {
+    mocks.explorerFactory = legacyFactory
+    mocks.isError = true
+    mocks.historicalPending = true
+
+    const view = render(<InteractionClient coinId="c" />)
+
+    expect(screen.getByRole("status")).toHaveTextContent("Verifying reactor")
+    expect(mocks.useReactorInteraction).not.toHaveBeenCalled()
+
+    mocks.historicalPending = false
+    mocks.historicalAddresses = [validReactor]
+    view.rerender(<InteractionClient coinId="c" />)
+
+    expect(screen.getByTestId("reactor-interaction")).toBeInTheDocument()
+  })
+
+  it("re-verifies on network switch even when the factory address is the same", () => {
+    mocks.explorerFactory = legacyFactory
+    mocks.registeredAddresses = []
+    mocks.historicalAddresses = [validReactor]
+    mocks.mainnetFactory = primaryFactory
+
+    const view = render(<InteractionClient coinId="c" />)
+    expect(screen.getByTestId("reactor-interaction")).toBeInTheDocument()
+
+    mocks.chainId = 1
+    view.rerender(<InteractionClient coinId="c" />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Reactor not verified")
+    expect(screen.queryByTestId("reactor-interaction")).not.toBeInTheDocument()
+    expect(mocks.read).toHaveBeenCalledWith(expect.objectContaining({
+      address: primaryFactory,
+      chainId: 1,
+      query: { enabled: true },
+    }))
   })
 
   it("blocks networks without a configured factory", () => {

@@ -62,9 +62,11 @@ vi.mock("wagmi", () => ({
   useReadContract: ({
     address,
     functionName,
+    query,
   }: {
     address: string
     functionName: string
+    query?: { enabled?: boolean }
   }) => {
     const wad = 10n ** 18n
     const data: Record<string, unknown> = {
@@ -116,6 +118,9 @@ vi.mock("wagmi", () => ({
       data: data[functionName],
       isPending: false,
       isError: false,
+      isSuccess:
+        query?.enabled !== false &&
+        data[functionName] !== undefined,
       refetch: pricingRead ? mocks.refetchPricing : mocks.refetch,
     }
   },
