@@ -10,6 +10,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useChainId } from "wagmi";
 import { getChainNameForTokenList } from "@/utils/chainMapping";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 export interface Token {
   id: string;
@@ -191,24 +192,14 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
       )}
 
       {/* Token Selection Modal */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
-          onClick={() => setIsModalOpen(false)}
-        >
-          <div
-            className="bg-popover border border-border rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-[var(--shadow-md)]"
-            onClick={(e) => e.stopPropagation()}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent
+            aria-describedby={undefined}
+            className="bg-popover border-border rounded-2xl sm:max-w-2xl max-h-[80vh] flex flex-col gap-0 p-0 shadow-[var(--shadow-md)]"
           >
             {/* Modal Header */}
             <div className="flex justify-between items-center px-5 py-4 sm:p-6 border-b border-border">
-              <h2 className="text-lg font-semibold tracking-[-0.01em] text-foreground">Select token</h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground text-2xl leading-none w-8 h-8 flex items-center justify-center transition-colors font-mono"
-              >
-                ×
-              </button>
+              <DialogTitle className="text-lg font-semibold tracking-[-0.01em] text-foreground">Select token</DialogTitle>
             </div>
 
             {/* Search Bar */}
@@ -298,9 +289,8 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({
                 Enter Custom Address
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </DialogContent>
+      </Dialog>
     </div>
   );
 };
