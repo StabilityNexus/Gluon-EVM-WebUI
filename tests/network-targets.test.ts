@@ -45,4 +45,20 @@ describe("deployment targets", () => {
       if (!chain.testnet) expect(oracles).toBeUndefined()
     }
   })
+
+  it("uses working RPC endpoints for Polygon and Ethereum Classic", () => {
+    const expected = [
+      { id: 137, url: "https://polygon-bor-rpc.publicnode.com" },
+      { id: 61, url: "https://etc.blockscout.com/api/eth-rpc" },
+    ]
+
+    for (const { id, url } of expected) {
+      const network = GLUON_NETWORKS.find(({ chain }) => chain.id === id)
+      const walletChain = GLUON_CHAINS.find((chain) => chain.id === id)
+
+      expect(network?.chain.rpcUrls.default.http[0]).toBe(url)
+      expect(walletChain?.rpcUrls.default.http[0]).toBe(url)
+    }
+  })
+
 })
