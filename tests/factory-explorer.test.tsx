@@ -39,34 +39,171 @@ describe("current factory explorer", () => {
     }))
   })
 
-  it("discovers Sepolia reactors without enabling creation", () => {
-    mocks.network.explorerFactoryAddress = "0x0000000000000000000000000000000000000005"
+  it("discovers historical Sepolia reactors when only the old Factory is configured", () => {
+    const historical = "0x0000000000000000000000000000000000000005"
+    mocks.network.explorerFactoryAddress = historical
+
     render(<ExplorerPage />)
-    expect(screen.getByRole("status")).toHaveTextContent("Sepolia test reactors")
-    for (const [request] of mocks.read.mock.calls) {
-      expect(request.address).toBe(mocks.network.explorerFactoryAddress)
-      expect(request.query.enabled).toBe(true)
-    }
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Sepolia includes historical test reactors"
+    )
+
+    expect(mocks.read).toHaveBeenCalledTimes(3)
+
+    const calls = mocks.read.mock.calls.map(([request]) => request)
+    const active = calls.filter((request) => request.query.enabled)
+
+    expect(active).toHaveLength(2)
+    expect(active.every((request) => request.address === historical)).toBe(true)
     expect(mocks.network.factoryAddress).toBeUndefined()
   })
 
-  it("prefers the current creation factory when configured", () => {
-    mocks.network.factoryAddress = "0x0000000000000000000000000000000000000002"
-    mocks.network.explorerFactoryAddress = "0x0000000000000000000000000000000000000005"
+  it("reads both current and historical Sepolia registries", () => {
+    const current = "0x0000000000000000000000000000000000000002"
+    const historical = "0x0000000000000000000000000000000000000005"
+
+    mocks.network.factoryAddress = current
+    mocks.network.explorerFactoryAddress = historical
+
     render(<ExplorerPage />)
-    for (const [request] of mocks.read.mock.calls) {
-      expect(request.address).toBe(mocks.network.factoryAddress)
-    }
-    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+
+    expect(mocks.read).toHaveBeenCalledWith(expect.objectContaining({
+      address: current,
+      functionName: "getAllDeployedReactors",
+      query: { enabled: true },
+    }))
+
+    expect(mocks.read).toHaveBeenCalledWith(expect.objectContaining({
+      address: historical,
+      functionName: "getAllDeployedReactors",
+      query: { enabled: true },
+    }))
+
+    expect(mocks.read).toHaveBeenCalledWith(expect.objectContaining({
+      address: current,
+      functionName: "getDeployedReactorsCount",
+      query: { enabled: true },
+    }))
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "New reactor creation uses the current verified Factory"
+    )
   })
 
-  it("shows an unavailable state and disables factory reads until configured", () => {
+  it("shows the unavailable state with all registry reads disabled", () => {
     render(<ExplorerPage />)
-    expect(screen.getByRole("heading", { name: "No deployment configured" })).toBeInTheDocument()
-    expect(mocks.read).toHaveBeenCalledTimes(2)
+
+    expect(screen.getByRole("heading", {
+      name: "No deployment configured",
+    })).toBeInTheDocument()
+
+    expect(mocks.read).toHaveBeenCalledTimes(3)
+
     for (const [request] of mocks.read.mock.calls) {
       expect(request.query.enabled).toBe(false)
     }
+  })
+
+  it("merges current and historical Reactors without duplicates", () => {
+    const current = "0x0000000000000000000000000000000000000002"
+    const historical = "0x0000000000000000000000000000000000000005"
+    const first = "0x0000000000000000000000000000000000000011"
+    const shared = "0x0000000000000000000000000000000000000012"
+    const older = "0x0000000000000000000000000000000000000013"
+
+    mocks.network.factoryAddress = current
+    mocks.network.explorerFactoryAddress = historical
+
+    mocks.read.mockImplementation(({
+      address, functionName,
+    }: {
+      address?: string
+      functionName: string
+    }) => ({
+      data: functionName === "getAllDeployedReactors"
+        ? address === current
+          ? [first, shared]
+          : address === historical
+            ? [shared, older]
+            : []
+        : undefined,
+      refetch: vi.fn(),
+    }))
+
+    render(<ExplorerPage />)
+
+    expect(screen.getAllByRole("link", {
+      name: /Open reactor/i,
+    })).toHaveLength(3)
+  })
+
+  it("keeps current Reactors visible if historical discovery fails", () => {
+    const current = "0x0000000000000000000000000000000000000002"
+    const historical = "0x0000000000000000000000000000000000000005"
+    const reactor = "0x0000000000000000000000000000000000000011"
+
+    mocks.network.factoryAddress = current
+    mocks.network.explorerFactoryAddress = historical
+
+    mocks.read.mockImplementation(({
+      address, functionName,
+    }: {
+      address?: string
+      functionName: string
+    }) => ({
+      data: functionName === "getAllDeployedReactors" && address === current
+        ? [reactor]
+        : undefined,
+      error: functionName === "getAllDeployedReactors" && address === historical
+        ? new Error("Historical RPC unavailable")
+        : null,
+      refetch: vi.fn(),
+    }))
+
+    render(<ExplorerPage />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Results may be incomplete"
+    )
+    expect(screen.getByRole("link", {
+      name: /Open reactor/i,
+    })).toBeInTheDocument()
+    expect(screen.queryByText("Unable to load reactors")).not.toBeInTheDocument()
+  })
+
+  it("keeps historical Reactors visible if the current registry fails", () => {
+    const current = "0x0000000000000000000000000000000000000002"
+    const historical = "0x0000000000000000000000000000000000000005"
+    const reactor = "0x0000000000000000000000000000000000000013"
+
+    mocks.network.factoryAddress = current
+    mocks.network.explorerFactoryAddress = historical
+
+    mocks.read.mockImplementation(({
+      address, functionName,
+    }: {
+      address?: string
+      functionName: string
+    }) => ({
+      data: functionName === "getAllDeployedReactors" && address === historical
+        ? [reactor]
+        : undefined,
+      error: functionName === "getAllDeployedReactors" && address === current
+        ? new Error("Current RPC unavailable")
+        : null,
+      refetch: vi.fn(),
+    }))
+
+    render(<ExplorerPage />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Results may be incomplete"
+    )
+    expect(screen.getByRole("link", {
+      name: /Open reactor/i,
+    })).toBeInTheDocument()
+    expect(screen.queryByText("Unable to load reactors")).not.toBeInTheDocument()
   })
 
   it("links reactor and reserve addresses and labels the two coins", () => {

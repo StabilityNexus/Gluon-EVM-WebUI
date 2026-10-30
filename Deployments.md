@@ -21,18 +21,26 @@ on this domain.
 It does not imply that any displayed reactor, token, oracle, or contract address is a production
 deployment.
 
-## Configured Test Networks
+## Configured Networks
 
-The WebUI currently contains development/testnet configuration for:
+The WebUI currently has verified Factory addresses configured for
+Reactor creation on these six networks:
 
-| Network | Status |
-|---|---|
-| Ethereum Sepolia | Configured in the WebUI network registry |
-| Scroll Sepolia | Configured in the WebUI network registry |
-| Citrea Testnet | Configured in the WebUI network registry |
-| Rootstock Testnet | Configured in the WebUI network registry |
+| Network | Chain ID | Network type |
+|---|---:|---|
+| Ethereum Classic | 61 | Mainnet |
+| Ethereum | 1 | Mainnet |
+| Polygon PoS | 137 | Mainnet |
+| BNB Smart Chain | 56 | Mainnet |
+| Base | 8453 | Mainnet |
+| Ethereum Sepolia | 11155111 | Testnet |
 
-Factory addresses and network metadata should remain centralized in the WebUI configuration.
+Factory addresses and network metadata are centralized in
+`utils/networks.ts`. Historical Sepolia test Reactor discovery
+remains separately configured through `explorerFactoryAddress`.
+
+Factory configuration does not imply audited or production-ready
+Reactor operations on every network.
 
 ## Current Sepolia Test Factory
 
@@ -181,17 +189,63 @@ These Factory deployments do not establish production security or imply an exter
 
 ---
 
+## Additional Verified Factories (2026-10-30)
+
+The following Factory-only deployments use Gluon-EVM source commit
+`d39081c3112fba0c22a1bb5dfc1ebb6a8f1d6f10`.
+
+- **Deployer:** `0x4924D0C5C26F8031df7713dEb6bb351B9Df03CDE`
+- **Developer:** `0x86B8f920835015c0F1b697dBe0B8b150a986eCE5`
+- **Developer fee:** `1000000000000000` WAD (0.1%)
+- **Initial Reactors:** Zero in each new Factory registry
+- **Deployment scope:** Factory only; no Reactor or oracle adapter deployed
+
+| Network | Chain ID | Verified Factory | Deployment transaction |
+|---|---:|---|---|
+| Ethereum Sepolia | 11155111 | `0x7e04a17f09EACa400c9CFca690C5a1859FE7DCD5` | [Sepolia Etherscan](https://sepolia.etherscan.io/tx/0xd5a1f6a65d59bd56a57d51aea1d5cbefb7ffe537529408688d5c8c3c9d935f88) |
+| BNB Smart Chain | 56 | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | [BscScan](https://bscscan.com/tx/0x1e798cd5160c59dd622232681fd487b1c09782245dfe8e009ed3ed4af382aea1) |
+| Ethereum Classic | 61 | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | [ETC Blockscout](https://etc.blockscout.com/tx/0x0ecd3a5490aaeb0e1db8a307ec4ab41a6a2f7be756acfce1417d89f5e4a82c40) |
+
+### Source and Runtime Verification
+
+- All three deployments returned successful transaction receipts.
+- The Factory developer, 0.1% fee, runtime and initial Reactor
+  registry were checked independently on-chain.
+- Sepolia and BSC use the Osaka-targeted Solidity 0.8.30 build,
+  with 24,418-byte runtime.
+- Ethereum Classic uses Solidity 0.8.30 targeting Shanghai,
+  via-IR and 200 optimizer runs, with 24,560-byte runtime.
+- Their Solidity source and constructor configuration are the same,
+  but ETC runtime bytecode is different.
+- Explorer source verification passed for all three:
+  [Sepolia](https://sepolia.etherscan.io/address/0x7e04a17f09EACa400c9CFca690C5a1859FE7DCD5#code),
+  [BSC](https://bscscan.com/address/0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a#code),
+  [ETC](https://etc.blockscout.com/address/0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a).
+
+Sepolia's historical Factory
+`0x56a8c79dE3d8e21Dc60e2679c4e296Ac8A4b9F50`
+remains configured for discovering previous test Reactors.
+The new Sepolia Factory is used for Reactor creation. Both
+registries are read separately in the explorer.
+
+These deployments do not establish an independent security audit
+or end-to-end Reactor testing on all networks.
+
+---
+
 ## Production Gluon-EVM Integration
 
-The Ethereum Mainnet Factory is configured, but no production Reactor
-or stablecoin deployment is currently registered.
+Verified Factory addresses are configured on the supported networks
+below. Factory deployment alone is not a production-readiness claim.
 
 | Network | Factory | Status |
 |---|---|---|
-| Ethereum Mainnet (1) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; no production Reactor registered |
-| Polygon PoS (137) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; 0 Reactors |
-| Base Mainnet (8453) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; 0 Reactors |
-| Other production networks | Not configured | Not configured |
+| Ethereum Mainnet (1) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; production readiness not asserted |
+| Polygon PoS (137) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; 0 Reactors at deployment |
+| Base Mainnet (8453) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; 0 Reactors at deployment |
+| BNB Smart Chain (56) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; 0 Reactors at deployment |
+| Ethereum Classic (61) | `0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a` | Factory configured; Shanghai build; 0 Reactors at deployment |
+| Ethereum Sepolia (11155111) | `0x7e04a17f09EACa400c9CFca690C5a1859FE7DCD5` | Testnet Factory configured; historical discovery preserved |
 
 ## OrbOracle
 
