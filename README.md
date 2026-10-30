@@ -290,11 +290,18 @@ WalletLink connects to browser-injected wallets without a project ID or hosted r
 Desktop-to-phone QR connections are not supported. On mobile, use a wallet's
 built-in browser where it provides a compatible injected wallet.
 
-Explorer lists the recorded Sepolia test reactors through the network's
-`explorerFactoryAddress`, in development and production. This discovery setting
-never enables creation through that older factory. Ethereum Mainnet now has a verified matching factory configured for creation.
-See [Deployments.md](Deployments.md) for deployment evidence and ABI compatibility.
-Other mainnets remain unconfigured. The WebUI is experimental and not externally audited.
+Explorer preserves historical Sepolia test reactors through
+`explorerFactoryAddress`, while the separately verified current Sepolia
+`factoryAddress` enables creation through the matching interface.
+
+Verified Factory addresses are configured for Ethereum, Polygon, Base,
+BNB Smart Chain, Ethereum Classic, and Ethereum Sepolia. These are separate
+network deployments; a shared address does not mean shared storage.
+
+See [Deployments.md](Deployments.md) for deployment evidence, compiler
+differences, and ABI compatibility. Factory verification does not establish
+end-to-end Reactor functionality on every chain. The WebUI remains
+experimental and has not been independently security audited.
 Open `/create` for the creation form and `/c?coin=<reactor-address>` for a reactor.
 
 Anything prefixed with `NEXT_PUBLIC_` is browser-visible and must never contain a secret.

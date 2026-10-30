@@ -22,18 +22,19 @@ export type GluonNetworkConfig = {
 }
 
 export const GLUON_NETWORKS: readonly GluonNetworkConfig[] = [
-  { chain: classic, displayName: "Ethereum Classic" },
+  { chain: classic, displayName: "Ethereum Classic", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
   {
     chain: mainnet,
     displayName: "Ethereum",
     factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a",
   },
-  { chain: polygon, displayName: "Polygon" },
-  { chain: bsc, displayName: "BSC" },
-  { chain: base, displayName: "Base" },
+  { chain: polygon, displayName: "Polygon", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
+  { chain: bsc, displayName: "BSC", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
+  { chain: base, displayName: "Base", factoryAddress: "0xcA68B9d5C0285CCf9f5Be2D60d525F292E76322a" },
   {
     chain: sepolia,
     displayName: "Ethereum Sepolia",
+    factoryAddress: "0x7e04a17f09EACa400c9CFca690C5a1859FE7DCD5",
     explorerFactoryAddress: "0x56a8c79dE3d8e21Dc60e2679c4e296Ac8A4b9F50",
     // Test oracle deployments recorded in Deployments.md; not mainnet addresses.
     oracles: [

@@ -28,20 +28,49 @@ export default function InteractionClient({ coinId }: { coinId: string }) {
 function VerifiedReactorAccess({ reactorAddress }: { reactorAddress: string }) {
   const chainId = useChainId()
   const isValidAddress = isAddress(reactorAddress)
-  // Match the Explorer's factory selection, including Sepolia's legacy factory.
+  const network = getGluonNetwork(chainId)
+  const currentFactoryAddress = StableCoinFactories[chainId]
+
+  // Preserve historical-only fallback and check both trusted registries
+  // when the current and historical Factories are different.
   const factoryAddress =
-    StableCoinFactories[chainId] ?? getGluonNetwork(chainId)?.explorerFactoryAddress
+    currentFactoryAddress ?? network?.explorerFactoryAddress
+
+  const historicalFactoryAddress =
+    currentFactoryAddress &&
+    network?.explorerFactoryAddress &&
+    currentFactoryAddress.toLowerCase() !==
+      network.explorerFactoryAddress.toLowerCase()
+      ? network.explorerFactoryAddress
+      : undefined
+
+  const readCurrent = isValidAddress && !!factoryAddress
+  const readHistorical = isValidAddress && !!historicalFactoryAddress
 
   const {
-    data: deployedReactors,
-    isPending,
-    isError,
+    data: currentReactors,
+    isPending: currentPending,
+    isError: currentError,
+    isSuccess: currentSuccess,
   } = useReadContract({
     address: factoryAddress,
     abi: FactoryABI,
     functionName: "getAllDeployedReactors",
     chainId,
-    query: { enabled: isValidAddress && !!factoryAddress },
+    query: { enabled: readCurrent },
+  })
+
+  const {
+    data: historicalReactors,
+    isPending: historicalPending,
+    isError: historicalError,
+    isSuccess: historicalSuccess,
+  } = useReadContract({
+    address: historicalFactoryAddress,
+    abi: FactoryABI,
+    functionName: "getAllDeployedReactors",
+    chainId,
+    query: { enabled: readHistorical },
   })
 
   if (!isValidAddress) {
@@ -52,27 +81,43 @@ function VerifiedReactorAccess({ reactorAddress }: { reactorAddress: string }) {
     return <ReactorAccessMessage title="No reactor factory configured for this network" />
   }
 
-  if (isPending && !isError) {
+  const normalizedAddress = reactorAddress.toLowerCase()
+
+  // Never trust failed or pending reads, even if cached data exists.
+  const verifiedCurrent =
+    readCurrent &&
+    currentSuccess &&
+    !currentError &&
+    currentReactors?.some(
+      (address) => address.toLowerCase() === normalizedAddress,
+    )
+
+  const verifiedHistorical =
+    readHistorical &&
+    historicalSuccess &&
+    !historicalError &&
+    historicalReactors?.some(
+      (address) => address.toLowerCase() === normalizedAddress,
+    )
+
+  if (verifiedCurrent || verifiedHistorical) {
+    return <ReactorInteractionClient reactorAddress={reactorAddress} />
+  }
+
+  if (
+    (readCurrent && currentPending) ||
+    (readHistorical && historicalPending)
+  ) {
     return <ReactorAccessMessage title="Verifying reactor" role="status" />
   }
 
-  // Fail closed on RPC errors and on addresses absent from the trusted registry.
-  const isRegistered =
-    !isError &&
-    deployedReactors?.some(
-      (address) => address.toLowerCase() === reactorAddress.toLowerCase(),
-    )
-
-  if (!isRegistered) {
-    return (
-      <ReactorAccessMessage
-        title="Reactor not verified"
-        description="This address could not be verified against this network's Gluon factory. Approvals and transactions are disabled."
-      />
-    )
-  }
-
-  return <ReactorInteractionClient reactorAddress={reactorAddress} />
+  // Fail closed: neither trusted registry verified this address.
+  return (
+    <ReactorAccessMessage
+      title="Reactor not verified"
+      description="This address could not be verified against this network's trusted Gluon factory registries. Approvals and transactions are disabled."
+    />
+  )
 }
 
 function ReactorAccessMessage({

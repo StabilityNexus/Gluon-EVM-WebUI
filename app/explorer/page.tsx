@@ -166,10 +166,18 @@ export default function ExplorerPage() {
   const factoryAddress = StableCoinFactories[chainId as keyof typeof StableCoinFactories]
     ?? currentNetwork?.explorerFactoryAddress
 
-  // Get all deployed reactors
+  const historicalFactoryAddress =
+    currentNetwork?.factoryAddress &&
+    currentNetwork?.explorerFactoryAddress &&
+    currentNetwork.factoryAddress.toLowerCase() !==
+      currentNetwork.explorerFactoryAddress.toLowerCase()
+      ? currentNetwork.explorerFactoryAddress
+      : undefined
+
+  // Read reactors registered in the current Factory.
   const {
-    data: deployedReactors,
-    isLoading: isLoadingReactors,
+    data: currentDeployedReactors,
+    isLoading: isLoadingCurrentReactors,
     error: reactorsError,
     refetch: refetchReactors,
   } = useReadContract({
@@ -182,7 +190,6 @@ export default function ExplorerPage() {
 
   // Get reactor count for UI
   const {
-    error: countError,
     refetch: refetchCount,
   } = useReadContract({
     address: factoryAddress,
@@ -191,6 +198,28 @@ export default function ExplorerPage() {
     chainId,
     query: { enabled: !!factoryAddress },
   })
+
+  // Include older Sepolia test reactors without replacing the current registry.
+  const {
+    data: historicalReactors,
+    isLoading: isLoadingHistoricalReactors,
+    error: historicalReactorsError,
+    refetch: refetchHistoricalReactors,
+  } = useReadContract({
+    address: historicalFactoryAddress,
+    abi: FactoryABI,
+    functionName: 'getAllDeployedReactors',
+    chainId,
+    query: { enabled: !!historicalFactoryAddress },
+  })
+
+  const deployedReactors = Array.from(
+    new Map(
+      [...(currentDeployedReactors ?? []), ...(historicalReactors ?? [])]
+        .map((address) => [address.toLowerCase(), address] as const)
+    ).values()
+  )
+  const isLoadingReactors = isLoadingCurrentReactors || isLoadingHistoricalReactors
 
   // Filter reactors by search term (basic filtering for addresses)
   const filteredReactorAddresses = deployedReactors?.filter((address: string) =>
@@ -222,7 +251,14 @@ export default function ExplorerPage() {
     )
   }
 
-  const hasError = !!(reactorsError || countError)
+  const currentRegistryFailed = !!reactorsError
+  const historicalRegistryFailed = !!historicalReactorsError
+  const hasError =
+    currentRegistryFailed &&
+    (!historicalFactoryAddress || historicalRegistryFailed)
+  const hasPartialError =
+    !hasError &&
+    (currentRegistryFailed || historicalRegistryFailed)
 
   return (
     <div className="container-page min-h-[calc(100vh-12rem)] py-10 sm:py-14">
@@ -231,8 +267,27 @@ export default function ExplorerPage() {
         description="Browse deployed reactors and open them to use their stablecoins and volatile leveraged yield coins."
       />
 
-      {!currentNetwork?.factoryAddress && currentNetwork?.explorerFactoryAddress && (
-        <p role="status" className="mb-6 text-sm text-muted-foreground">Sepolia test reactors. New reactor creation requires an updated factory.</p>
+      {currentNetwork?.explorerFactoryAddress && (
+        <p role="status" className="mb-6 text-sm text-muted-foreground">
+          Sepolia includes historical test reactors from an older Factory.
+          New reactor creation uses the current verified Factory.
+        </p>
+      )}
+
+      {hasPartialError && (
+        <div role="alert" className="mb-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <p>Some reactor registry data could not be loaded. Results may be incomplete.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (currentRegistryFailed) void refetchReactors()
+              if (historicalRegistryFailed) void refetchHistoricalReactors()
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       )}
 
       {/* Error State */}
@@ -254,6 +309,7 @@ export default function ExplorerPage() {
             onClick={() => {
               void refetchReactors()
               void refetchCount()
+              if (historicalFactoryAddress) void refetchHistoricalReactors()
             }}
           >
             Try again
@@ -323,8 +379,10 @@ export default function ExplorerPage() {
               <Activity aria-hidden="true" className="mx-auto size-8 text-faint-foreground" />
               <p className="mt-4 font-medium text-foreground">No reactors found</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {deployedReactors && deployedReactors.length === 0
-                  ? "No reactors have been deployed on this network yet."
+                {deployedReactors.length === 0
+                  ? hasPartialError
+                    ? "No reactors could be displayed from the available registry data."
+                    : "No reactors have been deployed on this network yet."
                   : "No reactor address matches your search."}
               </p>
               <div className="mt-6">
@@ -332,14 +390,14 @@ export default function ExplorerPage() {
                   <Button variant="outline" size="sm" onClick={() => setSearchTerm("")}>
                     Clear search
                   </Button>
-                ) : (
+                ) : !hasPartialError ? (
                   <Button asChild>
                     <Link href="/create">
                       <Rocket aria-hidden="true" />
                       Deploy the first reactor
                     </Link>
                   </Button>
-                )}
+                ) : null}
               </div>
             </div>
           )}
