@@ -15,6 +15,8 @@
 Developed under [**Stability Nexus**](https://github.com/StabilityNexus)
 
 [![CI](https://github.com/StabilityNexus/Gluon-EVM-WebUI/actions/workflows/ci.yml/badge.svg)](https://github.com/StabilityNexus/Gluon-EVM-WebUI/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/StabilityNexus/Gluon-EVM-WebUI/badge)](https://scorecard.dev/viewer/?uri=github.com/StabilityNexus/Gluon-EVM-WebUI)
+[![Best Practices](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FStabilityNexus%2FGluon-EVM-WebUI%2Fmain%2Fchecklist-status.json)](BestPracticesChecklist.md)
 [![Pages](https://github.com/StabilityNexus/Gluon-EVM-WebUI/actions/workflows/nextjs.yml/badge.svg)](https://github.com/StabilityNexus/Gluon-EVM-WebUI/actions/workflows/nextjs.yml)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
