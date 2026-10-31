@@ -89,8 +89,8 @@ describe("accessibility", () => {
       />,
     )
 
-    expect(screen.getByRole("combobox", { name: "From token" })).toBeInTheDocument()
-    expect(screen.getByRole("combobox", { name: "To token" })).toBeInTheDocument()
+    expect(screen.getByRole("combobox", { name: "From token" })).toHaveTextContent("WETH")
+    expect(screen.getByRole("combobox", { name: "To token" })).toHaveTextContent("GUSD + GLP")
     await expectNoAxeViolations(container)
   })
 })
