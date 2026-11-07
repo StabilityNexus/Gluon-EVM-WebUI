@@ -43,10 +43,8 @@ if (audit) {
     next: "critical",
     postcss: "high",
     ws: "high",
-    // Unresolved transitive WalletConnect findings tracked in issue #75:
-    // https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues/75
-    // These exceptions do NOT remediate the vulnerabilities.
-    // @wagmi/connectors is accepted only for the advisories in approvedAdvisories.
+    // npm audit rates this high through ws and zod after the
+    // issue #75 override of @walletconnect/ethereum-provider.
     "@wagmi/connectors": "high",
     // Newly reported by the October 24, 2026 npm advisory database:
     "@reown/appkit": "high",
@@ -62,23 +60,6 @@ if (audit) {
     zod: "high",
   }
 
-  // High/critical advisories these packages may reach, directly or through
-  // dependencies (ws and zod today). Any other one still fails.
-  const approvedAdvisories = {
-    "@wagmi/connectors": ["GHSA-96hv-2xvq-fx4p", "GHSA-mrhx-c7xc-m3w5"],
-  }
-
-  // npm audit lists advisories as objects in `via` and dependencies as names.
-  const rootAdvisories = (name, seen = new Set()) => {
-    if (seen.has(name)) {
-      return []
-    }
-    seen.add(name)
-    return (audit.vulnerabilities?.[name]?.via ?? []).flatMap((source) =>
-      typeof source === "string" ? rootAdvisories(source, seen) : [source],
-    )
-  }
-
   const severityRank = {
     low: 0,
     moderate: 1,
@@ -86,35 +67,18 @@ if (audit) {
     critical: 3,
   }
 
-  const isHighOrCritical = (severity) => ["high", "critical"].includes(severity)
-
   const unexpected = []
 
   for (const [name, info] of Object.entries(
     audit.vulnerabilities ?? {},
   )) {
-    if (!isHighOrCritical(info.severity)) {
+    if (!["high", "critical"].includes(info.severity)) {
       continue
     }
 
     const recordedSeverity = recordedHighSeverity[name]
 
-    const approved = approvedAdvisories[name]
-    const unapproved = approved
-      ? rootAdvisories(name)
-          .filter((advisory) => isHighOrCritical(advisory?.severity))
-          .map(
-            (advisory) =>
-              advisory.url?.split("/").pop() ?? advisory.title ?? "(no id)",
-          )
-          .filter((id) => !approved.includes(id))
-      : []
-
-    if (unapproved.length > 0) {
-      unexpected.push(
-        `${info.severity}: ${name} (unapproved advisory ${[...new Set(unapproved)].join(", ")})`,
-      )
-    } else if (
+    if (
       !recordedSeverity ||
       severityRank[info.severity] >
         severityRank[recordedSeverity]
@@ -138,7 +102,7 @@ if (audit) {
   console.log(
     "\nUnresolved exceptions: next (critical), postcss (high), ws (high), " +
       "@reown/appkit family (high), @walletconnect/ethereum-provider (high), " +
-      "@wagmi/connectors (high, approved advisories only), abitype (high), viem (high), zod (high). " +
+      "@wagmi/connectors (high), abitype (high), viem (high), zod (high). " +
       "Tracking: GitHub issue #75.",
   )
 }
