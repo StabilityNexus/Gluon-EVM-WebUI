@@ -111,6 +111,8 @@ export default function CreatePage() {
   const isChainlinkSupported = CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)
   const currentNetwork = GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)
   const isAdapterDeploymentBusy = isAdapterDeploying || isAdapterConfirming
+  // useChainId() does not follow the wallet onto unconfigured chains.
+  const isWalletOnWrongNetwork = isConnected && walletChain?.id !== chainId
 
   const { data: factoryDevFee } = useReadContract({
     address: currentNetwork?.factoryAddress,
@@ -321,6 +323,7 @@ export default function CreatePage() {
       }
 
       const hash = await deployContractAsync({
+        chainId: deploymentChainId,
         abi: ChainlinkToOracleAdapterABI,
         bytecode: ChainlinkToOracleAdapterBytecode,
         args: [feedAddress as `0x${string}`],
@@ -857,13 +860,21 @@ export default function CreatePage() {
                       <button
                         type="button"
                         onClick={handleDeployChainlinkAdapter}
-                        disabled={isAdapterDeploymentBusy}
+                        disabled={isAdapterDeploymentBusy || isWalletOnWrongNetwork}
                         className="h-12 w-full rounded-lg border border-border bg-muted/40 text-[13px] text-foreground/80 transition-colors hover:border-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isAdapterDeploymentBusy
                           ? "Deploying Adapter..."
                           : "Deploy Chainlink Adapter"}
                       </button>
+
+                      {isWalletOnWrongNetwork && (
+                        <p className="text-[13px] text-muted-foreground/75">
+                          Switch your wallet to{" "}
+                          {currentNetwork?.displayName ?? "a supported network"}{" "}
+                          to deploy the adapter.
+                        </p>
+                      )}
 
                       {config.oracleAddress && (
                         <>
