@@ -4,6 +4,9 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import OraclePreflightPanel from "@/components/OraclePreflightPanel"
 import { ManagementActionCard } from "@/components/management-action-card"
+import TokenSelector from "@/components/TokenSelector"
+
+vi.mock("wagmi", () => ({ useChainId: () => 999999 }))
 
 describe("OraclePreflightPanel", () => {
   it("allows the user to start a preflight check", async () => {
@@ -149,5 +152,16 @@ describe("ManagementActionCard", () => {
         recipient: "0xabc123",
       })
     })
+  })
+})
+
+describe("TokenSelector", () => {
+  it("opens the token list as a dialog that closes with Escape", async () => {
+    const user = userEvent.setup()
+    render(<TokenSelector onChange={() => {}} />)
+    await user.click(screen.getByRole("button", { name: "Select" }))
+    expect(screen.getByRole("dialog", { name: "Select token" })).toBeInTheDocument()
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
 })
