@@ -857,24 +857,25 @@ export default function CreatePage() {
                         className={`${inputClasses} font-mono`}
                       />
 
-                      <button
-                        type="button"
-                        onClick={handleDeployChainlinkAdapter}
-                        disabled={isAdapterDeploymentBusy || isWalletOnWrongNetwork}
-                        className="h-12 w-full rounded-lg border border-border bg-muted/40 text-[13px] text-foreground/80 transition-colors hover:border-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isAdapterDeploymentBusy
-                          ? "Deploying Adapter..."
-                          : "Deploy Chainlink Adapter"}
-                      </button>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleDeployChainlinkAdapter}
+                          disabled={isAdapterDeploymentBusy || isWalletOnWrongNetwork}
+                          className="h-12 w-full rounded-lg border border-border bg-muted/40 text-[13px] text-foreground/80 transition-colors hover:border-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isAdapterDeploymentBusy
+                            ? "Deploying Adapter..."
+                            : "Deploy Chainlink Adapter"}
+                        </button>
 
-                      {isWalletOnWrongNetwork && (
-                        <p className="text-[13px] text-muted-foreground/75">
-                          Switch your wallet to{" "}
-                          {currentNetwork?.displayName ?? "a supported network"}{" "}
-                          to deploy the adapter.
+                        {/* Stays mounted so screen readers announce the text when it appears. */}
+                        <p role="status" className="mt-3 text-[13px] text-muted-foreground/75 empty:mt-0">
+                          {isWalletOnWrongNetwork
+                            ? `Switch your wallet to ${currentNetwork?.displayName ?? "a supported network"} to deploy the adapter.`
+                            : null}
                         </p>
-                      )}
+                      </div>
 
                       {config.oracleAddress && (
                         <>

@@ -75,7 +75,7 @@ import CreatePage from "@/app/create/page"
 
 async function enterChainlinkFeed() {
   const user = userEvent.setup()
-  render(<CreatePage />)
+  const { rerender } = render(<CreatePage />)
 
   await user.click(screen.getByRole("button", { name: "Chainlink" }))
 
@@ -89,6 +89,7 @@ async function enterChainlinkFeed() {
 
   return {
     user,
+    rerender,
     deployButton: screen.getByRole("button", { name: "Deploy Chainlink Adapter" }),
   }
 }
@@ -121,15 +122,29 @@ describe("Chainlink adapter deployment network", () => {
     })
   })
 
-  it("pins the adapter deployment to the selected network", async () => {
+  it.each([
+    { network: "Ethereum", chainId: 1 },
+    { network: "Ethereum Sepolia", chainId: 11155111 },
+  ])("pins the adapter deployment to $network", async ({ chainId }) => {
+    mocks.chainId = chainId
+    mocks.account = { ...mocks.account, chain: { id: chainId } }
+    mocks.runOraclePreflight.mockResolvedValue({
+      chainId,
+      address: ADAPTER,
+      status: "compatible",
+      issues: [],
+      warnings: [],
+    })
+
     const { user, deployButton } = await enterChainlinkFeed()
 
     expect(deployButton).toBeEnabled()
+    expect(screen.getByRole("status")).toBeEmptyDOMElement()
     await user.click(deployButton)
 
     await waitFor(() => {
       expect(mocks.deployContractAsync).toHaveBeenCalledWith(
-        expect.objectContaining({ chainId: 1, args: [FEED] }),
+        expect.objectContaining({ chainId, args: [FEED] }),
       )
     })
   })
@@ -142,14 +157,29 @@ describe("Chainlink adapter deployment network", () => {
     const { user, deployButton } = await enterChainlinkFeed()
 
     expect(deployButton).toBeDisabled()
-    expect(
-      screen.getByText("Switch your wallet to Ethereum to deploy the adapter."),
-    ).toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Switch your wallet to Ethereum to deploy the adapter.",
+    )
 
     await user.click(deployButton)
 
     expect(mocks.readContract).not.toHaveBeenCalled()
     expect(mocks.deployContractAsync).not.toHaveBeenCalled()
+  })
+
+  it("announces the switch instruction when the wallet leaves the selected network", async () => {
+    const { rerender, deployButton } = await enterChainlinkFeed()
+    const status = screen.getByRole("status")
+    expect(status).toBeEmptyDOMElement()
+
+    mocks.account = { ...mocks.account, chain: undefined }
+    rerender(<CreatePage />)
+
+    expect(deployButton).toBeDisabled()
+    expect(screen.getByRole("status")).toBe(status)
+    expect(status).toHaveTextContent(
+      "Switch your wallet to Ethereum to deploy the adapter.",
+    )
   })
 
   it("does not report a wrong network when no wallet is connected", async () => {
@@ -158,6 +188,6 @@ describe("Chainlink adapter deployment network", () => {
     const { deployButton } = await enterChainlinkFeed()
 
     expect(deployButton).toBeEnabled()
-    expect(screen.queryByText(/Switch your wallet to/)).not.toBeInTheDocument()
+    expect(screen.getByRole("status")).toBeEmptyDOMElement()
   })
 })
