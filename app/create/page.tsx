@@ -111,6 +111,8 @@ export default function CreatePage() {
   const isChainlinkSupported = CHAINLINK_SUPPORTED_CHAIN_IDS.has(chainId)
   const currentNetwork = GLUON_NETWORKS.find(({ chain }) => chain.id === chainId)
   const isAdapterDeploymentBusy = isAdapterDeploying || isAdapterConfirming
+  // useChainId() does not follow the wallet onto unconfigured chains.
+  const isWalletOnWrongNetwork = isConnected && walletChain?.id !== chainId
 
   const { data: factoryDevFee } = useReadContract({
     address: currentNetwork?.factoryAddress,
@@ -321,6 +323,7 @@ export default function CreatePage() {
       }
 
       const hash = await deployContractAsync({
+        chainId: deploymentChainId,
         abi: ChainlinkToOracleAdapterABI,
         bytecode: ChainlinkToOracleAdapterBytecode,
         args: [feedAddress as `0x${string}`],
@@ -854,16 +857,25 @@ export default function CreatePage() {
                         className={`${inputClasses} font-mono`}
                       />
 
-                      <button
-                        type="button"
-                        onClick={handleDeployChainlinkAdapter}
-                        disabled={isAdapterDeploymentBusy}
-                        className="h-12 w-full rounded-lg border border-border bg-muted/40 text-[13px] text-foreground/80 transition-colors hover:border-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isAdapterDeploymentBusy
-                          ? "Deploying Adapter..."
-                          : "Deploy Chainlink Adapter"}
-                      </button>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleDeployChainlinkAdapter}
+                          disabled={isAdapterDeploymentBusy || isWalletOnWrongNetwork}
+                          className="h-12 w-full rounded-lg border border-border bg-muted/40 text-[13px] text-foreground/80 transition-colors hover:border-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isAdapterDeploymentBusy
+                            ? "Deploying Adapter..."
+                            : "Deploy Chainlink Adapter"}
+                        </button>
+
+                        {/* Stays mounted so screen readers announce the text when it appears. */}
+                        <p role="status" className="mt-3 text-[13px] text-muted-foreground/75 empty:mt-0">
+                          {isWalletOnWrongNetwork
+                            ? `Switch your wallet to ${currentNetwork?.displayName ?? "a supported network"} to deploy the adapter.`
+                            : null}
+                        </p>
+                      </div>
 
                       {config.oracleAddress && (
                         <>
