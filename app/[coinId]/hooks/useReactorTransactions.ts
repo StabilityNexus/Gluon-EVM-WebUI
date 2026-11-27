@@ -18,6 +18,8 @@ import {
   WAD,
   NATIVE_FLOW_CONTEXT_CHANGED,
   mulDiv,
+  describeRevertedTransaction,
+  describeTransactionError,
 } from "../interactionUtils"
 import type { InteractionContext } from "./interactionTypes"
 import type { InteractionForm } from "./useInteractionForm"
@@ -68,6 +70,85 @@ type ReactorTransactionsInput = Pick<
   | "baseSymbolText"
   | "reactorAddress"
 >
+
+// writeContract never throws. Wallet and receipt errors only reach the hook state.
+function useTransactionErrorFeedback({
+  action,
+  publicClient,
+  hash,
+  writeError,
+  receiptError,
+  refetchReceipt,
+  setAmount,
+}: {
+  action: string
+  publicClient: ReturnType<typeof usePublicClient>
+  hash: `0x${string}` | undefined
+  writeError: Error | null
+  receiptError: Error | null
+  refetchReceipt: () => unknown
+  setAmount?: (amount: string) => void
+}) {
+  const handledReceipt = useRef<{
+    hash?: `0x${string}`
+    refetched?: boolean
+    shown?: "reverted" | "unknown"
+  }>({})
+  const [settledReceiptError, setSettledReceiptError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    if (writeError) {
+      toast.error(`${action} failed. ${describeTransactionError(writeError)}`)
+    }
+  }, [action, writeError])
+
+  useEffect(() => {
+    if (!receiptError || !hash) return
+
+    let cancelled = false
+    // A receipt error alone does not prove a revert. Only the receipt status does.
+    const status = publicClient
+      ? publicClient.getTransactionReceipt({ hash }).then(
+          (receipt) => receipt.status,
+          () => undefined,
+        )
+      : Promise.resolve(undefined)
+
+    void status
+      .then((receiptStatus) => {
+        if (cancelled) return
+        // A failed receipt is refetched on window focus. Track what was done per transaction.
+        if (handledReceipt.current.hash !== hash) handledReceipt.current = { hash }
+        const handled = handledReceipt.current
+
+        if (receiptStatus === "success" && !handled.refetched) {
+          // The wait failed but the receipt is fine. Refetch once so the normal success handling runs.
+          handled.refetched = true
+          void refetchReceipt()
+        } else if (receiptStatus === "reverted") {
+          if (handled.shown === "reverted") return
+          handled.shown = "reverted"
+          toast.error(`${action} failed. ${describeRevertedTransaction(receiptError)}`)
+        } else if (!handled.shown) {
+          handled.shown = "unknown"
+          // Like the native flow, do not leave the same amount ready for a second submission.
+          setAmount?.("")
+          toast.error(
+            `${action} was submitted but its final status could not be confirmed. Check your wallet or explorer before retrying.`,
+          )
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSettledReceiptError(receiptError)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [action, publicClient, hash, receiptError, refetchReceipt, setAmount])
+
+  return Boolean(receiptError && hash) && settledReceiptError !== receiptError
+}
 
 export function useReactorTransactions({
   transmutationOutput,
@@ -128,16 +209,19 @@ export function useReactorTransactions({
     data: approveHash,
     writeContract: writeApprove,
     isPending: isApproving,
+    error: approveWriteError,
   } = useWriteContract()
   const {
     data: fissionHash,
     writeContract: writeFission,
     isPending: isFissioning,
+    error: fissionWriteError,
   } = useWriteContract()
   const {
     data: fusionHash,
     writeContract: writeFusion,
     isPending: isFusing,
+    error: fusionWriteError,
   } = useWriteContract()
   const { writeContractAsync: writeNativeContract } = useWriteContract()
   const { sendTransactionAsync: sendNativeTransaction } = useSendTransaction()
@@ -147,34 +231,52 @@ export function useReactorTransactions({
     data: protonToNeutronHash,
     writeContract: writeProtonToNeutron,
     isPending: isProtonToNeutronPending,
+    error: protonToNeutronWriteError,
   } = useWriteContract()
   const {
     data: neutronToProtonHash,
     writeContract: writeNeutronToProton,
     isPending: isNeutronToProtonPending,
+    error: neutronToProtonWriteError,
   } = useWriteContract()
 
-  const { isLoading: isApprovingTx, isSuccess: isApproveSuccess } =
-    useWaitForTransactionReceipt({
-      hash: approveHash,
-    })
-  const { isLoading: isFissionTx, isSuccess: isFissionSuccess } =
-    useWaitForTransactionReceipt({
-      hash: fissionHash,
-    })
-  const { isLoading: isFusionTx, isSuccess: isFusionSuccess } =
-    useWaitForTransactionReceipt({
-      hash: fusionHash,
-    })
+  const {
+    isLoading: isApprovingTx,
+    isSuccess: isApproveSuccess,
+    error: approveReceiptError,
+    refetch: refetchApproveReceipt,
+  } = useWaitForTransactionReceipt({
+    hash: approveHash,
+  })
+  const {
+    isLoading: isFissionTx,
+    isSuccess: isFissionSuccess,
+    error: fissionReceiptError,
+    refetch: refetchFissionReceipt,
+  } = useWaitForTransactionReceipt({
+    hash: fissionHash,
+  })
+  const {
+    isLoading: isFusionTx,
+    isSuccess: isFusionSuccess,
+    error: fusionReceiptError,
+    refetch: refetchFusionReceipt,
+  } = useWaitForTransactionReceipt({
+    hash: fusionHash,
+  })
   const {
     isLoading: isProtonToNeutronTx,
     isSuccess: isProtonToNeutronSuccess,
+    error: protonToNeutronReceiptError,
+    refetch: refetchProtonToNeutronReceipt,
   } = useWaitForTransactionReceipt({
     hash: protonToNeutronHash,
   })
   const {
     isLoading: isNeutronToProtonTx,
     isSuccess: isNeutronToProtonSuccess,
+    error: neutronToProtonReceiptError,
+    refetch: refetchNeutronToProtonReceipt,
   } = useWaitForTransactionReceipt({
     hash: neutronToProtonHash,
   })
@@ -258,6 +360,51 @@ export function useReactorTransactions({
       toast.success("Neutron successfully transmuted to proton")
   }, [isNeutronToProtonSuccess])
 
+  const isCheckingApproveReceipt = useTransactionErrorFeedback({
+    action: "Approval",
+    publicClient,
+    hash: approveHash,
+    writeError: approveWriteError,
+    receiptError: approveReceiptError,
+    refetchReceipt: refetchApproveReceipt,
+  })
+  const isCheckingFissionReceipt = useTransactionErrorFeedback({
+    action: "Fission",
+    publicClient,
+    hash: fissionHash,
+    writeError: fissionWriteError,
+    receiptError: fissionReceiptError,
+    refetchReceipt: refetchFissionReceipt,
+    setAmount,
+  })
+  const isCheckingFusionReceipt = useTransactionErrorFeedback({
+    action: "Fusion",
+    publicClient,
+    hash: fusionHash,
+    writeError: fusionWriteError,
+    receiptError: fusionReceiptError,
+    refetchReceipt: refetchFusionReceipt,
+    setAmount,
+  })
+  const isCheckingProtonToNeutronReceipt = useTransactionErrorFeedback({
+    action: "Proton to neutron transmutation",
+    publicClient,
+    hash: protonToNeutronHash,
+    writeError: protonToNeutronWriteError,
+    receiptError: protonToNeutronReceiptError,
+    refetchReceipt: refetchProtonToNeutronReceipt,
+    setAmount,
+  })
+  const isCheckingNeutronToProtonReceipt = useTransactionErrorFeedback({
+    action: "Neutron to proton transmutation",
+    publicClient,
+    hash: neutronToProtonHash,
+    writeError: neutronToProtonWriteError,
+    receiptError: neutronToProtonReceiptError,
+    refetchReceipt: refetchNeutronToProtonReceipt,
+    setAmount,
+  })
+
   const parsedAmountForApproval = useMemo(() => {
     if (baseDecimalsNumber === undefined) return null
     if (!amount) return null
@@ -284,7 +431,12 @@ export function useReactorTransactions({
     isProtonToNeutronPending ||
     isProtonToNeutronTx ||
     isNeutronToProtonPending ||
-    isNeutronToProtonTx
+    isNeutronToProtonTx ||
+    isCheckingApproveReceipt ||
+    isCheckingFissionReceipt ||
+    isCheckingFusionReceipt ||
+    isCheckingProtonToNeutronReceipt ||
+    isCheckingNeutronToProtonReceipt
 
   const handleApprove = () => {
     if (!writeApprove) return
@@ -508,7 +660,9 @@ export function useReactorTransactions({
                   "The wrap transaction was submitted but its final status could not be confirmed. Check your wallet before retrying.",
                 )
               } else {
-                toast.error("Native fission did not complete")
+                toast.error(
+                  `Native fission did not complete. ${describeTransactionError(error)}`,
+                )
               }
             } finally {
               setIsNativeFlowProcessing(false)
@@ -688,7 +842,9 @@ export function useReactorTransactions({
                   )
                 }
               } else {
-                toast.error("Native fusion did not complete")
+                toast.error(
+                  `Native fusion did not complete. ${describeTransactionError(error)}`,
+                )
               }
             } finally {
               setIsNativeFlowProcessing(false)

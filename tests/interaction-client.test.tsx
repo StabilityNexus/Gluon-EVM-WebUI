@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { parseUnits } from "viem"
+import { parseUnits, UserRejectedRequestError } from "viem"
 import InteractionClient from "@/app/[coinId]/InteractionClient"
 
 const mocks = vi.hoisted(() => ({
@@ -669,6 +669,24 @@ describe("reactor interaction", () => {
     )
     expect(mocks.send).not.toHaveBeenCalled()
     expect(screen.getByRole("spinbutton")).toHaveValue(null)
+  })
+
+  it("names a wallet rejection of the first native step", async () => {
+    mocks.native = true
+    mocks.writeNative.mockRejectedValueOnce(
+      new UserRejectedRequestError(new Error("User denied transaction signature.")),
+    )
+    renderPage()
+    fireEvent.click(screen.getByRole("button", { name: "ETH (native)" }))
+    inputAmount()
+    fireEvent.click(screen.getByRole("button", { name: "Split ETH" }))
+    await waitFor(() =>
+      expect(mocks.error).toHaveBeenCalledWith(
+        "Native fission did not complete. The request was rejected in your wallet.",
+      ),
+    )
+    expect(mocks.writeNative).toHaveBeenCalledOnce()
+    expect(screen.getByRole("spinbutton")).toHaveValue(1)
   })
 
   it("clears submitted native input when receipt confirmation is uncertain", async () => {
