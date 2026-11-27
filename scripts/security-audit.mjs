@@ -43,12 +43,9 @@ if (audit) {
     next: "critical",
     postcss: "high",
     ws: "high",
-    // Unresolved transitive WalletConnect findings tracked in issue #75:
-    // https://github.com/StabilityNexus/Gluon-EVM-WebUI/issues/75
-    // These exceptions do NOT remediate the vulnerabilities.
-    "@walletconnect/utils": "high",
-    "decode-uri-component": "high",
-    "query-string": "high",
+    // npm audit rates this high through ws and zod after the
+    // issue #75 override of @walletconnect/ethereum-provider.
+    "@wagmi/connectors": "high",
     // Newly reported by the October 24, 2026 npm advisory database:
     "@reown/appkit": "high",
     "@reown/appkit-controllers": "high",
@@ -105,8 +102,7 @@ if (audit) {
   console.log(
     "\nUnresolved exceptions: next (critical), postcss (high), ws (high), " +
       "@reown/appkit family (high), @walletconnect/ethereum-provider (high), " +
-      "abitype (high), viem (high), zod (high), " +
-      "@walletconnect/utils (high), decode-uri-component (high), " +
-      "query-string (high). Tracking: GitHub issue #75.",
+      "@wagmi/connectors (high), abitype (high), viem (high), zod (high). " +
+      "Tracking: GitHub issue #75.",
   )
 }

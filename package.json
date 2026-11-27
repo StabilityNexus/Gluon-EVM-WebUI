@@ -103,6 +103,10 @@
   "overrides": {
     "@wagmi/connectors": "5.11.2",
     "@base-org/account": "1.1.1",
+    "@walletconnect/ethereum-provider": {
+      ".": "2.22.0",
+      "@wallet-standard/base": "1.1.0"
+    },
     "anymatch": {
       "picomatch": "2.3.2"
     },
