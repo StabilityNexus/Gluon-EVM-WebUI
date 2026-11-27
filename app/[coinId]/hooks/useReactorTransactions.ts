@@ -18,6 +18,8 @@ import {
   WAD,
   NATIVE_FLOW_CONTEXT_CHANGED,
   mulDiv,
+  describeTransactionError,
+  isRevertedReceiptError,
 } from "../interactionUtils"
 import type { InteractionContext } from "./interactionTypes"
 import type { InteractionForm } from "./useInteractionForm"
@@ -68,6 +70,30 @@ type ReactorTransactionsInput = Pick<
   | "baseSymbolText"
   | "reactorAddress"
 >
+
+// writeContract never throws. Wallet and receipt errors only reach the hook state.
+function useTransactionErrorToast(
+  action: string,
+  writeError: Error | null,
+  receiptError: Error | null,
+) {
+  useEffect(() => {
+    if (writeError) {
+      toast.error(`${action} failed. ${describeTransactionError(writeError)}`)
+    }
+  }, [action, writeError])
+
+  // Keyed on text: a failed receipt is refetched on window focus with a new error object.
+  const receiptMessage = !receiptError
+    ? null
+    : isRevertedReceiptError(receiptError)
+      ? `${action} failed. ${describeTransactionError(receiptError)}`
+      : `${action} was submitted but its final status could not be confirmed. Check your wallet or explorer before retrying.`
+
+  useEffect(() => {
+    if (receiptMessage) toast.error(receiptMessage)
+  }, [receiptMessage])
+}
 
 export function useReactorTransactions({
   transmutationOutput,
@@ -128,16 +154,19 @@ export function useReactorTransactions({
     data: approveHash,
     writeContract: writeApprove,
     isPending: isApproving,
+    error: approveWriteError,
   } = useWriteContract()
   const {
     data: fissionHash,
     writeContract: writeFission,
     isPending: isFissioning,
+    error: fissionWriteError,
   } = useWriteContract()
   const {
     data: fusionHash,
     writeContract: writeFusion,
     isPending: isFusing,
+    error: fusionWriteError,
   } = useWriteContract()
   const { writeContractAsync: writeNativeContract } = useWriteContract()
   const { sendTransactionAsync: sendNativeTransaction } = useSendTransaction()
@@ -147,34 +176,47 @@ export function useReactorTransactions({
     data: protonToNeutronHash,
     writeContract: writeProtonToNeutron,
     isPending: isProtonToNeutronPending,
+    error: protonToNeutronWriteError,
   } = useWriteContract()
   const {
     data: neutronToProtonHash,
     writeContract: writeNeutronToProton,
     isPending: isNeutronToProtonPending,
+    error: neutronToProtonWriteError,
   } = useWriteContract()
 
-  const { isLoading: isApprovingTx, isSuccess: isApproveSuccess } =
-    useWaitForTransactionReceipt({
-      hash: approveHash,
-    })
-  const { isLoading: isFissionTx, isSuccess: isFissionSuccess } =
-    useWaitForTransactionReceipt({
-      hash: fissionHash,
-    })
-  const { isLoading: isFusionTx, isSuccess: isFusionSuccess } =
-    useWaitForTransactionReceipt({
-      hash: fusionHash,
-    })
+  const {
+    isLoading: isApprovingTx,
+    isSuccess: isApproveSuccess,
+    error: approveReceiptError,
+  } = useWaitForTransactionReceipt({
+    hash: approveHash,
+  })
+  const {
+    isLoading: isFissionTx,
+    isSuccess: isFissionSuccess,
+    error: fissionReceiptError,
+  } = useWaitForTransactionReceipt({
+    hash: fissionHash,
+  })
+  const {
+    isLoading: isFusionTx,
+    isSuccess: isFusionSuccess,
+    error: fusionReceiptError,
+  } = useWaitForTransactionReceipt({
+    hash: fusionHash,
+  })
   const {
     isLoading: isProtonToNeutronTx,
     isSuccess: isProtonToNeutronSuccess,
+    error: protonToNeutronReceiptError,
   } = useWaitForTransactionReceipt({
     hash: protonToNeutronHash,
   })
   const {
     isLoading: isNeutronToProtonTx,
     isSuccess: isNeutronToProtonSuccess,
+    error: neutronToProtonReceiptError,
   } = useWaitForTransactionReceipt({
     hash: neutronToProtonHash,
   })
@@ -257,6 +299,20 @@ export function useReactorTransactions({
     if (isNeutronToProtonSuccess)
       toast.success("Neutron successfully transmuted to proton")
   }, [isNeutronToProtonSuccess])
+
+  useTransactionErrorToast("Approval", approveWriteError, approveReceiptError)
+  useTransactionErrorToast("Fission", fissionWriteError, fissionReceiptError)
+  useTransactionErrorToast("Fusion", fusionWriteError, fusionReceiptError)
+  useTransactionErrorToast(
+    "Proton to neutron transmutation",
+    protonToNeutronWriteError,
+    protonToNeutronReceiptError,
+  )
+  useTransactionErrorToast(
+    "Neutron to proton transmutation",
+    neutronToProtonWriteError,
+    neutronToProtonReceiptError,
+  )
 
   const parsedAmountForApproval = useMemo(() => {
     if (baseDecimalsNumber === undefined) return null
@@ -508,7 +564,9 @@ export function useReactorTransactions({
                   "The wrap transaction was submitted but its final status could not be confirmed. Check your wallet before retrying.",
                 )
               } else {
-                toast.error("Native fission did not complete")
+                toast.error(
+                  `Native fission did not complete. ${describeTransactionError(error)}`,
+                )
               }
             } finally {
               setIsNativeFlowProcessing(false)
@@ -688,7 +746,9 @@ export function useReactorTransactions({
                   )
                 }
               } else {
-                toast.error("Native fusion did not complete")
+                toast.error(
+                  `Native fusion did not complete. ${describeTransactionError(error)}`,
+                )
               }
             } finally {
               setIsNativeFlowProcessing(false)

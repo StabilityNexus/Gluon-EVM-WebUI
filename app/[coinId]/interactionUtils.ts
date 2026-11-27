@@ -1,4 +1,15 @@
-import { parseUnits, formatUnits } from "viem"
+import {
+  BaseError,
+  CallExecutionError,
+  ContractFunctionRevertedError,
+  InsufficientFundsError,
+  UserRejectedRequestError,
+  decodeErrorResult,
+  formatUnits,
+  parseUnits,
+  type Hex,
+} from "viem"
+import { StableCoinReactorABI } from "@/utils/abi/StableCoin"
 
 export type TokenOption = "BASE" | "BUNDLE" | "NEUTRON" | "PROTON"
 
@@ -114,3 +125,50 @@ export const formatWad = (value?: bigint, precision = 4) => {
   const formatted = formatUnits(value, 18)
   return trimFormattedAmount(formatted, precision)
 }
+
+const revertErrorName = (error: BaseError) => {
+  const reverted = error.walk((cause) => cause instanceof ContractFunctionRevertedError)
+  if (reverted instanceof ContractFunctionRevertedError) return reverted.data?.errorName
+
+  // wagmi replays a reverted receipt with eth_call. Its error only keeps the raw revert data.
+  const withData = error.walk((cause) => {
+    const data = (cause as { data?: unknown } | null)?.data
+    return typeof data === "string" && data.startsWith("0x") && data.length >= 10
+  }) as { data: Hex } | null
+  if (!withData) return undefined
+  try {
+    return decodeErrorResult({ abi: StableCoinReactorABI, data: withData.data }).errorName
+  } catch {
+    return undefined
+  }
+}
+
+export const describeTransactionError = (error: unknown) => {
+  if (!(error instanceof BaseError)) return "The transaction did not succeed."
+  if (error.walk((cause) => cause instanceof UserRejectedRequestError)) {
+    return "The request was rejected in your wallet."
+  }
+  // Wallets often report this as an internal error, which viem reads as a revert.
+  if (InsufficientFundsError.nodeMessage.test(error.message)) {
+    return "Not enough funds to pay for gas."
+  }
+
+  const reverted = error.walk((cause) => cause instanceof ContractFunctionRevertedError)
+  if (reverted instanceof ContractFunctionRevertedError && reverted.reason) {
+    return reverted.reason
+  }
+
+  const errorName = revertErrorName(error)
+  if (errorName === "ExcessiveSlippage") {
+    return "The price moved before the transaction was mined. Check the new quote and try again."
+  }
+  if (errorName && errorName !== "Error" && errorName !== "Panic") {
+    return `The contract reverted with ${errorName}.`
+  }
+  return error.shortMessage
+}
+
+// wagmi replays the call only after a reverted receipt. Any other receipt error leaves the status unknown.
+export const isRevertedReceiptError = (error: Error) =>
+  !(error instanceof BaseError) ||
+  Boolean(error.walk((cause) => cause instanceof CallExecutionError))
